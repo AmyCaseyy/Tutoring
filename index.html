@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scholara Tutors</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Scholara Tutors home">
+        <span class="brand-mark">S</span>
+        <span>Scholara</span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#tutors">Find tutors</a>
+        <a href="#how">How it works</a>
+        <a href="#accounts">Accounts</a>
+        <a href="#payments">Payments</a>
+      </nav>
+      <div class="top-actions">
+        <button class="icon-btn" type="button" aria-label="Open messages" title="Messages">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+        </button>
+        <button class="secondary-btn" type="button">Log in</button>
+        <button class="primary-btn" type="button">Get started</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-media" aria-hidden="true">
+          <img src="assets/hero-tutoring.png" alt="" />
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="eyebrow">A-level tutoring, booked in minutes</p>
+          <h1>Find your ideal tutor, trial them free, then keep your lessons on track.</h1>
+          <p class="hero-copy">Students and parents can search by subject, university, grades, price, and availability. Tutors set their own profile and rates, while payments and repeat schedules stay simple.</p>
+          <form class="hero-search" data-search-form>
+            <label>
+              <span>Subject</span>
+              <input id="heroSubject" type="search" placeholder="Biology, Maths, Chemistry..." />
+            </label>
+            <label>
+              <span>University</span>
+              <input id="heroUniversity" type="search" placeholder="Oxford, UCL, Warwick..." />
+            </label>
+            <button class="primary-btn" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Search
+            </button>
+          </form>
+        </div>
+        <div class="hero-stat-row" aria-label="Marketplace highlights">
+          <div><strong>30 min</strong><span>free trial</span></div>
+          <div><strong>24 hr</strong><span>refund window</span></div>
+          <div><strong>Stripe</strong><span>secure payments</span></div>
+        </div>
+      </section>
+
+      <section class="strip" id="how">
+        <div class="strip-inner">
+          <article>
+            <span class="step">1</span>
+            <h2>Search by A-level subject</h2>
+            <p>Students enter what they study, then filter tutors by university, exam results, availability, teaching style, and price.</p>
+          </article>
+          <article>
+            <span class="step">2</span>
+            <h2>Trial before paying</h2>
+            <p>Every tutor offers one free 30-minute trial so the student can check fit before committing.</p>
+          </article>
+          <article>
+            <span class="step">3</span>
+            <h2>Book once or repeat</h2>
+            <p>Choose one-off lessons or a recurring weekly/monthly schedule that continues until cancelled.</p>
+          </article>
+          <article>
+            <span class="step">4</span>
+            <h2>Pay and message</h2>
+            <p>Stripe handles checkout, platform commission, tutor payouts, receipts, and the shared chat for arrangements.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="workspace" id="tutors">
+        <aside class="filters" aria-label="Tutor filters">
+          <div class="panel-heading">
+            <h2>Find a tutor</h2>
+            <p id="matchCount">6 tutors match</p>
+          </div>
+
+          <label class="field">
+            <span>A-level subject</span>
+            <select id="subjectFilter">
+              <option value="All">All subjects</option>
+              <option>Biology</option>
+              <option>Chemistry</option>
+              <option>Maths</option>
+              <option>Physics</option>
+              <option>English Literature</option>
+              <option>Economics</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>University</span>
+            <input id="uniFilter" type="search" placeholder="Search university" />
+          </label>
+
+          <label class="field">
+            <span>Minimum tutor grade</span>
+            <select id="gradeFilter">
+              <option value="Any">Any grade</option>
+              <option value="A*">A*</option>
+              <option value="A">A or above</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Sort by</span>
+            <select id="sortFilter">
+              <option value="recommended">Recommended</option>
+              <option value="grade">Highest grades</option>
+              <option value="priceLow">Price: low to high</option>
+              <option value="priceHigh">Price: high to low</option>
+              <option value="rating">Highest rated</option>
+            </select>
+          </label>
+
+          <div class="range-row">
+            <label for="budgetFilter">Max hourly rate</label>
+            <output id="budgetValue">GBP 60</output>
+          </div>
+          <input id="budgetFilter" type="range" min="20" max="80" step="5" value="60" />
+
+          <div class="toggle-row">
+            <input id="trialOnly" type="checkbox" checked />
+            <label for="trialOnly">Free trial available</label>
+          </div>
+
+          <button class="secondary-btn wide" id="resetFilters" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+            Reset filters
+          </button>
+        </aside>
+
+        <section class="results" aria-live="polite">
+          <div class="results-top">
+            <div>
+              <p class="eyebrow">Tutor marketplace</p>
+              <h2>Browse tutors who fit your goals</h2>
+            </div>
+            <div class="segmented" role="tablist" aria-label="Account preview">
+              <button class="segment active" type="button" data-role="student">Student</button>
+              <button class="segment" type="button" data-role="parent">Parent</button>
+              <button class="segment" type="button" data-role="tutor">Tutor</button>
+            </div>
+          </div>
+          <div class="tutor-grid" id="tutorGrid"></div>
+        </section>
+      </section>
+
+      <section class="account-zone" id="accounts">
+        <div class="account-copy">
+          <p class="eyebrow">Account dashboards</p>
+          <h2 id="accountTitle">Student account</h2>
+          <p id="accountText">Track upcoming lessons, talk to each tutor, manage recurring sessions, and start a free trial before committing.</p>
+          <div class="account-actions">
+            <button class="primary-btn" id="quickBook" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+              Book a trial
+            </button>
+            <button class="secondary-btn" type="button">View messages</button>
+          </div>
+        </div>
+        <div class="dashboard" aria-label="Account preview dashboard">
+          <div class="dash-header">
+            <div>
+              <span class="status-dot"></span>
+              <strong id="dashRole">Student dashboard</strong>
+            </div>
+            <span>Live schedule</span>
+          </div>
+          <div class="lesson-list">
+            <article>
+              <time>Mon 18:00</time>
+              <div>
+                <strong>A-level Biology</strong>
+                <span>Recurring weekly with Priya Shah</span>
+              </div>
+              <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+            </article>
+            <article>
+              <time>Wed 19:30</time>
+              <div>
+                <strong>Maths trial</strong>
+                <span>Free 30-minute session with Leo Grant</span>
+              </div>
+              <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+            </article>
+          </div>
+          <div class="chat-card">
+            <div class="chat-title">
+              <strong>Tutor chat</strong>
+              <span>Priya Shah</span>
+            </div>
+            <p class="bubble incoming">Hi Maya, I’ve uploaded the respiration practice questions for Monday.</p>
+            <p class="bubble outgoing">Great, can we also cover synoptic essay structure?</p>
+            <div class="chat-input">
+              <span>Message Priya...</span>
+              <button class="icon-btn" type="button" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="payments" id="payments">
+        <div>
+          <p class="eyebrow">Stripe-powered booking</p>
+          <h2>One button to book, split, and protect every lesson.</h2>
+          <p>Students or parents pay at checkout. Your platform commission is taken automatically, the tutor payout is reserved, and the refund rule is clear before anyone confirms.</p>
+        </div>
+        <div class="payment-flow">
+          <article><strong>GBP 45.00</strong><span>Student or parent pays</span></article>
+          <article><strong>15%</strong><span>Platform fee</span></article>
+          <article><strong>GBP 38.25</strong><span>Tutor payout after lesson</span></article>
+          <article><strong>24 hours</strong><span>Refund if cancelled early</span></article>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="bookingDialog" aria-labelledby="bookingTitle">
+      <form method="dialog" class="booking-modal">
+        <div class="modal-top">
+          <div>
+            <p class="eyebrow">Confirm lesson</p>
+            <h2 id="bookingTitle">Book a tutor</h2>
+          </div>
+          <button class="icon-btn" value="cancel" aria-label="Close booking" title="Close" type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="booking-body">
+          <label class="field">
+            <span>Lesson type</span>
+            <select id="lessonType">
+              <option value="trial">Free 30-minute trial</option>
+              <option value="weekly">Recurring weekly</option>
+              <option value="monthly">Recurring monthly</option>
+              <option value="oneoff">One-off lesson</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Frequency</span>
+            <select id="frequency">
+              <option>1 lesson per week</option>
+              <option>2 lessons per week</option>
+              <option>3 lessons per week</option>
+              <option>2 lessons per month</option>
+              <option>One lesson only</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Preferred time</span>
+            <input type="datetime-local" />
+          </label>
+          <div class="checkout-summary">
+            <div><span>Due today</span><strong id="dueToday">GBP 0.00</strong></div>
+            <div><span>Cancellation</span><strong>Full refund before 24 hours</strong></div>
+            <div><span>After 24 hours</span><strong>Tutor is paid</strong></div>
+          </div>
+        </div>
+        <button class="primary-btn wide" id="stripeButton" value="confirm" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
+          Confirm with Stripe
+        </button>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
