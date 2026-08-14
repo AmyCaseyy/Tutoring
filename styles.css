@@ -94,7 +94,8 @@ button {
 }
 
 .top-actions,
-.account-actions {
+.account-actions,
+.card-actions {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -531,6 +532,11 @@ input[type="range"] {
   align-items: center;
 }
 
+.card-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .price {
   display: grid;
   gap: 2px;
@@ -554,20 +560,24 @@ input[type="range"] {
   border-radius: 8px;
 }
 
-.account-zone,
-.payments {
+.account-zone {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
   gap: 42px;
-  align-items: center;
+  align-items: start;
   padding: 70px clamp(18px, 5vw, 72px);
 }
 
-.signup-panel {
+.auth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 26px 0 14px;
+}
+
+.auth-panel {
   display: grid;
   gap: 12px;
-  max-width: 520px;
-  margin: 26px 0 18px;
   padding: 18px;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -575,8 +585,14 @@ input[type="range"] {
   box-shadow: 0 12px 34px rgba(35, 26, 31, 0.06);
 }
 
+.auth-panel h3 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+}
+
 .signup-status {
-  margin: 0;
+  max-width: 720px;
+  margin: 0 0 18px;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 700;
@@ -590,8 +606,7 @@ input[type="range"] {
   opacity: 0.58;
 }
 
-.account-copy p,
-.payments p {
+.account-copy p {
   color: var(--muted);
   line-height: 1.68;
 }
@@ -603,6 +618,8 @@ input[type="range"] {
 }
 
 .dash-header,
+.role-tools article,
+.ratings-panel,
 .chat-title,
 .lesson-list article,
 .checkout-summary div {
@@ -623,6 +640,40 @@ input[type="range"] {
   align-items: center;
   gap: 10px;
   color: var(--ink);
+}
+
+.role-tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.role-tools article,
+.ratings-panel {
+  padding: 14px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.role-tools article {
+  display: grid;
+  align-items: start;
+  justify-content: start;
+}
+
+.role-tools span,
+.ratings-panel span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.ratings-panel.highlight {
+  border-color: rgba(47, 140, 103, 0.3);
+  background: #f4fbf8;
 }
 
 .status-dot {
@@ -704,37 +755,8 @@ input[type="range"] {
   border-radius: 8px;
 }
 
-.payments {
-  background: var(--paper);
-}
-
-.payment-flow {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-
-.payment-flow article {
-  min-height: 150px;
-  padding: 22px;
-  background: #fff;
-  border-top: 5px solid var(--pink);
-  border-radius: 8px;
-  box-shadow: 0 12px 34px rgba(18, 45, 59, 0.08);
-}
-
-.payment-flow strong,
-.payment-flow span {
-  display: block;
-}
-
-.payment-flow strong {
-  font-size: 1.65rem;
-}
-
-.payment-flow span {
-  margin-top: 10px;
-  color: var(--muted);
+body[data-role="tutor"] [data-student-parent-only] {
+  display: none;
 }
 
 dialog {
@@ -791,8 +813,11 @@ dialog::backdrop {
   }
 
   .workspace,
-  .account-zone,
-  .payments {
+  .account-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-grid {
     grid-template-columns: 1fr;
   }
 
@@ -824,8 +849,7 @@ dialog::backdrop {
 
   .hero-search,
   .hero-stat-row,
-  .results-top,
-  .payment-flow {
+  .results-top {
     grid-template-columns: 1fr;
   }
 
@@ -835,8 +859,22 @@ dialog::backdrop {
   }
 
   .strip-inner,
-  .tutor-grid {
+  .tutor-grid,
+  .role-tools {
     grid-template-columns: 1fr;
+  }
+
+  .card-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    justify-content: stretch;
+  }
+
+  .card-actions .primary-btn,
+  .card-actions .secondary-btn {
+    flex: 1;
   }
 
   .results-top {

@@ -16,13 +16,13 @@
         <a href="#tutors">Find tutors</a>
         <a href="#how">How it works</a>
         <a href="#accounts">Accounts</a>
-        <a href="#payments">Payments</a>
+        <a href="#dashboard">Dashboard</a>
       </nav>
       <div class="top-actions">
-        <button class="icon-btn" type="button" aria-label="Open messages" title="Messages">
+        <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
         </button>
-        <button class="secondary-btn" type="button">Log in</button>
+        <a class="secondary-btn" href="#loginPanel">Log in</a>
         <a class="primary-btn" href="#accounts">Get started</a>
       </div>
     </header>
@@ -56,7 +56,7 @@
           <div class="logo-stat"><img src="assets/girlstem-logo.png" alt="" /></div>
           <div><strong>30 min</strong><span>free trial</span></div>
           <div><strong>24 hr</strong><span>refund window</span></div>
-          <div><strong>Stripe</strong><span>secure payments</span></div>
+          <div><strong>Ratings</strong><span>after lessons</span></div>
         </div>
       </section>
 
@@ -85,7 +85,7 @@
         </div>
       </section>
 
-      <section class="workspace" id="tutors">
+      <section class="workspace" id="tutors" data-student-parent-only>
         <aside class="filters" aria-label="Tutor filters">
           <div class="panel-heading">
             <h2>Find a tutor</h2>
@@ -153,7 +153,7 @@
               <p class="eyebrow">GirlSTEM tutor marketplace</p>
               <h2>Browse tutors who fit your goals</h2>
             </div>
-            <p class="account-lock-note">Create an account before booking or messaging tutors.</p>
+            <p class="account-lock-note">Students and parents can book, message, pay, and rate tutors from their account.</p>
           </div>
           <div class="tutor-grid" id="tutorGrid"></div>
         </section>
@@ -164,86 +164,80 @@
           <p class="eyebrow">Account dashboards</p>
           <h2 id="accountTitle">Student account</h2>
           <p id="accountText">Track upcoming lessons, talk to each tutor, manage recurring sessions, and start a free trial before committing.</p>
-          <form class="signup-panel" id="signupForm">
-            <label class="field">
-              <span>Choose account type</span>
-              <select id="signupRole" required>
-                <option value="student">Student</option>
-                <option value="parent">Parent</option>
-                <option value="tutor">Tutor</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>Full name</span>
-              <input id="signupName" type="text" placeholder="Enter your name" required />
-            </label>
-            <label class="field">
-              <span>Email address</span>
-              <input id="signupEmail" type="email" placeholder="you@example.com" required />
-            </label>
-            <button class="primary-btn wide" type="submit">Create account</button>
-            <p class="signup-status" id="signupStatus">You need an account before you can book lessons or message tutors.</p>
-          </form>
+          <div class="auth-grid">
+            <form class="auth-panel" id="loginPanel">
+              <h3>Log in</h3>
+              <label class="field">
+                <span>Email address</span>
+                <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password" required />
+              </label>
+              <button class="primary-btn wide" type="submit">Log in</button>
+            </form>
+
+            <form class="auth-panel" id="signupForm">
+              <h3>Create account</h3>
+              <label class="field">
+                <span>Account type</span>
+                <select id="signupRole" required>
+                  <option value="student">Student</option>
+                  <option value="parent">Parent</option>
+                  <option value="tutor">Tutor</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Full name</span>
+                <input id="signupName" type="text" placeholder="Enter your name" autocomplete="name" required />
+              </label>
+              <label class="field">
+                <span>Email address</span>
+                <input id="signupEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="signupPassword" type="password" placeholder="Create password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <label class="field">
+                <span>Retype password</span>
+                <input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <button class="secondary-btn wide" type="submit">Create account</button>
+            </form>
+          </div>
+          <p class="signup-status" id="signupStatus">Log in or create an account to unlock the right dashboard.</p>
           <div class="account-actions">
             <button class="primary-btn" id="quickBook" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
               Book a trial
             </button>
-            <button class="secondary-btn" id="messagesButton" type="button">View messages</button>
+            <button class="secondary-btn" id="messagesButton" type="button">Open chat</button>
           </div>
         </div>
-        <div class="dashboard" aria-label="Account preview dashboard">
+        <div class="dashboard" id="dashboard" aria-label="Account dashboard">
           <div class="dash-header">
             <div>
               <span class="status-dot"></span>
               <strong id="dashRole">Student dashboard preview</strong>
             </div>
-            <span>Live schedule</span>
+            <span id="dashMode">Live schedule</span>
           </div>
-          <div class="lesson-list">
-            <article>
-              <time>Mon 18:00</time>
-              <div>
-                <strong>A-level Biology</strong>
-                <span>Recurring weekly with Priya Shah</span>
-              </div>
-              <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-            </article>
-            <article>
-              <time>Wed 19:30</time>
-              <div>
-                <strong>Maths trial</strong>
-                <span>Free 30-minute session with Leo Grant</span>
-              </div>
-              <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-            </article>
-          </div>
+          <div class="role-tools" id="roleTools"></div>
+          <div class="lesson-list" id="lessonList"></div>
           <div class="chat-card">
             <div class="chat-title">
-              <strong>Tutor chat</strong>
-              <span>Priya Shah</span>
+              <strong id="chatTitle">Tutor chat</strong>
+              <span id="chatWith">Priya Shah</span>
             </div>
-            <p class="bubble incoming">Hi Maya, I’ve uploaded the respiration practice questions for Monday.</p>
-            <p class="bubble outgoing">Great, can we also cover synoptic essay structure?</p>
+            <div id="chatMessages"></div>
             <div class="chat-input">
-              <span>Message Priya...</span>
+              <span id="chatPlaceholder">Message Priya...</span>
               <button class="icon-btn" type="button" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section class="payments" id="payments">
-        <div>
-          <p class="eyebrow">Secure booking</p>
-          <h2>One button to book, split, and protect every lesson.</h2>
-          <p>Students or parents pay at checkout. Your platform commission is taken automatically, the tutor payout is reserved, and the refund rule is clear before anyone confirms.</p>
-        </div>
-        <div class="payment-flow">
-          <article><strong>GBP 45.00</strong><span>Student or parent pays</span></article>
-          <article><strong>15%</strong><span>Platform fee</span></article>
-          <article><strong>GBP 38.25</strong><span>Tutor payout after lesson</span></article>
-          <article><strong>24 hours</strong><span>Refund if cancelled early</span></article>
+          <div class="ratings-panel" id="ratingsPanel"></div>
         </div>
       </section>
     </main>
