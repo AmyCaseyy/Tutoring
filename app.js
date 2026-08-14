@@ -82,17 +82,17 @@ const tutors = [
 const roleContent = {
   student: {
     title: "Student account",
-    text: "Track upcoming lessons, talk to each tutor, manage recurring sessions, and start a free trial before committing.",
+    text: "Create a student account to book trials, track upcoming lessons, message tutors, and manage recurring sessions.",
     dash: "Student dashboard"
   },
   parent: {
     title: "Parent account",
-    text: "Use the same clean dashboard to message tutors, arrange lessons, pay securely, manage cancellations, and follow your child’s schedule.",
+    text: "Create a parent account to arrange lessons, pay securely, manage cancellations, message tutors, and follow your child’s schedule.",
     dash: "Parent dashboard"
   },
   tutor: {
     title: "Tutor account",
-    text: "Build a profile, list A-level subjects, set hourly rates, choose availability, accept free trials, manage chats, and receive Stripe payouts.",
+    text: "Create a tutor account to build a profile, list A-level subjects, set hourly rates, choose availability, accept trials, and receive payouts.",
     dash: "Tutor dashboard"
   }
 };
@@ -110,8 +110,16 @@ const dialog = document.querySelector("#bookingDialog");
 const bookingTitle = document.querySelector("#bookingTitle");
 const lessonType = document.querySelector("#lessonType");
 const dueToday = document.querySelector("#dueToday");
+const signupForm = document.querySelector("#signupForm");
+const signupRole = document.querySelector("#signupRole");
+const signupName = document.querySelector("#signupName");
+const signupEmail = document.querySelector("#signupEmail");
+const signupStatus = document.querySelector("#signupStatus");
+const quickBook = document.querySelector("#quickBook");
+const messagesButton = document.querySelector("#messagesButton");
 
 let selectedTutor = tutors[0];
+let currentAccount = null;
 
 function gradeRank(grade) {
   return grade === "A*" ? 2 : 1;
@@ -189,6 +197,7 @@ function renderTutors() {
 }
 
 function openBooking() {
+  if (!canBook()) return;
   bookingTitle.textContent = `Book ${selectedTutor.name}`;
   updateDueToday();
   dialog.showModal();
@@ -199,12 +208,56 @@ function updateDueToday() {
 }
 
 function setRole(role) {
-  document.querySelectorAll(".segment").forEach((button) => {
-    button.classList.toggle("active", button.dataset.role === role);
-  });
   document.querySelector("#accountTitle").textContent = roleContent[role].title;
   document.querySelector("#accountText").textContent = roleContent[role].text;
-  document.querySelector("#dashRole").textContent = roleContent[role].dash;
+  document.querySelector("#dashRole").textContent = currentAccount ? roleContent[role].dash : `${roleContent[role].dash} preview`;
+}
+
+function setAccount(account) {
+  currentAccount = account;
+  localStorage.setItem("girlstemTutoringAccount", JSON.stringify(account));
+  signupRole.value = account.role;
+  signupName.value = account.name;
+  signupEmail.value = account.email;
+  signupRole.disabled = true;
+  signupName.disabled = true;
+  signupEmail.disabled = true;
+  signupForm.querySelector("button").textContent = "Account created";
+  signupForm.querySelector("button").disabled = true;
+  signupStatus.textContent = `${account.name}, your ${account.role} account is set.`;
+  signupStatus.classList.add("success");
+  setRole(account.role);
+  updateActionState();
+}
+
+function updateActionState() {
+  const locked = !currentAccount;
+  [quickBook, messagesButton].forEach((button) => {
+    button.classList.toggle("locked-action", locked);
+  });
+}
+
+function promptForAccount() {
+  signupStatus.textContent = "Please create an account first, then you can book or message tutors.";
+  signupStatus.classList.remove("success");
+  document.querySelector("#accounts").scrollIntoView({ behavior: "smooth" });
+  signupName.focus();
+}
+
+function canBook() {
+  if (!currentAccount) {
+    promptForAccount();
+    return false;
+  }
+
+  if (currentAccount.role === "tutor") {
+    signupStatus.textContent = "Tutor accounts manage profiles and availability. Use a student or parent account to book lessons.";
+    signupStatus.classList.remove("success");
+    document.querySelector("#accounts").scrollIntoView({ behavior: "smooth" });
+    return false;
+  }
+
+  return true;
 }
 
 document.querySelector("[data-search-form]").addEventListener("submit", (event) => {
@@ -235,11 +288,41 @@ document.querySelector("#resetFilters").addEventListener("click", () => {
   renderTutors();
 });
 
-document.querySelectorAll(".segment").forEach((button) => {
-  button.addEventListener("click", () => setRole(button.dataset.role));
+signupRole.addEventListener("change", () => {
+  if (!currentAccount) setRole(signupRole.value);
 });
 
-document.querySelector("#quickBook").addEventListener("click", openBooking);
+signupForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  setAccount({
+    role: signupRole.value,
+    name: signupName.value.trim(),
+    email: signupEmail.value.trim()
+  });
+});
+
+quickBook.addEventListener("click", openBooking);
+messagesButton.addEventListener("click", () => {
+  if (!currentAccount) {
+    promptForAccount();
+    return;
+  }
+  signupStatus.textContent = "Messages are ready inside your account dashboard preview.";
+  signupStatus.classList.add("success");
+});
 lessonType.addEventListener("change", updateDueToday);
+
+try {
+  const savedAccount = JSON.parse(localStorage.getItem("girlstemTutoringAccount"));
+  if (savedAccount && savedAccount.role && savedAccount.name && savedAccount.email) {
+    setAccount(savedAccount);
+  } else {
+    setRole(signupRole.value);
+    updateActionState();
+  }
+} catch {
+  setRole(signupRole.value);
+  updateActionState();
+}
 
 renderTutors();
