@@ -8,27 +8,27 @@
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="GirlSTEM Tutoring home">
+      <a class="brand" href="#home" data-route="home" aria-label="GirlSTEM Tutoring home">
         <img class="brand-logo" src="assets/girlstem-logo.png" alt="GirlSTEM Tutoring logo" />
         <span>GirlSTEM Tutoring</span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a href="#tutors">Find tutors</a>
-        <a href="#how">How it works</a>
-        <a href="#accounts">Accounts</a>
-        <a href="#dashboard">Dashboard</a>
+        <a href="#tutors" data-route="tutors">Find tutors</a>
+        <a href="#how" data-route="how">How it works</a>
+        <a href="#accounts" data-route="accounts">Accounts</a>
+        <a href="#dashboard" data-route="dashboard">Dashboard</a>
       </nav>
       <div class="top-actions">
         <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
         </button>
-        <a class="secondary-btn" href="#loginPanel">Log in</a>
-        <a class="primary-btn" href="#accounts">Get started</a>
+        <a class="secondary-btn" href="#accounts" data-route="accounts">Log in</a>
+        <a class="primary-btn" href="#accounts" data-route="accounts">Get started</a>
       </div>
     </header>
 
     <main id="top">
-      <section class="hero">
+      <section class="hero app-page active" id="home" data-page="home">
         <div class="hero-media" aria-hidden="true">
           <img src="assets/hero-tutoring.png" alt="" />
         </div>
@@ -60,7 +60,12 @@
         </div>
       </section>
 
-      <section class="strip" id="how">
+      <section class="strip app-page" id="how" data-page="how">
+        <div class="page-heading">
+          <p class="eyebrow">How it works</p>
+          <h2>Keep the journey simple.</h2>
+          <p>Students and parents find tutors first. Account tools, messages, ratings, and payments live behind the right dashboard.</p>
+        </div>
         <div class="strip-inner">
           <article>
             <span class="step">1</span>
@@ -85,7 +90,7 @@
         </div>
       </section>
 
-      <section class="workspace" id="tutors" data-student-parent-only>
+      <section class="workspace app-page" id="tutors" data-page="tutors" data-student-parent-only>
         <aside class="filters" aria-label="Tutor filters">
           <div class="panel-heading">
             <h2>Find a tutor</h2>
@@ -159,7 +164,7 @@
         </section>
       </section>
 
-      <section class="account-zone" id="accounts">
+      <section class="account-zone app-page" id="accounts" data-page="accounts">
         <div class="account-copy">
           <p class="eyebrow">Account dashboards</p>
           <h2 id="accountTitle">Student account</h2>
@@ -208,6 +213,20 @@
             </form>
           </div>
           <p class="signup-status" id="signupStatus">Log in or create an account to unlock the right dashboard.</p>
+        </div>
+        <aside class="account-side">
+          <strong>After sign-up</strong>
+          <p>You will be taken to a separate dashboard page for your account type.</p>
+        </aside>
+      </section>
+
+      <section class="dashboard-page app-page" id="dashboard" data-page="dashboard">
+        <div class="dashboard-intro">
+          <div>
+            <p class="eyebrow">Your account</p>
+            <h2 id="dashboardTitle">Dashboard</h2>
+            <p id="dashboardSubtitle">Log in or create an account to see the right tools here.</p>
+          </div>
           <div class="account-actions">
             <button class="primary-btn" id="quickBook" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
@@ -216,7 +235,8 @@
             <button class="secondary-btn" id="messagesButton" type="button">Open chat</button>
           </div>
         </div>
-        <div class="dashboard" id="dashboard" aria-label="Account dashboard">
+        <div class="login-confirmation" id="loginConfirmation" hidden></div>
+        <div class="dashboard" aria-label="Account dashboard">
           <div class="dash-header">
             <div>
               <span class="status-dot"></span>
@@ -225,6 +245,37 @@
             <span id="dashMode">Live schedule</span>
           </div>
           <div class="role-tools" id="roleTools"></div>
+          <div class="dashboard-grid">
+            <section class="profile-panel" aria-labelledby="profileTitle">
+              <div class="section-title">
+                <h3 id="profileTitle">Profile</h3>
+                <span id="profileBadge">Set up</span>
+              </div>
+              <form id="profileForm" class="profile-form">
+                <label class="field">
+                  <span>Display name</span>
+                  <input id="profileName" type="text" placeholder="Your name" />
+                </label>
+                <label class="field">
+                  <span id="profileSubjectLabel">Focus subject</span>
+                  <input id="profileSubject" type="text" placeholder="Biology, Maths, Chemistry" />
+                </label>
+                <label class="field">
+                  <span id="profileDetailLabel">Goal or teaching style</span>
+                  <input id="profileDetail" type="text" placeholder="Exam confidence, calm weekly structure" />
+                </label>
+                <button class="secondary-btn wide" type="submit">Save profile</button>
+              </form>
+            </section>
+
+            <section class="activity-panel" aria-labelledby="activityTitle">
+              <div class="section-title">
+                <h3 id="activityTitle">Live activity</h3>
+                <span id="activityCount">0 updates</span>
+              </div>
+              <div class="activity-feed" id="activityFeed"></div>
+            </section>
+          </div>
           <div class="lesson-list" id="lessonList"></div>
           <div class="chat-card">
             <div class="chat-title">
@@ -232,10 +283,10 @@
               <span id="chatWith">Priya Shah</span>
             </div>
             <div id="chatMessages"></div>
-            <div class="chat-input">
-              <span id="chatPlaceholder">Message Priya...</span>
-              <button class="icon-btn" type="button" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
-            </div>
+            <form class="chat-input" id="chatForm">
+              <input id="chatInput" type="text" placeholder="Message Priya..." autocomplete="off" />
+              <button class="icon-btn" type="submit" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+            </form>
           </div>
           <div class="ratings-panel" id="ratingsPanel"></div>
         </div>

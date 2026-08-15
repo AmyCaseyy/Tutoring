@@ -193,9 +193,75 @@ const roleTools = document.querySelector("#roleTools");
 const lessonList = document.querySelector("#lessonList");
 const ratingsPanel = document.querySelector("#ratingsPanel");
 const chatMessages = document.querySelector("#chatMessages");
+const loginConfirmation = document.querySelector("#loginConfirmation");
+const dashboardTitle = document.querySelector("#dashboardTitle");
+const dashboardSubtitle = document.querySelector("#dashboardSubtitle");
+const profileForm = document.querySelector("#profileForm");
+const profileName = document.querySelector("#profileName");
+const profileSubject = document.querySelector("#profileSubject");
+const profileDetail = document.querySelector("#profileDetail");
+const profileBadge = document.querySelector("#profileBadge");
+const profileSubjectLabel = document.querySelector("#profileSubjectLabel");
+const profileDetailLabel = document.querySelector("#profileDetailLabel");
+const chatForm = document.querySelector("#chatForm");
+const chatInput = document.querySelector("#chatInput");
+const activityFeed = document.querySelector("#activityFeed");
+const activityCount = document.querySelector("#activityCount");
+const pages = [...document.querySelectorAll("[data-page]")];
+const routeLinks = [...document.querySelectorAll("[data-route]")];
 
 let selectedTutor = tutors[0];
 let currentAccount = null;
+let pendingConfirmation = "";
+
+const storage = {
+  messages: "girlstemTutoringMessages",
+  ratings: "girlstemTutoringRatings",
+  profiles: "girlstemTutoringProfiles",
+  activity: "girlstemTutoringActivity"
+};
+
+function showPage(pageName, options = {}) {
+  const fallback = currentAccount ? "dashboard" : "home";
+  let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
+
+  if (nextPage === "dashboard" && !currentAccount) {
+    nextPage = "accounts";
+    signupStatus.textContent = "Log in or create an account first, then your dashboard will open.";
+    signupStatus.classList.remove("success");
+  }
+
+  if (nextPage === "tutors" && currentAccount?.role === "tutor") {
+    nextPage = "dashboard";
+    showConfirmation("Tutor accounts use this dashboard for availability, requests, chat, ratings, and payouts.");
+  }
+
+  pages.forEach((page) => {
+    page.classList.toggle("active", page.dataset.page === nextPage);
+  });
+
+  routeLinks.forEach((link) => {
+    link.classList.toggle("active", link.dataset.route === nextPage);
+  });
+
+  if (window.location.hash !== `#${nextPage}`) {
+    history.replaceState(null, "", `#${nextPage}`);
+  }
+
+  if (!options.keepScroll) {
+    window.scrollTo({ top: 0, behavior: options.instant ? "auto" : "smooth" });
+  }
+}
+
+function getRouteFromHash() {
+  return window.location.hash.replace("#", "") || "home";
+}
+
+function showConfirmation(message) {
+  pendingConfirmation = message;
+  loginConfirmation.hidden = false;
+  loginConfirmation.textContent = message;
+}
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -217,6 +283,92 @@ function getAccounts() {
 
 function saveAccounts(accounts) {
   localStorage.setItem("girlstemTutoringAccounts", JSON.stringify(accounts));
+}
+
+function readStore(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStore(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function accountKey() {
+  return currentAccount?.email || "guest";
+}
+
+function threadKey() {
+  const participant = currentAccount?.role === "tutor" ? "student-parent" : selectedTutor.name;
+  return `${accountKey()}::${participant}`;
+}
+
+function nowLabel() {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date());
+}
+
+function getTutorRating(tutor) {
+  const ratings = readStore(storage.ratings, {});
+  const tutorRatings = ratings[tutor.name] || [];
+  if (!tutorRatings.length) return tutor.rating;
+  const average = tutorRatings.reduce((total, item) => total + item.score, 0) / tutorRatings.length;
+  return Number(((average + tutor.rating) / 2).toFixed(2));
+}
+
+function addActivity(text, type = "Update") {
+  if (!currentAccount) return;
+  const activity = readStore(storage.activity, {});
+  const items = activity[accountKey()] || [];
+  items.unshift({
+    type,
+    text,
+    time: nowLabel()
+  });
+  activity[accountKey()] = items.slice(0, 8);
+  writeStore(storage.activity, activity);
+  renderActivity();
+}
+
+function renderActivity() {
+  if (!currentAccount) {
+    activityFeed.innerHTML = `<p class="empty-copy">Log in to see live account updates.</p>`;
+    activityCount.textContent = "0 updates";
+    return;
+  }
+
+  const activity = readStore(storage.activity, {});
+  const items = activity[accountKey()] || [];
+  activityCount.textContent = `${items.length} update${items.length === 1 ? "" : "s"}`;
+
+  if (!items.length) {
+    activityFeed.innerHTML = `<p class="empty-copy">Your bookings, messages, ratings, and profile edits will appear here.</p>`;
+    return;
+  }
+
+  activityFeed.innerHTML = items.map((item) => `
+    <article class="activity-item">
+      <span>${escapeHtml(item.type)}</span>
+      <strong>${escapeHtml(item.text)}</strong>
+      <time>${escapeHtml(item.time)}</time>
+    </article>
+  `).join("");
+}
+
+function getProfile() {
+  const profiles = readStore(storage.profiles, {});
+  return profiles[accountKey()] || {};
+}
+
+function saveProfile(profile) {
+  const profiles = readStore(storage.profiles, {});
+  profiles[accountKey()] = profile;
+  writeStore(storage.profiles, profiles);
 }
 
 function gradeRank(grade) {
@@ -265,7 +417,7 @@ function renderTutors() {
           <h3>${escapeHtml(tutor.name)}</h3>
           <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
         </div>
-        <span class="rating">${tutor.rating.toFixed(2)}</span>
+        <span class="rating">${getTutorRating(tutor).toFixed(2)}</span>
       </div>
       <p>${escapeHtml(tutor.style)}</p>
       <div class="chips">
@@ -279,6 +431,7 @@ function renderTutors() {
           <span>Trial: free 30 mins</span>
         </div>
         <div class="card-actions">
+          <button class="secondary-btn" type="button" data-message="${index}">Message</button>
           <button class="secondary-btn" type="button" data-rate="${index}">Rate</button>
           <button class="primary-btn" type="button" data-book="${index}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
@@ -302,11 +455,158 @@ function renderTutors() {
       requestRating();
     });
   });
+
+  tutorGrid.querySelectorAll("[data-message]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedTutor = visibleTutors[Number(button.dataset.message)];
+      if (!currentAccount) {
+        promptForAccount("Please log in or create an account before messaging a tutor.");
+        return;
+      }
+      addActivity(`Opened chat with ${selectedTutor.name}`, "Chat");
+      renderDashboard(currentAccount.role);
+      showPage("dashboard");
+    });
+  });
+}
+
+function defaultMessagesFor(role) {
+  if (role === "tutor") {
+    return [
+      ["incoming", "Could we do a free trial next week?"],
+      ["outgoing", "Yes, I have Tuesday at 16:30 or Thursday at 18:00."]
+    ];
+  }
+
+  return [
+    ["incoming", `Hi, I'm ${selectedTutor.name}. Send me what you want to work on and we can plan the first session.`],
+    ["outgoing", "Hi, I'd like help building confidence before mocks."]
+  ];
+}
+
+function getMessages() {
+  const allMessages = readStore(storage.messages, {});
+  const key = threadKey();
+  if (!allMessages[key]) {
+    allMessages[key] = defaultMessagesFor(currentAccount?.role || "student").map(([direction, text]) => ({
+      direction,
+      text,
+      time: nowLabel()
+    }));
+    writeStore(storage.messages, allMessages);
+  }
+  return allMessages[key];
+}
+
+function saveMessage(message) {
+  const allMessages = readStore(storage.messages, {});
+  const key = threadKey();
+  const messages = allMessages[key] || [];
+  messages.push(message);
+  allMessages[key] = messages;
+  writeStore(storage.messages, allMessages);
+}
+
+function renderChat(role) {
+  const chatPartner = role === "tutor" ? "student and parent" : selectedTutor.name;
+  document.querySelector("#chatTitle").textContent = role === "tutor" ? "Student and parent chat" : "Tutor chat";
+  document.querySelector("#chatWith").textContent = chatPartner;
+  chatInput.placeholder = `Message ${chatPartner}...`;
+  chatMessages.innerHTML = getMessages().map((message) => `
+    <p class="bubble ${message.direction}">
+      ${escapeHtml(message.text)}
+      <time>${escapeHtml(message.time)}</time>
+    </p>
+  `).join("");
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function renderProfile(role) {
+  if (!currentAccount) return;
+
+  const profile = getProfile();
+  profileName.value = profile.name || currentAccount.name;
+  profileSubject.value = profile.subject || (role === "tutor" ? "Biology" : "A-level Biology");
+  profileDetail.value = profile.detail || (role === "tutor" ? "Exam technique and calm weekly structure" : "Mocks, confidence, and exam technique");
+  profileBadge.textContent = profile.updated ? "Saved" : "Draft";
+  profileSubjectLabel.textContent = role === "tutor" ? "Subjects you teach" : "Subjects you want help with";
+  profileDetailLabel.textContent = role === "tutor" ? "Teaching style" : "Learning goal";
+}
+
+function renderRatings(role) {
+  if (!currentAccount) return;
+
+  if (role === "tutor") {
+    const ratings = readStore(storage.ratings, {});
+    const ownRatings = ratings[currentAccount.name] || [];
+    const ratingText = ownRatings.length
+      ? `${ownRatings.length} student review${ownRatings.length === 1 ? "" : "s"} on your profile.`
+      : "Student and parent reviews will appear here after lessons.";
+    ratingsPanel.innerHTML = `
+      <div>
+        <strong>Tutor ratings</strong>
+        <span>${escapeHtml(ratingText)}</span>
+      </div>
+      <button class="secondary-btn" type="button" id="ratingAction">View profile</button>
+    `;
+    document.querySelector("#ratingAction").addEventListener("click", () => {
+      addActivity("Checked public tutor rating profile", "Ratings");
+    });
+    return;
+  }
+
+  ratingsPanel.innerHTML = `
+    <form class="rating-form" id="ratingForm">
+      <div>
+        <strong>Rate ${escapeHtml(selectedTutor.name)}</strong>
+        <span>Choose a score and save feedback after a session.</span>
+      </div>
+      <div class="star-row" role="radiogroup" aria-label="Tutor rating">
+        ${[1, 2, 3, 4, 5].map((score) => `
+          <label>
+            <input type="radio" name="ratingScore" value="${score}" ${score === 5 ? "checked" : ""} />
+            <span>${score}</span>
+          </label>
+        `).join("")}
+      </div>
+      <input id="ratingNote" type="text" placeholder="Optional note" />
+      <button class="secondary-btn" type="submit">Save rating</button>
+    </form>
+  `;
+
+  document.querySelector("#ratingForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveRating();
+  });
+}
+
+function saveRating() {
+  const form = document.querySelector("#ratingForm");
+  const score = Number(new FormData(form).get("ratingScore"));
+  const note = document.querySelector("#ratingNote").value.trim();
+  const ratings = readStore(storage.ratings, {});
+  const tutorRatings = ratings[selectedTutor.name] || [];
+  tutorRatings.push({
+    score,
+    note,
+    by: currentAccount.name,
+    time: nowLabel()
+  });
+  ratings[selectedTutor.name] = tutorRatings;
+  writeStore(storage.ratings, ratings);
+  ratingsPanel.classList.add("highlight");
+  addActivity(`Rated ${selectedTutor.name} ${score}/5`, "Rating");
+  renderRatings(currentAccount.role);
+  renderTutors();
 }
 
 function renderDashboard(role) {
   const dashboard = roleDashboards[role];
   ratingsPanel.classList.remove("highlight");
+  dashboardTitle.textContent = roleContent[role].dash;
+  dashboardSubtitle.textContent = currentAccount
+    ? `${currentAccount.name}, this is your ${role} dashboard.`
+    : "Log in or create an account to see the right tools here.";
   document.querySelector("#dashMode").textContent = dashboard.mode;
   roleTools.innerHTML = dashboard.tools.map(([title, text]) => `
     <article>
@@ -324,20 +624,10 @@ function renderDashboard(role) {
       <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
     </article>
   `).join("");
-  document.querySelector("#chatTitle").textContent = dashboard.chatTitle;
-  document.querySelector("#chatWith").textContent = dashboard.chatWith;
-  document.querySelector("#chatPlaceholder").textContent = `Message ${dashboard.chatWith}...`;
-  chatMessages.innerHTML = dashboard.messages.map(([direction, text]) => `
-    <p class="bubble ${direction}">${escapeHtml(text)}</p>
-  `).join("");
-  ratingsPanel.innerHTML = `
-    <div>
-      <strong>${escapeHtml(dashboard.ratingTitle)}</strong>
-      <span>${escapeHtml(dashboard.ratingText)}</span>
-    </div>
-    <button class="secondary-btn" type="button" id="ratingAction">${escapeHtml(dashboard.ratingButton)}</button>
-  `;
-  document.querySelector("#ratingAction").addEventListener("click", requestRating);
+  renderProfile(role);
+  renderActivity();
+  renderChat(role);
+  renderRatings(role);
 }
 
 function openBooking() {
@@ -370,23 +660,34 @@ function updateAccess() {
   });
 }
 
-function setAccount(account) {
+function setAccount(account, options = {}) {
   currentAccount = account;
   localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(account));
   signupRole.value = account.role;
   signupName.value = account.name;
   signupEmail.value = account.email;
   loginEmail.value = account.email;
-  signupStatus.textContent = `${account.name}, you are logged in as a ${account.role}.`;
+  signupStatus.textContent = `${account.name}, you are logged in successfully as a ${account.role}.`;
   signupStatus.classList.add("success");
   setRole(account.role);
   updateAccess();
+
+  if (options.confirm) {
+    showConfirmation(`${account.name}, you are logged in successfully as a ${account.role}.`);
+    addActivity(`Logged in as ${account.role}`, "Account");
+  } else if (!pendingConfirmation) {
+    loginConfirmation.hidden = true;
+  }
+
+  if (options.redirect) {
+    showPage("dashboard");
+  }
 }
 
 function promptForAccount(message = "Please log in or create an account first.") {
   signupStatus.textContent = message;
   signupStatus.classList.remove("success");
-  document.querySelector("#accounts").scrollIntoView({ behavior: "smooth" });
+  showPage("accounts");
   loginEmail.focus();
 }
 
@@ -399,7 +700,7 @@ function canBook() {
   if (currentAccount.role === "tutor") {
     signupStatus.textContent = "Tutor accounts manage profiles, availability, chat, ratings, and payouts. Students and parents book lessons.";
     signupStatus.classList.remove("success");
-    document.querySelector("#dashboard").scrollIntoView({ behavior: "smooth" });
+    showPage("dashboard");
     return false;
   }
 
@@ -415,20 +716,12 @@ function requestRating() {
   if (currentAccount.role === "tutor") {
     signupStatus.textContent = "Tutor accounts can view received ratings, but students and parents leave ratings.";
     signupStatus.classList.remove("success");
-    document.querySelector("#dashboard").scrollIntoView({ behavior: "smooth" });
+    showPage("dashboard");
     return;
   }
 
-  ratingsPanel.classList.add("highlight");
-  ratingsPanel.innerHTML = `
-    <div>
-      <strong>Rating saved</strong>
-      <span>${escapeHtml(currentAccount.name)} rated ${escapeHtml(selectedTutor.name)} 5 stars for ${escapeHtml(selectedTutor.subject)}.</span>
-    </div>
-    <button class="secondary-btn" type="button" id="ratingAction">Edit rating</button>
-  `;
-  document.querySelector("#ratingAction").addEventListener("click", requestRating);
-  document.querySelector("#dashboard").scrollIntoView({ behavior: "smooth" });
+  renderRatings(currentAccount.role);
+  showPage("dashboard");
 }
 
 document.querySelector("[data-search-form]").addEventListener("submit", (event) => {
@@ -436,7 +729,7 @@ document.querySelector("[data-search-form]").addEventListener("submit", (event) 
   if (currentAccount?.role === "tutor") {
     signupStatus.textContent = "Tutor accounts use the dashboard for availability, messages, ratings, and payout setup.";
     signupStatus.classList.add("success");
-    document.querySelector("#dashboard").scrollIntoView({ behavior: "smooth" });
+    showPage("dashboard");
     return;
   }
 
@@ -448,7 +741,18 @@ document.querySelector("[data-search-form]").addEventListener("submit", (event) 
   }
   uniFilter.value = university;
   renderTutors();
-  document.querySelector("#tutors").scrollIntoView({ behavior: "smooth" });
+  showPage("tutors");
+});
+
+routeLinks.forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    showPage(link.dataset.route);
+  });
+});
+
+window.addEventListener("hashchange", () => {
+  showPage(getRouteFromHash(), { keepScroll: true });
 });
 
 [subjectFilter, uniFilter, gradeFilter, sortFilter, budgetFilter, trialOnly].forEach((control) => {
@@ -464,6 +768,50 @@ document.querySelector("#resetFilters").addEventListener("click", () => {
   budgetFilter.value = "60";
   trialOnly.checked = true;
   renderTutors();
+});
+
+profileForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentAccount) {
+    promptForAccount("Log in first, then you can save a profile.");
+    return;
+  }
+
+  const profile = {
+    name: profileName.value.trim() || currentAccount.name,
+    subject: profileSubject.value.trim(),
+    detail: profileDetail.value.trim(),
+    updated: true
+  };
+
+  saveProfile(profile);
+  currentAccount.name = profile.name;
+  localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(currentAccount));
+  const accounts = getAccounts().map((account) => account.email === currentAccount.email ? currentAccount : account);
+  saveAccounts(accounts);
+  profileBadge.textContent = "Saved";
+  dashboardSubtitle.textContent = `${currentAccount.name}, this is your ${currentAccount.role} dashboard.`;
+  addActivity("Updated profile details", "Profile");
+});
+
+chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentAccount) {
+    promptForAccount("Log in first, then you can send messages.");
+    return;
+  }
+
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  saveMessage({
+    direction: "outgoing",
+    text,
+    time: nowLabel()
+  });
+  chatInput.value = "";
+  addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedTutor.name}`, "Chat");
+  renderChat(currentAccount.role);
 });
 
 signupRole.addEventListener("change", () => {
@@ -505,7 +853,7 @@ signupForm.addEventListener("submit", (event) => {
   saveAccounts(accounts);
   signupPassword.value = "";
   signupConfirmPassword.value = "";
-  setAccount(account);
+  setAccount(account, { confirm: true, redirect: true });
 });
 
 loginPanel.addEventListener("submit", (event) => {
@@ -521,7 +869,7 @@ loginPanel.addEventListener("submit", (event) => {
   }
 
   loginPassword.value = "";
-  setAccount(account);
+  setAccount(account, { confirm: true, redirect: true });
 });
 
 quickBook.addEventListener("click", () => {
@@ -533,7 +881,7 @@ quickBook.addEventListener("click", () => {
   if (currentAccount.role === "tutor") {
     signupStatus.textContent = "Availability tools are open in your tutor dashboard.";
     signupStatus.classList.add("success");
-    document.querySelector("#dashboard").scrollIntoView({ behavior: "smooth" });
+    showPage("dashboard");
     return;
   }
 
@@ -549,7 +897,7 @@ messagesButton.addEventListener("click", () => {
     ? "Student and parent messages are ready in your tutor dashboard."
     : "Tutor chat is ready inside your account dashboard.";
   signupStatus.classList.add("success");
-  document.querySelector("#dashboard").scrollIntoView({ behavior: "smooth" });
+  showPage("dashboard");
 });
 
 topMessagesButton.addEventListener("click", () => {
@@ -557,6 +905,12 @@ topMessagesButton.addEventListener("click", () => {
 });
 
 lessonType.addEventListener("change", updateDueToday);
+
+dialog.addEventListener("close", () => {
+  if (!currentAccount || dialog.returnValue !== "confirm") return;
+  addActivity(`Booked ${lessonType.value === "trial" ? "a free trial" : "a paid lesson"} with ${selectedTutor.name}`, "Booking");
+  renderDashboard(currentAccount.role);
+});
 
 try {
   const savedAccount = JSON.parse(localStorage.getItem("girlstemTutoringCurrentAccount"));
@@ -572,3 +926,4 @@ try {
 }
 
 renderTutors();
+showPage(getRouteFromHash(), { instant: true });
