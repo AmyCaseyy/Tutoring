@@ -200,6 +200,10 @@ const profileForm = document.querySelector("#profileForm");
 const profileName = document.querySelector("#profileName");
 const profileSubject = document.querySelector("#profileSubject");
 const profileDetail = document.querySelector("#profileDetail");
+const profileUniversity = document.querySelector("#profileUniversity");
+const profilePrice = document.querySelector("#profilePrice");
+const profileAbout = document.querySelector("#profileAbout");
+const profileSessions = document.querySelector("#profileSessions");
 const profileBadge = document.querySelector("#profileBadge");
 const profileSubjectLabel = document.querySelector("#profileSubjectLabel");
 const profileDetailLabel = document.querySelector("#profileDetailLabel");
@@ -207,10 +211,32 @@ const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
 const activityFeed = document.querySelector("#activityFeed");
 const activityCount = document.querySelector("#activityCount");
+const publicProfile = document.querySelector("#publicProfile");
+const threadList = document.querySelector("#threadList");
+const messagePageTitle = document.querySelector("#messagePageTitle");
+const messagePageWith = document.querySelector("#messagePageWith");
+const messagePageMessages = document.querySelector("#messagePageMessages");
+const messagePageForm = document.querySelector("#messagePageForm");
+const messagePageInput = document.querySelector("#messagePageInput");
+const bookingPageForm = document.querySelector("#bookingPageForm");
+const bookingTutor = document.querySelector("#bookingTutor");
+const bookingLessonType = document.querySelector("#bookingLessonType");
+const bookingDateTime = document.querySelector("#bookingDateTime");
+const upcomingBookings = document.querySelector("#upcomingBookings");
+const previousBookings = document.querySelector("#previousBookings");
+const upcomingCount = document.querySelector("#upcomingCount");
+const previousCount = document.querySelector("#previousCount");
+const reviewsTitle = document.querySelector("#reviewsTitle");
+const reviewsSummary = document.querySelector("#reviewsSummary");
+const reviewList = document.querySelector("#reviewList");
+const reviewPageForm = document.querySelector("#reviewPageForm");
+const reviewScore = document.querySelector("#reviewScore");
+const reviewText = document.querySelector("#reviewText");
 const pages = [...document.querySelectorAll("[data-page]")];
 const routeLinks = [...document.querySelectorAll("[data-route]")];
 
 let selectedTutor = tutors[0];
+let selectedThreadTutor = tutors[0];
 let currentAccount = null;
 let pendingConfirmation = "";
 
@@ -218,7 +244,8 @@ const storage = {
   messages: "girlstemTutoringMessages",
   ratings: "girlstemTutoringRatings",
   profiles: "girlstemTutoringProfiles",
-  activity: "girlstemTutoringActivity"
+  activity: "girlstemTutoringActivity",
+  bookings: "girlstemTutoringBookings"
 };
 
 function showPage(pageName, options = {}) {
@@ -231,10 +258,21 @@ function showPage(pageName, options = {}) {
     signupStatus.classList.remove("success");
   }
 
+  if ((nextPage === "messages" || nextPage === "bookings") && !currentAccount) {
+    nextPage = "accounts";
+    signupStatus.textContent = "Log in or create an account first.";
+    signupStatus.classList.remove("success");
+  }
+
   if (nextPage === "tutors" && currentAccount?.role === "tutor") {
     nextPage = "dashboard";
     showConfirmation("Tutor accounts use this dashboard for availability, requests, chat, ratings, and payouts.");
   }
+
+  if (nextPage === "messages") renderMessagesPage();
+  if (nextPage === "bookings") renderBookingsPage();
+  if (nextPage === "profile") renderPublicProfile();
+  if (nextPage === "reviews") renderReviewsPage();
 
   pages.forEach((page) => {
     page.classList.toggle("active", page.dataset.page === nextPage);
@@ -302,7 +340,7 @@ function accountKey() {
 }
 
 function threadKey() {
-  const participant = currentAccount?.role === "tutor" ? "student-parent" : selectedTutor.name;
+  const participant = currentAccount?.role === "tutor" ? "student-parent" : selectedThreadTutor.name;
   return `${accountKey()}::${participant}`;
 }
 
@@ -371,6 +409,48 @@ function saveProfile(profile) {
   writeStore(storage.profiles, profiles);
 }
 
+function initialsFromName(name) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "GT";
+}
+
+function getTutorProfiles() {
+  const profiles = readStore(storage.profiles, {});
+  return getAccounts()
+    .filter((account) => account.role === "tutor")
+    .map((account) => {
+      const profile = profiles[account.email] || {};
+      const subject = profile.subject || "Biology";
+      return {
+        name: profile.name || account.name,
+        subject,
+        university: profile.university || "GirlSTEM verified tutor",
+        grade: profile.grade || "A*",
+        rating: 5,
+        lessons: profile.lessons || 0,
+        price: Number(profile.price || 35),
+        style: profile.detail || "Supportive online lessons, exam practice, and confidence building",
+        badges: ["New tutor", "Free trial", "GirlSTEM"],
+        initials: initialsFromName(profile.name || account.name),
+        score: 87,
+        email: account.email,
+        about: profile.about || `Hi, I'm ${profile.name || account.name}. I help students feel calmer, clearer, and more prepared for exams.`,
+        sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
+      };
+    });
+}
+
+function getAllTutors() {
+  return [...tutors, ...getTutorProfiles()];
+}
+
+function getCurrentTutorProfile() {
+  return getAllTutors().find((tutor) => tutor.email === currentAccount?.email);
+}
+
+function tutorId(tutor) {
+  return tutor.email || tutor.name;
+}
+
 function gradeRank(grade) {
   return grade === "A*" ? 2 : 1;
 }
@@ -381,7 +461,7 @@ function getFilteredTutors() {
   const minGrade = gradeFilter.value;
   const maxBudget = Number(budgetFilter.value);
 
-  const filtered = tutors.filter((tutor) => {
+  const filtered = getAllTutors().filter((tutor) => {
     const subjectMatch = subject === "All" || tutor.subject === subject;
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
     const gradeMatch = minGrade === "Any" || gradeRank(tutor.grade) >= gradeRank(minGrade);
@@ -431,6 +511,7 @@ function renderTutors() {
           <span>Trial: free 30 mins</span>
         </div>
         <div class="card-actions">
+          <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
           <button class="secondary-btn" type="button" data-rate="${index}">Rate</button>
           <button class="primary-btn" type="button" data-book="${index}">
@@ -445,7 +526,16 @@ function renderTutors() {
   tutorGrid.querySelectorAll("[data-book]").forEach((button) => {
     button.addEventListener("click", () => {
       selectedTutor = visibleTutors[Number(button.dataset.book)];
-      openBooking();
+      if (!canBook()) return;
+      showPage("bookings");
+    });
+  });
+
+  tutorGrid.querySelectorAll("[data-profile]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedTutor = visibleTutors[Number(button.dataset.profile)];
+      renderPublicProfile();
+      showPage("profile");
     });
   });
 
@@ -463,9 +553,10 @@ function renderTutors() {
         promptForAccount("Please log in or create an account before messaging a tutor.");
         return;
       }
+      selectedThreadTutor = selectedTutor;
       addActivity(`Opened chat with ${selectedTutor.name}`, "Chat");
-      renderDashboard(currentAccount.role);
-      showPage("dashboard");
+      renderMessagesPage();
+      showPage("messages");
     });
   });
 }
@@ -479,7 +570,7 @@ function defaultMessagesFor(role) {
   }
 
   return [
-    ["incoming", `Hi, I'm ${selectedTutor.name}. Send me what you want to work on and we can plan the first session.`],
+    ["incoming", `Hi, I'm ${selectedThreadTutor.name}. Send me what you want to work on and we can plan the first session.`],
     ["outgoing", "Hi, I'd like help building confidence before mocks."]
   ];
 }
@@ -508,7 +599,7 @@ function saveMessage(message) {
 }
 
 function renderChat(role) {
-  const chatPartner = role === "tutor" ? "student and parent" : selectedTutor.name;
+  const chatPartner = role === "tutor" ? "student and parent" : selectedThreadTutor.name;
   document.querySelector("#chatTitle").textContent = role === "tutor" ? "Student and parent chat" : "Tutor chat";
   document.querySelector("#chatWith").textContent = chatPartner;
   chatInput.placeholder = `Message ${chatPartner}...`;
@@ -521,6 +612,41 @@ function renderChat(role) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+function renderMessagesPage() {
+  if (!currentAccount) {
+    promptForAccount("Log in first, then your private messages will open.");
+    return;
+  }
+
+  const availableTutors = getAllTutors();
+  if (!selectedThreadTutor) selectedThreadTutor = availableTutors[0];
+  threadList.innerHTML = availableTutors.map((tutor) => `
+    <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
+      <span class="avatar small-avatar">${escapeHtml(tutor.initials)}</span>
+      <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutor.subject)}</small></span>
+    </button>
+  `).join("");
+
+  threadList.querySelectorAll("[data-thread]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedThreadTutor = availableTutors.find((tutor) => tutorId(tutor) === button.dataset.thread) || availableTutors[0];
+      selectedTutor = selectedThreadTutor;
+      renderMessagesPage();
+    });
+  });
+
+  messagePageTitle.textContent = currentAccount.role === "tutor" ? "Student and parent chat" : "Tutor chat";
+  messagePageWith.textContent = currentAccount.role === "tutor" ? "Student and parent" : selectedThreadTutor.name;
+  messagePageInput.placeholder = `Message ${messagePageWith.textContent}...`;
+  messagePageMessages.innerHTML = getMessages().map((message) => `
+    <p class="bubble ${message.direction}">
+      ${escapeHtml(message.text)}
+      <time>${escapeHtml(message.time)}</time>
+    </p>
+  `).join("");
+  messagePageMessages.scrollTop = messagePageMessages.scrollHeight;
+}
+
 function renderProfile(role) {
   if (!currentAccount) return;
 
@@ -528,6 +654,10 @@ function renderProfile(role) {
   profileName.value = profile.name || currentAccount.name;
   profileSubject.value = profile.subject || (role === "tutor" ? "Biology" : "A-level Biology");
   profileDetail.value = profile.detail || (role === "tutor" ? "Exam technique and calm weekly structure" : "Mocks, confidence, and exam technique");
+  profileUniversity.value = profile.university || "";
+  profilePrice.value = profile.price || "";
+  profileAbout.value = profile.about || "";
+  profileSessions.value = profile.sessions || "";
   profileBadge.textContent = profile.updated ? "Saved" : "Draft";
   profileSubjectLabel.textContent = role === "tutor" ? "Subjects you teach" : "Subjects you want help with";
   profileDetailLabel.textContent = role === "tutor" ? "Teaching style" : "Learning goal";
@@ -547,10 +677,13 @@ function renderRatings(role) {
         <strong>Tutor ratings</strong>
         <span>${escapeHtml(ratingText)}</span>
       </div>
-      <button class="secondary-btn" type="button" id="ratingAction">View profile</button>
+      <button class="secondary-btn" type="button" id="ratingAction">View public profile</button>
     `;
     document.querySelector("#ratingAction").addEventListener("click", () => {
-      addActivity("Checked public tutor rating profile", "Ratings");
+      selectedTutor = getCurrentTutorProfile() || selectedTutor;
+      addActivity("Opened public tutor profile", "Profile");
+      renderPublicProfile();
+      showPage("profile");
     });
     return;
   }
@@ -600,8 +733,156 @@ function saveRating() {
   renderTutors();
 }
 
+function getReviewsFor(tutor) {
+  const ratings = readStore(storage.ratings, {});
+  const saved = ratings[tutor.name] || [];
+  const fallback = [
+    {
+      score: Math.round(tutor.rating),
+      note: `${tutor.name} explains difficult ideas clearly and keeps lessons calm.`,
+      by: "GirlSTEM parent",
+      time: "Recent"
+    }
+  ];
+  return saved.length ? saved : fallback;
+}
+
+function renderPublicProfile() {
+  const reviews = getReviewsFor(selectedTutor);
+  publicProfile.innerHTML = `
+    <div class="profile-hero-card">
+      <div class="profile-photo">${escapeHtml(selectedTutor.initials)}</div>
+      <div>
+        <p class="eyebrow">Tutor profile</p>
+        <h2>${escapeHtml(selectedTutor.name)}</h2>
+        <p class="profile-rate">GBP ${selectedTutor.price}/hr</p>
+        <p>${escapeHtml(selectedTutor.subject)} · ${escapeHtml(selectedTutor.university)}</p>
+        <div class="chips">${selectedTutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}</div>
+      </div>
+      <aside class="profile-actions">
+        <strong>${getTutorRating(selectedTutor).toFixed(2)} / 5</strong>
+        <span>${reviews.length} review${reviews.length === 1 ? "" : "s"}</span>
+        <button class="primary-btn wide" type="button" id="profileBook">Book lessons</button>
+        <button class="secondary-btn wide" type="button" id="profileMessage">Message tutor</button>
+        <button class="secondary-btn wide" type="button" id="profileReviews">Read reviews</button>
+      </aside>
+    </div>
+    <div class="profile-copy-grid">
+      <section>
+        <h3>About me</h3>
+        <p>${escapeHtml(selectedTutor.about || `Hi, I'm ${selectedTutor.name}. I support students with ${selectedTutor.subject}, confidence, exam preparation, and clearer study routines.`)}</p>
+      </section>
+      <section>
+        <h3>About my sessions</h3>
+        <p>${escapeHtml(selectedTutor.sessions || selectedTutor.style)}</p>
+      </section>
+    </div>
+  `;
+
+  document.querySelector("#profileBook").addEventListener("click", () => {
+    if (!canBook()) return;
+    showPage("bookings");
+  });
+  document.querySelector("#profileMessage").addEventListener("click", () => {
+    if (!currentAccount) {
+      promptForAccount("Log in first, then you can message this tutor.");
+      return;
+    }
+    selectedThreadTutor = selectedTutor;
+    renderMessagesPage();
+    showPage("messages");
+  });
+  document.querySelector("#profileReviews").addEventListener("click", () => {
+    renderReviewsPage();
+    showPage("reviews");
+  });
+}
+
+function renderReviewsPage() {
+  const reviews = getReviewsFor(selectedTutor);
+  reviewsTitle.textContent = `${selectedTutor.name} reviews`;
+  reviewsSummary.textContent = `${getTutorRating(selectedTutor).toFixed(2)} average from ${reviews.length} review${reviews.length === 1 ? "" : "s"}.`;
+  reviewList.innerHTML = reviews.map((review) => `
+    <article class="review-card">
+      <strong>${"★".repeat(review.score)}${"☆".repeat(5 - review.score)}</strong>
+      <p>${escapeHtml(review.note || "Helpful, clear, and supportive.")}</p>
+      <span>${escapeHtml(review.by)} · ${escapeHtml(review.time)}</span>
+    </article>
+  `).join("");
+}
+
+function getBookings() {
+  const bookings = readStore(storage.bookings, {});
+  return bookings[accountKey()] || [];
+}
+
+function saveBookings(items) {
+  const bookings = readStore(storage.bookings, {});
+  bookings[accountKey()] = items;
+  writeStore(storage.bookings, bookings);
+}
+
+function formatBookingDate(value) {
+  if (!value) return "Time to confirm";
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function renderBookingList(container, items, emptyText) {
+  if (!items.length) {
+    container.innerHTML = `<p class="empty-copy">${emptyText}</p>`;
+    return;
+  }
+
+  container.innerHTML = items.map((booking, index) => {
+    const participant = currentAccount?.role === "tutor" && booking.student ? booking.student : booking.tutor;
+    return `
+      <article class="booking-row">
+        <div class="avatar small-avatar">${escapeHtml(booking.initials)}</div>
+        <div>
+          <strong>${escapeHtml(formatBookingDate(booking.dateTime))}</strong>
+          <span>${escapeHtml(booking.type)} with ${escapeHtml(participant)} · ${escapeHtml(booking.subject)}</span>
+        </div>
+        <button class="secondary-btn" type="button" data-edit-booking="${index}">Edit</button>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderBookingsPage() {
+  if (!currentAccount) {
+    promptForAccount("Log in first, then bookings will open.");
+    return;
+  }
+
+  const availableTutors = getAllTutors();
+  bookingTutor.innerHTML = availableTutors.map((tutor) => `
+    <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutor.subject)}</option>
+  `).join("");
+  bookingPageForm.hidden = currentAccount.role === "tutor";
+
+  const bookings = getBookings();
+  const now = Date.now();
+  const upcoming = bookings.filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= now);
+  const previous = bookings.filter((booking) => booking.dateTime && new Date(booking.dateTime).getTime() < now);
+  upcomingCount.textContent = upcoming.length;
+  previousCount.textContent = previous.length;
+  renderBookingList(upcomingBookings, upcoming, "No upcoming lessons yet.");
+  renderBookingList(previousBookings, previous, "Previous lessons will appear here.");
+}
+
 function renderDashboard(role) {
   const dashboard = roleDashboards[role];
+  const bookings = currentAccount ? getBookings() : [];
+  const nextBookings = bookings
+    .filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= Date.now())
+    .slice(0, 3);
+  const recentMessages = currentAccount ? getMessages().slice(-2).reverse() : [];
   ratingsPanel.classList.remove("highlight");
   dashboardTitle.textContent = roleContent[role].dash;
   dashboardSubtitle.textContent = currentAccount
@@ -614,16 +895,47 @@ function renderDashboard(role) {
       <span>${escapeHtml(text)}</span>
     </article>
   `).join("");
-  lessonList.innerHTML = dashboard.lessons.map(([time, title, text]) => `
-    <article>
-      <time>${escapeHtml(time)}</time>
-      <div>
-        <strong>${escapeHtml(title)}</strong>
-        <span>${escapeHtml(text)}</span>
+  const liveLessons = nextBookings.length
+    ? nextBookings.map((booking) => [
+        formatBookingDate(booking.dateTime),
+        booking.type,
+        `${booking.tutor} · ${booking.subject}`
+      ])
+    : dashboard.lessons;
+  lessonList.innerHTML = `
+    <div class="feed-heading">
+      <strong>${nextBookings.length ? "Upcoming from your bookings" : "Suggested next steps"}</strong>
+      <button class="text-link" type="button" id="openBookingsFromDash">View bookings</button>
+    </div>
+    ${liveLessons.map(([time, title, text]) => `
+      <article>
+        <time>${escapeHtml(time)}</time>
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(text)}</span>
+        </div>
+        <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </article>
+    `).join("")}
+    ${recentMessages.length ? `
+      <div class="feed-heading">
+        <strong>Latest messages</strong>
+        <button class="text-link" type="button" id="openMessagesFromDash">View messages</button>
       </div>
-      <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-    </article>
-  `).join("");
+      ${recentMessages.map((message) => `
+        <article>
+          <time>${escapeHtml(message.time)}</time>
+          <div>
+            <strong>${message.direction === "incoming" ? "Reply received" : "Message sent"}</strong>
+            <span>${escapeHtml(message.text)}</span>
+          </div>
+          <button class="icon-btn" type="button" title="Open messages" aria-label="Open messages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+        </article>
+      `).join("")}
+    ` : ""}
+  `;
+  document.querySelector("#openBookingsFromDash")?.addEventListener("click", () => showPage("bookings"));
+  document.querySelector("#openMessagesFromDash")?.addEventListener("click", () => showPage("messages"));
   renderProfile(role);
   renderActivity();
   renderChat(role);
@@ -653,8 +965,8 @@ function updateAccess() {
   document.body.dataset.role = currentAccount ? role : "guest";
   quickBook.innerHTML = role === "tutor"
     ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Update availability`
-    : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Book a trial`;
-  messagesButton.textContent = role === "tutor" ? "View requests" : "Open chat";
+    : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Book lessons`;
+  messagesButton.textContent = role === "tutor" ? "View messages" : "Open messages";
   [quickBook, messagesButton].forEach((button) => {
     button.classList.toggle("locked-action", !currentAccount);
   });
@@ -751,6 +1063,12 @@ routeLinks.forEach((link) => {
   });
 });
 
+document.querySelectorAll(".text-link[data-route]").forEach((button) => {
+  button.addEventListener("click", () => {
+    showPage(button.dataset.route);
+  });
+});
+
 window.addEventListener("hashchange", () => {
   showPage(getRouteFromHash(), { keepScroll: true });
 });
@@ -781,6 +1099,15 @@ profileForm.addEventListener("submit", (event) => {
     name: profileName.value.trim() || currentAccount.name,
     subject: profileSubject.value.trim(),
     detail: profileDetail.value.trim(),
+    university: currentAccount.role === "tutor" ? profileUniversity.value.trim() || "Tutor-created profile" : profileUniversity.value.trim(),
+    price: currentAccount.role === "tutor" ? Number(profilePrice.value || 35) : "",
+    grade: currentAccount.role === "tutor" ? "A*" : "",
+    about: currentAccount.role === "tutor"
+      ? profileAbout.value.trim() || `Hi, I'm ${profileName.value.trim() || currentAccount.name}. I teach ${profileSubject.value.trim() || "A-level subjects"} and help students build confidence.`
+      : profileAbout.value.trim(),
+    sessions: currentAccount.role === "tutor"
+      ? profileSessions.value.trim() || profileDetail.value.trim() || "My sessions are structured around the student's goals, confidence, and exam practice."
+      : profileSessions.value.trim(),
     updated: true
   };
 
@@ -792,6 +1119,7 @@ profileForm.addEventListener("submit", (event) => {
   profileBadge.textContent = "Saved";
   dashboardSubtitle.textContent = `${currentAccount.name}, this is your ${currentAccount.role} dashboard.`;
   addActivity("Updated profile details", "Profile");
+  renderTutors();
 });
 
 chatForm.addEventListener("submit", (event) => {
@@ -812,6 +1140,84 @@ chatForm.addEventListener("submit", (event) => {
   chatInput.value = "";
   addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedTutor.name}`, "Chat");
   renderChat(currentAccount.role);
+});
+
+messagePageForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentAccount) {
+    promptForAccount("Log in first, then you can send messages.");
+    return;
+  }
+
+  const text = messagePageInput.value.trim();
+  if (!text) return;
+
+  saveMessage({
+    direction: "outgoing",
+    text,
+    time: nowLabel()
+  });
+  messagePageInput.value = "";
+  addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedThreadTutor.name}`, "Chat");
+  renderMessagesPage();
+});
+
+bookingPageForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!canBook()) return;
+
+  const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value) || selectedTutor;
+  selectedTutor = tutor;
+  const items = getBookings();
+  const booking = {
+    tutor: tutor.name,
+    initials: tutor.initials,
+    subject: tutor.subject,
+    type: bookingLessonType.value,
+    dateTime: bookingDateTime.value,
+    student: currentAccount.name,
+    created: nowLabel()
+  };
+  items.push(booking);
+  saveBookings(items);
+
+  if (tutor.email) {
+    const allBookings = readStore(storage.bookings, {});
+    const tutorItems = allBookings[tutor.email] || [];
+    tutorItems.push({
+      ...booking,
+      initials: initialsFromName(currentAccount.name)
+    });
+    allBookings[tutor.email] = tutorItems;
+    writeStore(storage.bookings, allBookings);
+  }
+
+  bookingDateTime.value = "";
+  addActivity(`Booked ${bookingLessonType.value} with ${tutor.name}`, "Booking");
+  renderBookingsPage();
+});
+
+reviewPageForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentAccount || currentAccount.role === "tutor") {
+    promptForAccount("Log in as a student or parent before writing reviews.");
+    return;
+  }
+
+  const ratings = readStore(storage.ratings, {});
+  const tutorRatings = ratings[selectedTutor.name] || [];
+  tutorRatings.push({
+    score: Number(reviewScore.value),
+    note: reviewText.value.trim() || "Helpful, clear, and supportive.",
+    by: currentAccount.name,
+    time: nowLabel()
+  });
+  ratings[selectedTutor.name] = tutorRatings;
+  writeStore(storage.ratings, ratings);
+  reviewText.value = "";
+  addActivity(`Reviewed ${selectedTutor.name}`, "Review");
+  renderReviewsPage();
+  renderTutors();
 });
 
 signupRole.addEventListener("change", () => {
@@ -885,7 +1291,7 @@ quickBook.addEventListener("click", () => {
     return;
   }
 
-  openBooking();
+  showPage("bookings");
 });
 
 messagesButton.addEventListener("click", () => {
@@ -894,10 +1300,10 @@ messagesButton.addEventListener("click", () => {
     return;
   }
   signupStatus.textContent = currentAccount.role === "tutor"
-    ? "Student and parent messages are ready in your tutor dashboard."
-    : "Tutor chat is ready inside your account dashboard.";
+    ? "Student and parent messages are ready."
+    : "Private tutor messages are ready.";
   signupStatus.classList.add("success");
-  showPage("dashboard");
+  showPage("messages");
 });
 
 topMessagesButton.addEventListener("click", () => {
