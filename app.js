@@ -2,7 +2,7 @@ const tutors = [
   {
     name: "Priya Shah",
     subject: "Biology",
-    university: "University of Cambridge",
+    university: "Cambridge",
     grade: "A*",
     rating: 4.98,
     lessons: 420,
@@ -14,8 +14,8 @@ const tutors = [
   },
   {
     name: "Leo Grant",
-    subject: "Maths",
-    university: "Imperial College London",
+    subject: "Mathematics",
+    university: "Imperial",
     grade: "A*",
     rating: 4.94,
     lessons: 315,
@@ -28,7 +28,7 @@ const tutors = [
   {
     name: "Amara Okafor",
     subject: "Chemistry",
-    university: "University of Oxford",
+    university: "UCL",
     grade: "A*",
     rating: 4.99,
     lessons: 510,
@@ -40,21 +40,21 @@ const tutors = [
   },
   {
     name: "Nina Patel",
-    subject: "English Literature",
-    university: "University College London",
+    subject: "Psychology",
+    university: "Edinburgh",
     grade: "A",
     rating: 4.9,
     lessons: 260,
     price: 32,
-    style: "Close analysis, coursework planning, essay voice",
-    badges: ["AQA", "Coursework", "Free trial"],
+    style: "Research methods, biopsychology, evaluation technique",
+    badges: ["AQA", "Essay structure", "Free trial"],
     initials: "NP",
     score: 88
   },
   {
     name: "Theo Mensah",
     subject: "Physics",
-    university: "University of Manchester",
+    university: "Durham",
     grade: "A*",
     rating: 4.92,
     lessons: 198,
@@ -67,7 +67,7 @@ const tutors = [
   {
     name: "Sofia Bennett",
     subject: "Economics",
-    university: "University of Warwick",
+    university: "King's",
     grade: "A",
     rating: 4.87,
     lessons: 144,
@@ -76,6 +76,136 @@ const tutors = [
     badges: ["Edexcel", "Essay drills", "Free trial"],
     initials: "SB",
     score: 84
+  },
+  {
+    name: "Maya Brooks",
+    subject: "Further Mathematics",
+    university: "Warwick",
+    grade: "A*",
+    rating: 4.96,
+    lessons: 286,
+    price: 42,
+    style: "Further pure, decision maths, STEP-style problem solving",
+    badges: ["Edexcel", "STEP prep", "Free trial"],
+    initials: "MB",
+    score: 94
+  },
+  {
+    name: "Hannah Clarke",
+    subject: "Geography",
+    university: "Manchester",
+    grade: "A*",
+    rating: 4.91,
+    lessons: 176,
+    price: 30,
+    style: "Case studies, fieldwork write-ups, high-mark evaluation",
+    badges: ["AQA", "NEA support", "Free trial"],
+    initials: "HC",
+    score: 87
+  },
+  {
+    name: "Ibrahim Khan",
+    subject: "Computer Science",
+    university: "Birmingham",
+    grade: "A*",
+    rating: 4.95,
+    lessons: 232,
+    price: 36,
+    style: "Python, algorithms, pseudocode, and exam paper technique",
+    badges: ["OCR", "Programming", "Free trial"],
+    initials: "IK",
+    score: 92
+  },
+  {
+    name: "Eilidh Fraser",
+    subject: "Biology",
+    university: "Glasgow",
+    grade: "A",
+    rating: 4.88,
+    lessons: 154,
+    price: 29,
+    style: "Cell biology, genetics, practical skills, and recall systems",
+    badges: ["SQA", "Exam recall", "Free trial"],
+    initials: "EF",
+    score: 83
+  },
+  {
+    name: "Samira Ali",
+    subject: "Chemistry",
+    university: "Nottingham",
+    grade: "A*",
+    rating: 4.93,
+    lessons: 201,
+    price: 34,
+    style: "Calculations, mechanisms, practical papers, and confidence",
+    badges: ["AQA", "OCR A", "Free trial"],
+    initials: "SA",
+    score: 89
+  },
+  {
+    name: "Daniel Reed",
+    subject: "Physics",
+    university: "Southampton",
+    grade: "A",
+    rating: 4.86,
+    lessons: 132,
+    price: 28,
+    style: "Electricity, mechanics, waves, and equation fluency",
+    badges: ["AQA", "Engineering", "Free trial"],
+    initials: "DR",
+    score: 80
+  },
+  {
+    name: "Isla Morgan",
+    subject: "Mathematics",
+    university: "Bath",
+    grade: "A*",
+    rating: 4.97,
+    lessons: 348,
+    price: 40,
+    style: "Pure maths, stats, mechanics, and exam speed",
+    badges: ["Edexcel", "AQA", "Free trial"],
+    initials: "IM",
+    score: 96
+  },
+  {
+    name: "Aisha Rahman",
+    subject: "Psychology",
+    university: "Leicester",
+    grade: "A*",
+    rating: 4.9,
+    lessons: 187,
+    price: 27,
+    style: "Memory, attachment, psychopathology, and evaluation points",
+    badges: ["AQA", "Essay plans", "Free trial"],
+    initials: "AR",
+    score: 86
+  },
+  {
+    name: "Tom Evans",
+    subject: "Economics",
+    university: "Lancaster",
+    grade: "A",
+    rating: 4.84,
+    lessons: 119,
+    price: 26,
+    style: "Micro, macro, diagrams, chains of analysis, and evaluation",
+    badges: ["Edexcel", "AQA", "Free trial"],
+    initials: "TE",
+    score: 79
+  },
+  {
+    name: "Chloe Martin",
+    subject: "Geography",
+    university: "Surrey",
+    grade: "A*",
+    rating: 4.89,
+    lessons: 141,
+    price: 28,
+    style: "Human geography, hazards, data response, and case study recall",
+    badges: ["OCR", "AQA", "Free trial"],
+    initials: "CM",
+    score: 82
   }
 ];
 
@@ -109,7 +239,7 @@ const roleDashboards = {
     ],
     lessons: [
       ["Mon 18:00", "A-level Biology", "Recurring weekly with Priya Shah"],
-      ["Wed 19:30", "Maths trial", "Free 30-minute session with Leo Grant"]
+      ["Wed 19:30", "Mathematics trial", "Free 30-minute session with Leo Grant"]
     ],
     chatTitle: "Tutor chat",
     chatWith: "Priya Shah",
@@ -164,6 +294,7 @@ const roleDashboards = {
 };
 
 const tutorGrid = document.querySelector("#tutorGrid");
+const nameFilter = document.querySelector("#nameFilter");
 const subjectFilter = document.querySelector("#subjectFilter");
 const uniFilter = document.querySelector("#uniFilter");
 const gradeFilter = document.querySelector("#gradeFilter");
@@ -181,11 +312,31 @@ const loginPanel = document.querySelector("#loginPanel");
 const signupRole = document.querySelector("#signupRole");
 const signupName = document.querySelector("#signupName");
 const signupEmail = document.querySelector("#signupEmail");
+const signupDob = document.querySelector("#signupDob");
+const signupParentName = document.querySelector("#signupParentName");
+const signupParentEmail = document.querySelector("#signupParentEmail");
 const signupPassword = document.querySelector("#signupPassword");
 const signupConfirmPassword = document.querySelector("#signupConfirmPassword");
 const loginEmail = document.querySelector("#loginEmail");
 const loginPassword = document.querySelector("#loginPassword");
 const signupStatus = document.querySelector("#signupStatus");
+const userMenu = document.querySelector("#userMenu");
+const userMenuButton = document.querySelector("#userMenuButton");
+const userDropdown = document.querySelector("#userDropdown");
+const userMenuName = document.querySelector("#userMenuName");
+const userMenuInitials = document.querySelector("#userMenuInitials");
+const logoutButton = document.querySelector("#logoutButton");
+const becomeTutorLink = document.querySelector("#becomeTutorLink");
+const accountDetailsForm = document.querySelector("#accountDetailsForm");
+const accountName = document.querySelector("#accountName");
+const accountEmail = document.querySelector("#accountEmail");
+const accountDob = document.querySelector("#accountDob");
+const accountParentName = document.querySelector("#accountParentName");
+const accountParentEmail = document.querySelector("#accountParentEmail");
+const passwordForm = document.querySelector("#passwordForm");
+const oldPassword = document.querySelector("#oldPassword");
+const newPassword = document.querySelector("#newPassword");
+const confirmNewPassword = document.querySelector("#confirmNewPassword");
 const quickBook = document.querySelector("#quickBook");
 const messagesButton = document.querySelector("#messagesButton");
 const topMessagesButton = document.querySelector("#topMessagesButton");
@@ -212,16 +363,22 @@ const chatInput = document.querySelector("#chatInput");
 const activityFeed = document.querySelector("#activityFeed");
 const activityCount = document.querySelector("#activityCount");
 const publicProfile = document.querySelector("#publicProfile");
+const studentProfile = document.querySelector("#studentProfile");
 const threadList = document.querySelector("#threadList");
 const messagePageTitle = document.querySelector("#messagePageTitle");
 const messagePageWith = document.querySelector("#messagePageWith");
 const messagePageMessages = document.querySelector("#messagePageMessages");
 const messagePageForm = document.querySelector("#messagePageForm");
 const messagePageInput = document.querySelector("#messagePageInput");
+const viewMessageProfile = document.querySelector("#viewMessageProfile");
 const bookingPageForm = document.querySelector("#bookingPageForm");
 const bookingTutor = document.querySelector("#bookingTutor");
+const bookingPersonLabel = document.querySelector("#bookingPersonLabel");
 const bookingLessonType = document.querySelector("#bookingLessonType");
 const bookingDateTime = document.querySelector("#bookingDateTime");
+const bookingSubmitButton = document.querySelector("#bookingSubmitButton");
+const bookingsPageTitle = document.querySelector("#bookingsPageTitle");
+const bookingsPageCopy = document.querySelector("#bookingsPageCopy");
 const upcomingBookings = document.querySelector("#upcomingBookings");
 const previousBookings = document.querySelector("#previousBookings");
 const upcomingCount = document.querySelector("#upcomingCount");
@@ -237,6 +394,7 @@ const routeLinks = [...document.querySelectorAll("[data-route]")];
 
 let selectedTutor = tutors[0];
 let selectedThreadTutor = tutors[0];
+let selectedStudentAccount = null;
 let currentAccount = null;
 let pendingConfirmation = "";
 
@@ -245,20 +403,23 @@ const storage = {
   ratings: "girlstemTutoringRatings",
   profiles: "girlstemTutoringProfiles",
   activity: "girlstemTutoringActivity",
-  bookings: "girlstemTutoringBookings"
+  bookings: "girlstemTutoringBookings",
+  emails: "tutrstemEmailQueue"
 };
 
 function showPage(pageName, options = {}) {
-  const fallback = currentAccount ? "dashboard" : "home";
+  const publicPages = ["home", "tutors", "how", "prices", "about", "accounts", "profile", "reviews"];
+  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "trial-space", "help", "support"];
+  const fallback = currentAccount ? "dashboard" : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
 
-  if (nextPage === "dashboard" && !currentAccount) {
+  if (!currentAccount && !publicPages.includes(nextPage)) {
     nextPage = "accounts";
-    signupStatus.textContent = "Log in or create an account first, then your dashboard will open.";
+    signupStatus.textContent = "Log in first, then this account page will open.";
     signupStatus.classList.remove("success");
   }
 
-  if ((nextPage === "messages" || nextPage === "bookings") && !currentAccount) {
+  if (privatePages.includes(nextPage) && !currentAccount) {
     nextPage = "accounts";
     signupStatus.textContent = "Log in or create an account first.";
     signupStatus.classList.remove("success");
@@ -269,10 +430,16 @@ function showPage(pageName, options = {}) {
     showConfirmation("Tutor accounts use this dashboard for availability, requests, chat, ratings, and payouts.");
   }
 
+  if (nextPage === "profile" && currentAccount?.role === "tutor") {
+    selectedTutor = getCurrentTutorProfile() || selectedTutor;
+  }
+
   if (nextPage === "messages") renderMessagesPage();
   if (nextPage === "bookings") renderBookingsPage();
   if (nextPage === "profile") renderPublicProfile();
+  if (nextPage === "student-profile") renderStudentProfile();
   if (nextPage === "reviews") renderReviewsPage();
+  if (nextPage === "account-details") populateAccountDetails();
 
   pages.forEach((page) => {
     page.classList.toggle("active", page.dataset.page === nextPage);
@@ -335,13 +502,40 @@ function writeStore(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function createId(prefix = "item") {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function queueEmail(to, subject, body, meta = {}) {
+  if (!to) return;
+  const queue = readStore(storage.emails, []);
+  const key = meta.key || createId("email");
+  if (queue.some((email) => email.key === key)) return;
+
+  queue.unshift({
+    key,
+    to,
+    subject,
+    body,
+    status: "queued",
+    time: nowLabel(),
+    meta
+  });
+  writeStore(storage.emails, queue.slice(0, 40));
+}
+
 function accountKey() {
   return currentAccount?.email || "guest";
 }
 
 function threadKey() {
-  const participant = currentAccount?.role === "tutor" ? "student-parent" : selectedThreadTutor.name;
-  return `${accountKey()}::${participant}`;
+  if (currentAccount?.role === "tutor") {
+    const studentEmail = selectedStudentAccount?.email || "student-parent";
+    return `${studentEmail}::${accountKey()}`;
+  }
+
+  return `${accountKey()}::${tutorId(selectedThreadTutor)}`;
 }
 
 function nowLabel() {
@@ -409,6 +603,37 @@ function saveProfile(profile) {
   writeStore(storage.profiles, profiles);
 }
 
+function getProfileForAccount(account) {
+  const profiles = readStore(storage.profiles, {});
+  return profiles[account?.email] || {};
+}
+
+function getStudentAccounts() {
+  return getAccounts().filter((account) => account.role === "student" || account.role === "parent");
+}
+
+function getStudentsForTutor() {
+  const bookings = getBookings();
+  const bookedEmails = new Set(bookings.map((booking) => booking.studentEmail).filter(Boolean));
+  const students = getStudentAccounts();
+  const bookedStudents = students.filter((account) => bookedEmails.has(account.email));
+  const otherStudents = students.filter((account) => !bookedEmails.has(account.email));
+  return [...bookedStudents, ...otherStudents];
+}
+
+function studentSummary(account) {
+  const profile = getProfileForAccount(account);
+  return {
+    name: profile.name || account?.name || "Student",
+    subject: profile.subject || "A-level support",
+    detail: profile.detail || "Learning goals and lesson notes will appear here once saved.",
+    about: profile.about || "This student has not added extra profile notes yet.",
+    role: account?.role || "student",
+    email: account?.email || "",
+    initials: initialsFromName(profile.name || account?.name || "Student")
+  };
+}
+
 function initialsFromName(name) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "GT";
 }
@@ -423,13 +648,13 @@ function getTutorProfiles() {
       return {
         name: profile.name || account.name,
         subject,
-        university: profile.university || "GirlSTEM verified tutor",
+        university: profile.university || "tutrSTEM verified tutor",
         grade: profile.grade || "A*",
         rating: 5,
         lessons: profile.lessons || 0,
         price: Number(profile.price || 35),
         style: profile.detail || "Supportive online lessons, exam practice, and confidence building",
-        badges: ["New tutor", "Free trial", "GirlSTEM"],
+        badges: ["New tutor", "Free trial", "Verified"],
         initials: initialsFromName(profile.name || account.name),
         score: 87,
         email: account.email,
@@ -456,18 +681,20 @@ function gradeRank(grade) {
 }
 
 function getFilteredTutors() {
+  const tutorName = nameFilter.value.trim().toLowerCase();
   const subject = subjectFilter.value;
   const university = uniFilter.value.trim().toLowerCase();
   const minGrade = gradeFilter.value;
   const maxBudget = Number(budgetFilter.value);
 
   const filtered = getAllTutors().filter((tutor) => {
+    const nameMatch = !tutorName || tutor.name.toLowerCase().includes(tutorName);
     const subjectMatch = subject === "All" || tutor.subject === subject;
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
     const gradeMatch = minGrade === "Any" || gradeRank(tutor.grade) >= gradeRank(minGrade);
     const budgetMatch = tutor.price <= maxBudget;
     const trialMatch = !trialOnly.checked || tutor.badges.includes("Free trial");
-    return subjectMatch && uniMatch && gradeMatch && budgetMatch && trialMatch;
+    return nameMatch && subjectMatch && uniMatch && gradeMatch && budgetMatch && trialMatch;
   });
 
   return filtered.sort((a, b) => {
@@ -513,7 +740,6 @@ function renderTutors() {
         <div class="card-actions">
           <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
-          <button class="secondary-btn" type="button" data-rate="${index}">Rate</button>
           <button class="primary-btn" type="button" data-book="${index}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
             Book
@@ -539,13 +765,6 @@ function renderTutors() {
     });
   });
 
-  tutorGrid.querySelectorAll("[data-rate]").forEach((button) => {
-    button.addEventListener("click", () => {
-      selectedTutor = visibleTutors[Number(button.dataset.rate)];
-      requestRating();
-    });
-  });
-
   tutorGrid.querySelectorAll("[data-message]").forEach((button) => {
     button.addEventListener("click", () => {
       selectedTutor = visibleTutors[Number(button.dataset.message)];
@@ -563,9 +782,10 @@ function renderTutors() {
 
 function defaultMessagesFor(role) {
   if (role === "tutor") {
+    const student = selectedStudentAccount ? studentSummary(selectedStudentAccount).name : "there";
     return [
-      ["incoming", "Could we do a free trial next week?"],
-      ["outgoing", "Yes, I have Tuesday at 16:30 or Thursday at 18:00."]
+      ["incoming", `Hi, I'm ${student}. Could we arrange a lesson?`],
+      ["outgoing", "Yes, send me the topic and a few times that work."]
     ];
   }
 
@@ -599,7 +819,7 @@ function saveMessage(message) {
 }
 
 function renderChat(role) {
-  const chatPartner = role === "tutor" ? "student and parent" : selectedThreadTutor.name;
+  const chatPartner = role === "tutor" ? (selectedStudentAccount ? studentSummary(selectedStudentAccount).name : "student and parent") : selectedThreadTutor.name;
   document.querySelector("#chatTitle").textContent = role === "tutor" ? "Student and parent chat" : "Tutor chat";
   document.querySelector("#chatWith").textContent = chatPartner;
   chatInput.placeholder = `Message ${chatPartner}...`;
@@ -618,25 +838,72 @@ function renderMessagesPage() {
     return;
   }
 
-  const availableTutors = getAllTutors();
-  if (!selectedThreadTutor) selectedThreadTutor = availableTutors[0];
-  threadList.innerHTML = availableTutors.map((tutor) => `
-    <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
-      <span class="avatar small-avatar">${escapeHtml(tutor.initials)}</span>
-      <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutor.subject)}</small></span>
-    </button>
-  `).join("");
+  if (currentAccount.role === "tutor") {
+    const students = getStudentsForTutor();
+    if (!selectedStudentAccount || !students.some((student) => student.email === selectedStudentAccount.email)) {
+      selectedStudentAccount = students[0] || null;
+    }
 
-  threadList.querySelectorAll("[data-thread]").forEach((button) => {
-    button.addEventListener("click", () => {
-      selectedThreadTutor = availableTutors.find((tutor) => tutorId(tutor) === button.dataset.thread) || availableTutors[0];
-      selectedTutor = selectedThreadTutor;
-      renderMessagesPage();
+    if (!students.length) {
+      threadList.innerHTML = `<p class="empty-copy">Student and parent threads appear after accounts are created or lessons are booked.</p>`;
+      messagePageTitle.textContent = "Student and parent chat";
+      messagePageWith.textContent = "No student selected";
+      messagePageMessages.innerHTML = `<p class="empty-copy">No private thread yet.</p>`;
+      viewMessageProfile.hidden = true;
+      return;
+    }
+
+    threadList.innerHTML = students.map((student) => {
+      const summary = studentSummary(student);
+      return `
+        <button class="thread-button ${student.email === selectedStudentAccount.email ? "active" : ""}" type="button" data-student-thread="${escapeHtml(student.email)}">
+          <span class="avatar small-avatar">${escapeHtml(summary.initials)}</span>
+          <span><strong>${escapeHtml(summary.name)}</strong><small>${escapeHtml(summary.subject)}</small></span>
+        </button>
+      `;
+    }).join("");
+
+    threadList.querySelectorAll("[data-student-thread]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedStudentAccount = students.find((student) => student.email === button.dataset.studentThread) || students[0];
+        renderMessagesPage();
+      });
     });
-  });
 
-  messagePageTitle.textContent = currentAccount.role === "tutor" ? "Student and parent chat" : "Tutor chat";
-  messagePageWith.textContent = currentAccount.role === "tutor" ? "Student and parent" : selectedThreadTutor.name;
+    const summary = studentSummary(selectedStudentAccount);
+    messagePageTitle.textContent = "Student and parent chat";
+    messagePageWith.textContent = summary.name;
+    viewMessageProfile.hidden = false;
+    viewMessageProfile.textContent = "View student profile";
+    viewMessageProfile.onclick = () => showPage("student-profile");
+  } else {
+    const availableTutors = getAllTutors();
+    if (!selectedThreadTutor) selectedThreadTutor = availableTutors[0];
+    threadList.innerHTML = availableTutors.map((tutor) => `
+      <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
+        <span class="avatar small-avatar">${escapeHtml(tutor.initials)}</span>
+        <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutor.subject)}</small></span>
+      </button>
+    `).join("");
+
+    threadList.querySelectorAll("[data-thread]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedThreadTutor = availableTutors.find((tutor) => tutorId(tutor) === button.dataset.thread) || availableTutors[0];
+        selectedTutor = selectedThreadTutor;
+        renderMessagesPage();
+      });
+    });
+
+    messagePageTitle.textContent = "Tutor chat";
+    messagePageWith.textContent = selectedThreadTutor.name;
+    viewMessageProfile.hidden = false;
+    viewMessageProfile.textContent = "View tutor profile";
+    viewMessageProfile.onclick = () => {
+      selectedTutor = selectedThreadTutor;
+      showPage("profile");
+    };
+  }
+
   messagePageInput.placeholder = `Message ${messagePageWith.textContent}...`;
   messagePageMessages.innerHTML = getMessages().map((message) => `
     <p class="bubble ${message.direction}">
@@ -667,6 +934,7 @@ function renderRatings(role) {
   if (!currentAccount) return;
 
   if (role === "tutor") {
+    ratingsPanel.hidden = false;
     const ratings = readStore(storage.ratings, {});
     const ownRatings = ratings[currentAccount.name] || [];
     const ratingText = ownRatings.length
@@ -688,29 +956,8 @@ function renderRatings(role) {
     return;
   }
 
-  ratingsPanel.innerHTML = `
-    <form class="rating-form" id="ratingForm">
-      <div>
-        <strong>Rate ${escapeHtml(selectedTutor.name)}</strong>
-        <span>Choose a score and save feedback after a session.</span>
-      </div>
-      <div class="star-row" role="radiogroup" aria-label="Tutor rating">
-        ${[1, 2, 3, 4, 5].map((score) => `
-          <label>
-            <input type="radio" name="ratingScore" value="${score}" ${score === 5 ? "checked" : ""} />
-            <span>${score}</span>
-          </label>
-        `).join("")}
-      </div>
-      <input id="ratingNote" type="text" placeholder="Optional note" />
-      <button class="secondary-btn" type="submit">Save rating</button>
-    </form>
-  `;
-
-  document.querySelector("#ratingForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    saveRating();
-  });
+  ratingsPanel.hidden = true;
+  ratingsPanel.innerHTML = "";
 }
 
 function saveRating() {
@@ -740,7 +987,7 @@ function getReviewsFor(tutor) {
     {
       score: Math.round(tutor.rating),
       note: `${tutor.name} explains difficult ideas clearly and keeps lessons calm.`,
-      by: "GirlSTEM parent",
+      by: "tutrSTEM parent",
       time: "Recent"
     }
   ];
@@ -749,6 +996,7 @@ function getReviewsFor(tutor) {
 
 function renderPublicProfile() {
   const reviews = getReviewsFor(selectedTutor);
+  const isOwnTutorProfile = currentAccount?.role === "tutor" && selectedTutor.email === currentAccount.email;
   publicProfile.innerHTML = `
     <div class="profile-hero-card">
       <div class="profile-photo">${escapeHtml(selectedTutor.initials)}</div>
@@ -762,8 +1010,10 @@ function renderPublicProfile() {
       <aside class="profile-actions">
         <strong>${getTutorRating(selectedTutor).toFixed(2)} / 5</strong>
         <span>${reviews.length} review${reviews.length === 1 ? "" : "s"}</span>
-        <button class="primary-btn wide" type="button" id="profileBook">Book lessons</button>
-        <button class="secondary-btn wide" type="button" id="profileMessage">Message tutor</button>
+        ${isOwnTutorProfile
+          ? `<button class="primary-btn wide" type="button" id="profileEdit">Edit profile</button>`
+          : `<button class="primary-btn wide" type="button" id="profileBook">Book lessons</button>
+             <button class="secondary-btn wide" type="button" id="profileMessage">Message tutor</button>`}
         <button class="secondary-btn wide" type="button" id="profileReviews">Read reviews</button>
       </aside>
     </div>
@@ -779,11 +1029,12 @@ function renderPublicProfile() {
     </div>
   `;
 
-  document.querySelector("#profileBook").addEventListener("click", () => {
+  document.querySelector("#profileEdit")?.addEventListener("click", () => showPage("dashboard"));
+  document.querySelector("#profileBook")?.addEventListener("click", () => {
     if (!canBook()) return;
     showPage("bookings");
   });
-  document.querySelector("#profileMessage").addEventListener("click", () => {
+  document.querySelector("#profileMessage")?.addEventListener("click", () => {
     if (!currentAccount) {
       promptForAccount("Log in first, then you can message this tutor.");
       return;
@@ -796,6 +1047,53 @@ function renderPublicProfile() {
     renderReviewsPage();
     showPage("reviews");
   });
+}
+
+function renderStudentProfile() {
+  if (!selectedStudentAccount && currentAccount?.role !== "tutor") {
+    selectedStudentAccount = currentAccount;
+  }
+
+  if (!selectedStudentAccount) {
+    studentProfile.innerHTML = `<p class="empty-copy">No student profile selected.</p>`;
+    return;
+  }
+
+  const summary = studentSummary(selectedStudentAccount);
+  studentProfile.innerHTML = `
+    <div class="profile-hero-card student-profile-card">
+      <div class="profile-photo">${escapeHtml(summary.initials)}</div>
+      <div>
+        <p class="eyebrow">${escapeHtml(summary.role)} profile</p>
+        <h2>${escapeHtml(summary.name)}</h2>
+        <p class="profile-rate">${escapeHtml(summary.subject)}</p>
+        <p>${escapeHtml(summary.detail)}</p>
+        <div class="chips">
+          <span class="chip">${escapeHtml(summary.role)}</span>
+          <span class="chip">${escapeHtml(summary.email)}</span>
+        </div>
+      </div>
+      <aside class="profile-actions">
+        <strong>Profile</strong>
+        <span>Visible to matched tutors</span>
+        <button class="primary-btn wide" type="button" id="studentProfileMessage">Open messages</button>
+        <button class="secondary-btn wide" type="button" id="studentProfileBookings">View bookings</button>
+      </aside>
+    </div>
+    <div class="profile-copy-grid">
+      <section>
+        <h3>Learning goals</h3>
+        <p>${escapeHtml(summary.detail)}</p>
+      </section>
+      <section>
+        <h3>Notes</h3>
+        <p>${escapeHtml(summary.about)}</p>
+      </section>
+    </div>
+  `;
+
+  document.querySelector("#studentProfileMessage").addEventListener("click", () => showPage("messages"));
+  document.querySelector("#studentProfileBookings").addEventListener("click", () => showPage("bookings"));
 }
 
 function renderReviewsPage() {
@@ -813,6 +1111,15 @@ function renderReviewsPage() {
 
 function getBookings() {
   const bookings = readStore(storage.bookings, {});
+  const items = bookings[accountKey()] || [];
+  if (items.some((booking) => !booking.id)) {
+    bookings[accountKey()] = items.map((booking) => ({
+      id: booking.id || createId("booking"),
+      status: booking.status || "Confirmed",
+      ...booking
+    }));
+    writeStore(storage.bookings, bookings);
+  }
   return bookings[accountKey()] || [];
 }
 
@@ -820,6 +1127,10 @@ function saveBookings(items) {
   const bookings = readStore(storage.bookings, {});
   bookings[accountKey()] = items;
   writeStore(storage.bookings, bookings);
+}
+
+function tutorEmail(tutor) {
+  return tutor.email || `${tutor.name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/(^\.|\.$)/g, "")}@tutrstem.co.uk`;
 }
 
 function formatBookingDate(value) {
@@ -833,13 +1144,64 @@ function formatBookingDate(value) {
   }).format(new Date(value));
 }
 
+function bookingStatusClass(status = "Pending tutor approval") {
+  return status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function updateBookingEverywhere(id, updates) {
+  const allBookings = readStore(storage.bookings, {});
+  Object.keys(allBookings).forEach((key) => {
+    allBookings[key] = allBookings[key].map((booking) => booking.id === id ? {
+      ...booking,
+      ...updates,
+      updated: nowLabel()
+    } : booking);
+  });
+  writeStore(storage.bookings, allBookings);
+}
+
+function bookingActions(booking) {
+  const id = escapeHtml(booking.id);
+
+  if (currentAccount?.role === "tutor") {
+    return `
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by tutor" data-booking-id="${id}">Suggest time</button>
+      ${booking.studentEmail ? `<button class="secondary-btn compact-btn" type="button" data-view-student="${escapeHtml(booking.studentEmail)}">Student</button>` : ""}
+    `;
+  }
+
+  return `
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept time</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject time</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by student" data-booking-id="${id}">Reschedule</button>
+  `;
+}
+
+function checkLessonReminders() {
+  const allBookings = readStore(storage.bookings, {});
+  const now = Date.now();
+  Object.values(allBookings).flat().forEach((booking) => {
+    if (!booking.dateTime || booking.status === "Rejected") return;
+    const start = new Date(booking.dateTime).getTime();
+    const minsUntil = (start - now) / 60000;
+    if (minsUntil > 0 && minsUntil <= 10) {
+      queueEmail(booking.tutorEmail, `Lesson starts in 10 minutes`, `${booking.type} with ${booking.student || "your student"} starts at ${formatBookingDate(booking.dateTime)}.`, {
+        key: `reminder-${booking.id}`,
+        bookingId: booking.id
+      });
+    }
+  });
+}
+
 function renderBookingList(container, items, emptyText) {
   if (!items.length) {
     container.innerHTML = `<p class="empty-copy">${emptyText}</p>`;
     return;
   }
 
-  container.innerHTML = items.map((booking, index) => {
+  container.innerHTML = items.map((booking) => {
     const participant = currentAccount?.role === "tutor" && booking.student ? booking.student : booking.tutor;
     return `
       <article class="booking-row">
@@ -847,11 +1209,37 @@ function renderBookingList(container, items, emptyText) {
         <div>
           <strong>${escapeHtml(formatBookingDate(booking.dateTime))}</strong>
           <span>${escapeHtml(booking.type)} with ${escapeHtml(participant)} · ${escapeHtml(booking.subject)}</span>
+          <small class="booking-status ${bookingStatusClass(booking.status)}">${escapeHtml(booking.status || "Pending tutor approval")}</small>
         </div>
-        <button class="secondary-btn" type="button" data-edit-booking="${index}">Edit</button>
+        <div class="booking-actions">${bookingActions(booking)}</div>
       </article>
     `;
   }).join("");
+
+  container.querySelectorAll("[data-view-student]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedStudentAccount = getStudentAccounts().find((account) => account.email === button.dataset.viewStudent) || selectedStudentAccount;
+      showPage("student-profile");
+    });
+  });
+
+  container.querySelectorAll("[data-booking-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const status = button.dataset.bookingAction;
+      const booking = getBookings().find((item) => item.id === button.dataset.bookingId);
+      updateBookingEverywhere(button.dataset.bookingId, { status });
+      if (booking) {
+        const recipient = currentAccount.role === "tutor" ? booking.studentEmail : booking.tutorEmail;
+        queueEmail(recipient, `Booking ${status.toLowerCase()}`, `${currentAccount.name} marked ${booking.type} on ${formatBookingDate(booking.dateTime)} as: ${status}.`, {
+          key: `booking-${button.dataset.bookingId}-${status}`,
+          bookingId: button.dataset.bookingId
+        });
+      }
+      addActivity(`Booking marked: ${status}`, "Booking");
+      renderBookingsPage();
+      renderDashboard(currentAccount.role);
+    });
+  });
 }
 
 function renderBookingsPage() {
@@ -860,11 +1248,30 @@ function renderBookingsPage() {
     return;
   }
 
-  const availableTutors = getAllTutors();
-  bookingTutor.innerHTML = availableTutors.map((tutor) => `
-    <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutor.subject)}</option>
-  `).join("");
-  bookingPageForm.hidden = currentAccount.role === "tutor";
+  if (currentAccount.role === "tutor") {
+    bookingPersonLabel.textContent = "Student";
+    bookingSubmitButton.textContent = "Manage requests";
+    bookingTutor.innerHTML = "";
+    bookingPageForm.hidden = true;
+    bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
+      control.disabled = true;
+    });
+  } else {
+    const availableTutors = getAllTutors();
+    bookingPersonLabel.textContent = "Tutor";
+    bookingSubmitButton.textContent = "Book lesson";
+    bookingTutor.innerHTML = availableTutors.map((tutor) => `
+      <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutor.subject)}</option>
+    `).join("");
+    bookingPageForm.hidden = false;
+    bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
+      control.disabled = false;
+    });
+  }
+  bookingsPageTitle.textContent = currentAccount.role === "tutor" ? "Lesson requests" : "Bookings";
+  bookingsPageCopy.textContent = currentAccount.role === "tutor"
+    ? "Accept, reject, or request a new time for student and parent booking requests."
+    : "Request a lesson time, then accept, reject, or reschedule if the tutor suggests a change.";
 
   const bookings = getBookings();
   const now = Date.now();
@@ -954,17 +1361,55 @@ function updateDueToday() {
 }
 
 function setRole(role) {
-  document.querySelector("#accountTitle").textContent = roleContent[role].title;
-  document.querySelector("#accountText").textContent = roleContent[role].text;
+  document.querySelector("#accountTitle").textContent = currentAccount ? roleContent[role].title : "Welcome back";
+  document.querySelector("#accountText").textContent = currentAccount
+    ? roleContent[role].text
+    : "Log in as a student or approved tutor. Students can create an account here when they are ready to book.";
   document.querySelector("#dashRole").textContent = currentAccount ? roleContent[role].dash : `${roleContent[role].dash} preview`;
   renderDashboard(role);
+}
+
+function populateAccountDetails() {
+  if (!currentAccount) return;
+  accountName.value = currentAccount.name || "";
+  accountEmail.value = currentAccount.email || "";
+  accountDob.value = currentAccount.dob || "";
+  accountParentName.value = currentAccount.parentName || "";
+  accountParentEmail.value = currentAccount.parentEmail || "";
 }
 
 function updateAccess() {
   const role = currentAccount?.role || signupRole.value;
   document.body.dataset.role = currentAccount ? role : "guest";
+  document.querySelectorAll("[data-auth-only]").forEach((item) => {
+    item.hidden = !currentAccount;
+  });
+  document.querySelectorAll("[data-guest-only]").forEach((item) => {
+    item.hidden = Boolean(currentAccount);
+  });
+  document.querySelectorAll("[data-public-only]").forEach((item) => {
+    item.hidden = Boolean(currentAccount);
+  });
+  document.querySelectorAll("[data-student-parent-nav]").forEach((item) => {
+    item.hidden = !currentAccount || role === "tutor";
+  });
+  document.querySelectorAll("[data-hide-tutor-nav]").forEach((item) => {
+    item.hidden = currentAccount?.role === "tutor";
+  });
+  document.querySelectorAll("[data-tutor-nav]").forEach((item) => {
+    item.hidden = role !== "tutor" || !currentAccount;
+  });
+  userMenu.hidden = !currentAccount;
+  if (currentAccount) {
+    userMenuName.textContent = currentAccount.name;
+    userMenuInitials.textContent = initialsFromName(currentAccount.name);
+    populateAccountDetails();
+  } else {
+    userDropdown.hidden = true;
+    userMenuButton?.setAttribute("aria-expanded", "false");
+  }
   quickBook.innerHTML = role === "tutor"
-    ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Update availability`
+    ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Manage requests`
     : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Book lessons`;
   messagesButton.textContent = role === "tutor" ? "View messages" : "Open messages";
   [quickBook, messagesButton].forEach((button) => {
@@ -979,6 +1424,7 @@ function setAccount(account, options = {}) {
   signupName.value = account.name;
   signupEmail.value = account.email;
   loginEmail.value = account.email;
+  populateAccountDetails();
   signupStatus.textContent = `${account.name}, you are logged in successfully as a ${account.role}.`;
   signupStatus.classList.add("success");
   setRole(account.role);
@@ -1017,6 +1463,17 @@ function canBook() {
   }
 
   return true;
+}
+
+function ageFromDob(value) {
+  if (!value) return null;
+  const dob = new Date(value);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const beforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate());
+  if (beforeBirthday) age -= 1;
+  return age;
 }
 
 function requestRating() {
@@ -1073,12 +1530,13 @@ window.addEventListener("hashchange", () => {
   showPage(getRouteFromHash(), { keepScroll: true });
 });
 
-[subjectFilter, uniFilter, gradeFilter, sortFilter, budgetFilter, trialOnly].forEach((control) => {
+[nameFilter, subjectFilter, uniFilter, gradeFilter, sortFilter, budgetFilter, trialOnly].forEach((control) => {
   control.addEventListener("input", renderTutors);
   control.addEventListener("change", renderTutors);
 });
 
 document.querySelector("#resetFilters").addEventListener("click", () => {
+  nameFilter.value = "";
   subjectFilter.value = "All";
   uniFilter.value = "";
   gradeFilter.value = "Any";
@@ -1164,18 +1622,33 @@ messagePageForm.addEventListener("submit", (event) => {
 
 bookingPageForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (!currentAccount) {
+    promptForAccount("Log in first, then bookings will open.");
+    return;
+  }
+
+  if (currentAccount.role === "tutor") {
+    addActivity("Opened lesson requests", "Booking");
+    renderBookingsPage();
+    return;
+  }
+
   if (!canBook()) return;
 
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value) || selectedTutor;
   selectedTutor = tutor;
   const items = getBookings();
   const booking = {
+    id: createId("booking"),
     tutor: tutor.name,
+    tutorEmail: tutorEmail(tutor),
     initials: tutor.initials,
     subject: tutor.subject,
     type: bookingLessonType.value,
     dateTime: bookingDateTime.value,
+    status: "Pending tutor approval",
     student: currentAccount.name,
+    studentEmail: currentAccount.email,
     created: nowLabel()
   };
   items.push(booking);
@@ -1193,7 +1666,12 @@ bookingPageForm.addEventListener("submit", (event) => {
   }
 
   bookingDateTime.value = "";
-  addActivity(`Booked ${bookingLessonType.value} with ${tutor.name}`, "Booking");
+  queueEmail(booking.tutorEmail, "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} for ${formatBookingDate(booking.dateTime)}.`, {
+    key: `new-booking-${booking.id}`,
+    bookingId: booking.id
+  });
+  addActivity(`Requested ${bookingLessonType.value} with ${tutor.name}`, "Booking");
+  checkLessonReminders();
   renderBookingsPage();
 });
 
@@ -1215,6 +1693,9 @@ reviewPageForm.addEventListener("submit", (event) => {
   ratings[selectedTutor.name] = tutorRatings;
   writeStore(storage.ratings, ratings);
   reviewText.value = "";
+  queueEmail(tutorEmail(selectedTutor), "New tutor review", `${currentAccount.name} left you a ${reviewScore.value}/5 review: ${tutorRatings.at(-1).note}`, {
+    key: `review-${selectedTutor.name}-${Date.now()}`
+  });
   addActivity(`Reviewed ${selectedTutor.name}`, "Review");
   renderReviewsPage();
   renderTutors();
@@ -1233,6 +1714,14 @@ signupForm.addEventListener("submit", (event) => {
   const password = signupPassword.value;
   const confirmPassword = signupConfirmPassword.value;
   const accounts = getAccounts();
+  const age = ageFromDob(signupDob.value);
+
+  if (age !== null && age < 18 && (!signupParentName.value.trim() || !signupParentEmail.value.trim())) {
+    signupStatus.textContent = "Parent or guardian details are required for students under 18.";
+    signupStatus.classList.remove("success");
+    signupParentName.focus();
+    return;
+  }
 
   if (password !== confirmPassword) {
     signupStatus.textContent = "Passwords do not match. Retype the same password to create the account.";
@@ -1249,14 +1738,20 @@ signupForm.addEventListener("submit", (event) => {
   }
 
   const account = {
-    role: signupRole.value,
+    role: "student",
     name: signupName.value.trim(),
     email,
+    dob: signupDob.value,
+    parentName: signupParentName.value.trim(),
+    parentEmail: signupParentEmail.value.trim().toLowerCase(),
     password
   };
 
   accounts.push(account);
   saveAccounts(accounts);
+  signupDob.value = "";
+  signupParentName.value = "";
+  signupParentEmail.value = "";
   signupPassword.value = "";
   signupConfirmPassword.value = "";
   setAccount(account, { confirm: true, redirect: true });
@@ -1278,6 +1773,74 @@ loginPanel.addEventListener("submit", (event) => {
   setAccount(account, { confirm: true, redirect: true });
 });
 
+accountDetailsForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentAccount) {
+    promptForAccount();
+    return;
+  }
+
+  const updatedEmail = accountEmail.value.trim().toLowerCase();
+  const accounts = getAccounts();
+  const emailTaken = accounts.some((account) => account.email === updatedEmail && account.email !== currentAccount.email);
+  if (emailTaken) {
+    signupStatus.textContent = "Another account already uses that email address.";
+    signupStatus.classList.remove("success");
+    return;
+  }
+
+  const updated = {
+    ...currentAccount,
+    name: accountName.value.trim() || currentAccount.name,
+    email: updatedEmail,
+    dob: accountDob.value,
+    parentName: accountParentName.value.trim(),
+    parentEmail: accountParentEmail.value.trim().toLowerCase()
+  };
+
+  saveAccounts(accounts.map((account) => account.email === currentAccount.email ? updated : account));
+  currentAccount = updated;
+  localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(updated));
+  signupStatus.textContent = "Account details saved.";
+  signupStatus.classList.add("success");
+  addActivity("Updated account details", "Account");
+  updateAccess();
+  renderDashboard(currentAccount.role);
+});
+
+passwordForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentAccount) {
+    promptForAccount();
+    return;
+  }
+
+  if (oldPassword.value !== currentAccount.password) {
+    signupStatus.textContent = "Old password does not match.";
+    signupStatus.classList.remove("success");
+    oldPassword.focus();
+    return;
+  }
+
+  if (newPassword.value !== confirmNewPassword.value) {
+    signupStatus.textContent = "New passwords do not match.";
+    signupStatus.classList.remove("success");
+    confirmNewPassword.focus();
+    return;
+  }
+
+  const updated = { ...currentAccount, password: newPassword.value };
+  saveAccounts(getAccounts().map((account) => account.email === currentAccount.email ? updated : account));
+  currentAccount = updated;
+  localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(updated));
+  oldPassword.value = "";
+  newPassword.value = "";
+  confirmNewPassword.value = "";
+  signupStatus.textContent = "Password changed.";
+  signupStatus.classList.add("success");
+  addActivity("Changed password", "Account");
+});
+
 quickBook.addEventListener("click", () => {
   if (!currentAccount) {
     promptForAccount();
@@ -1285,9 +1848,9 @@ quickBook.addEventListener("click", () => {
   }
 
   if (currentAccount.role === "tutor") {
-    signupStatus.textContent = "Availability tools are open in your tutor dashboard.";
+    signupStatus.textContent = "Student and parent booking requests are open.";
     signupStatus.classList.add("success");
-    showPage("dashboard");
+    showPage("bookings");
     return;
   }
 
@@ -1310,6 +1873,48 @@ topMessagesButton.addEventListener("click", () => {
   messagesButton.click();
 });
 
+userMenuButton.addEventListener("click", () => {
+  const nextHidden = !userDropdown.hidden;
+  userDropdown.hidden = nextHidden;
+  userMenuButton.setAttribute("aria-expanded", String(!nextHidden));
+});
+
+userMenu.addEventListener("mouseenter", () => {
+  if (!currentAccount) return;
+  userDropdown.hidden = false;
+  userMenuButton.setAttribute("aria-expanded", "true");
+});
+
+userMenu.addEventListener("mouseleave", () => {
+  userDropdown.hidden = true;
+  userMenuButton.setAttribute("aria-expanded", "false");
+});
+
+userDropdown.querySelectorAll("[data-route]").forEach((button) => {
+  button.addEventListener("click", () => {
+    userDropdown.hidden = true;
+    userMenuButton.setAttribute("aria-expanded", "false");
+    showPage(button.dataset.route);
+  });
+});
+
+logoutButton.addEventListener("click", () => {
+  currentAccount = null;
+  localStorage.removeItem("girlstemTutoringCurrentAccount");
+  pendingConfirmation = "";
+  loginConfirmation.hidden = true;
+  updateAccess();
+  setRole("student");
+  showPage("accounts");
+});
+
+becomeTutorLink.addEventListener("click", (event) => {
+  event.preventDefault();
+  signupStatus.textContent = "Tutor applications will open in a Google Form once you add the link.";
+  signupStatus.classList.add("success");
+  showPage("accounts");
+});
+
 lessonType.addEventListener("change", updateDueToday);
 
 dialog.addEventListener("close", () => {
@@ -1318,18 +1923,22 @@ dialog.addEventListener("close", () => {
   renderDashboard(currentAccount.role);
 });
 
-try {
-  const savedAccount = JSON.parse(localStorage.getItem("girlstemTutoringCurrentAccount"));
-  if (savedAccount && savedAccount.role && savedAccount.name && savedAccount.email) {
-    setAccount(savedAccount);
-  } else {
-    setRole(signupRole.value);
-    updateAccess();
-  }
-} catch {
-  setRole(signupRole.value);
-  updateAccess();
-}
+localStorage.removeItem("girlstemTutoringCurrentAccount");
+setRole(signupRole.value);
+updateAccess();
 
 renderTutors();
-showPage(getRouteFromHash(), { instant: true });
+const initialRoute = getRouteFromHash();
+showPage(initialRoute && initialRoute !== "home" ? initialRoute : "accounts", { instant: true });
+checkLessonReminders();
+window.setInterval(checkLessonReminders, 60000);
+
+window.addEventListener("load", () => {
+  const loadingScreen = document.querySelector("#loadingScreen");
+  window.setTimeout(() => {
+    loadingScreen?.classList.add("is-hidden");
+    document.body.classList.remove("is-loading");
+    document.body.classList.add("site-ready");
+    window.setTimeout(() => loadingScreen?.classList.add("is-gone"), 760);
+  }, 950);
+});
