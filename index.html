@@ -3,41 +3,93 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GirlSTEM Tutoring</title>
+    <title>tutrSTEM.</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="is-loading">
+    <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
+      <div class="loading-orb loading-orb-top" aria-hidden="true"></div>
+      <div class="loading-line" aria-hidden="true"></div>
+      <div class="loading-dot-grid loading-dot-grid-top" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+      <div class="loading-dot-grid loading-dot-grid-bottom" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+      <div class="loading-orb loading-orb-bottom" aria-hidden="true"></div>
+      <div class="loading-core">
+        <img src="assets/tutrstem-logo.png" alt="tutrSTEM" />
+        <div class="loading-dots" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p>Loading</p>
+      </div>
+    </div>
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="GirlSTEM Tutoring home">
-        <img class="brand-logo" src="assets/girlstem-logo.png" alt="GirlSTEM Tutoring logo" />
-        <span>GirlSTEM Tutoring</span>
+      <a class="brand" href="#home" data-route="home" aria-label="tutrSTEM home">
+        <img class="brand-logo" src="assets/tutrstem-wordmark.png" alt="tutrSTEM logo" />
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a href="#tutors">Find tutors</a>
-        <a href="#how">How it works</a>
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform" target="_blank" rel="noopener">Become a tutor</a>
-        <a href="#accounts">Accounts</a>
-        <a href="#contact">Contact</a>
+        <a href="#tutors" data-route="tutors" data-hide-tutor-nav>Find a tutor</a>
+        <a href="#how" data-route="how" data-public-only>How it works</a>
+        <a href="#prices" data-route="prices" data-public-only>Prices</a>
+        <a href="#about" data-route="about" data-public-only>About us</a>
+        <a href="#" id="becomeTutorLink" data-public-only>Become a tutor</a>
+        <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
+        <a href="#messages" data-route="messages" data-auth-only>Messages</a>
+        <a href="#bookings" data-route="bookings" data-auth-only>Bookings</a>
+        <a href="#dashboard" data-route="dashboard" data-auth-only>Dashboard</a>
       </nav>
       <div class="top-actions">
-        <button class="icon-btn" type="button" aria-label="Open messages" title="Messages">
+        <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages" data-auth-only>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
         </button>
-        <a class="secondary-btn" href="#accounts">Log in</a>
-        <a class="primary-btn" href="#accounts">Get started</a>
+        <a class="secondary-btn" href="#accounts" data-route="accounts" data-guest-only>Log in</a>
+        <a class="primary-btn" href="#accounts" data-route="accounts" data-guest-only>Sign up</a>
+        <div class="user-menu" id="userMenu" hidden>
+          <button class="user-trigger" id="userMenuButton" type="button" aria-haspopup="true" aria-expanded="false">
+            <span id="userMenuName">Account</span>
+            <span class="avatar mini-avatar" id="userMenuInitials">TS</span>
+          </button>
+          <div class="user-dropdown" id="userDropdown" hidden>
+            <button type="button" data-route="account-details">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+              Your profile
+            </button>
+            <button type="button" data-route="trial-space">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><rect x="5" y="5" width="14" height="10" rx="1"/></svg>
+              Trial lesson space
+            </button>
+            <button type="button" data-route="help">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c-.8 1.2-2.1 1.4-2.6 2.6"/><path d="M12 17h.01"/></svg>
+              Help centre
+            </button>
+            <button type="button" data-route="support">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              Contact support
+            </button>
+            <button type="button" id="logoutButton">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Log out
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
     <main id="top">
-      <section class="hero">
+      <section class="hero app-page active" id="home" data-page="home">
         <div class="hero-media" aria-hidden="true">
           <img src="assets/hero-tutoring.png" alt="" />
         </div>
         <div class="hero-overlay"></div>
         <div class="hero-content">
-          <p class="eyebrow">GirlSTEM Tutoring</p>
-          <h1>Find supportive tutors, trial them free, then keep lessons on track.</h1>
-          <p class="hero-copy">A professional tutoring service connected to the GirlSTEM mission, helping students and parents search by subject, university, grades, price, and availability.</p>
+          <p class="eyebrow">Private STEM tutoring</p>
+          <h1>STEM tutoring that fits your week.</h1>
+          <p class="hero-copy">Find a tutor, request a time, chat privately, and keep lessons, reviews, and progress in one clear place.</p>
           <form class="hero-search" data-search-form>
             <label>
               <span>Subject</span>
@@ -53,15 +105,14 @@
             </button>
           </form>
         </div>
-        <div class="hero-stat-row" aria-label="Marketplace highlights">
-          <div class="logo-stat"><img src="assets/girlstem-logo.png" alt="" /></div>
-          <div><strong>30 min</strong><span>free trial</span></div>
-          <div><strong>24 hr</strong><span>refund window</span></div>
-          <div><strong>Secure</strong><span>account-first booking</span></div>
-        </div>
       </section>
 
-      <section class="strip" id="how">
+      <section class="strip app-page" id="how" data-page="how">
+        <div class="page-heading">
+          <p class="eyebrow">How it works</p>
+          <h2>Keep the journey simple.</h2>
+          <p>Students and parents find tutors first. Account tools, messages, ratings, and payments live behind the right dashboard.</p>
+        </div>
         <div class="strip-inner">
           <article>
             <span class="step">1</span>
@@ -80,18 +131,57 @@
           </article>
           <article>
             <span class="step">4</span>
-            <h2>Book and message</h2>
-            <p>Account holders can arrange lessons, message tutors and keep their tutoring schedule organised in one place.</p>
+            <h2>Pay and message</h2>
+            <p>Stripe handles checkout, platform commission, tutor payouts, receipts, and the shared chat for arrangements.</p>
           </article>
         </div>
       </section>
 
-      <section class="workspace" id="tutors">
+      <section class="info-page app-page" id="prices" data-page="prices">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Prices</p>
+              <h2>Clear prices before every lesson.</h2>
+              <p>Students can browse tutor rates before signing up. Free trial availability, hourly price, and cancellation terms are shown before a booking is requested.</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article><strong>Free trials</strong><span>Many tutors offer a free 30-minute trial so students can check fit first.</span></article>
+            <article><strong>Hourly lessons</strong><span>Tutor rates are shown on each profile, with filters for budget and subject.</span></article>
+            <article><strong>Secure payments</strong><span>Paid lessons can connect to Stripe checkout when the backend is added.</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="info-page app-page" id="about" data-page="about">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">About us</p>
+              <h2>STEM tutoring from people who recently sat the exams.</h2>
+              <p>tutrSTEM helps students find specialist STEM tutors, manage messages and bookings, and keep all lesson admin in one calm workspace.</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article><strong>Specialist tutors</strong><span>Profiles focus on subject, university, teaching style, reviews, and availability.</span></article>
+            <article><strong>Student-first</strong><span>Students can search before logging in, then create an account when they are ready to book.</span></article>
+            <article><strong>Organised support</strong><span>Messages, bookings, reviews, and account details live in separate pages after login.</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace app-page" id="tutors" data-page="tutors" data-student-parent-only>
         <aside class="filters" aria-label="Tutor filters">
           <div class="panel-heading">
             <h2>Find a tutor</h2>
-            <p id="matchCount">0 tutors match</p>
+            <p id="matchCount">16 tutors match</p>
           </div>
+
+          <label class="field">
+            <span>Tutor name</span>
+            <input id="nameFilter" type="search" placeholder="Search by name" />
+          </label>
 
           <label class="field">
             <span>A-level subject</span>
@@ -154,87 +244,135 @@
         <section class="results" aria-live="polite">
           <div class="results-top">
             <div>
-              <p class="eyebrow">GirlSTEM tutor marketplace</p>
+          <p class="eyebrow">tutrSTEM marketplace</p>
               <h2>Browse tutors who fit your goals</h2>
             </div>
-            <p class="account-lock-note">Create an account before booking or messaging tutors.</p>
+            <p class="account-lock-note">Students and parents can book, message, pay, and rate tutors from their account.</p>
           </div>
           <div class="tutor-grid" id="tutorGrid"></div>
         </section>
       </section>
 
-      <section class="account-zone" id="accounts">
+      <section class="account-zone app-page" id="accounts" data-page="accounts">
         <div class="account-copy">
-          <p class="eyebrow">Accounts</p>
-          <h2 id="accountTitle">Student account</h2>
-          <p id="accountText">Create an account first, verify your email, then access the correct layout for students, parents or tutors.</p>
-
+          <p class="eyebrow">Log in</p>
+          <h2 id="accountTitle">Welcome back</h2>
+          <p id="accountText">Tutors log in only after their account has been approved. Students can create an account here when they are ready to book.</p>
           <div class="auth-grid">
-            <form class="auth-panel" id="signupForm">
-              <h3>Create account</h3>
-              <label class="field">
-                <span>Account type</span>
-                <select id="signupRole" required>
-                  <option value="student">Student</option>
-                  <option value="parent">Parent</option>
-                  <option value="tutor">Tutor</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Full name</span>
-                <input id="signupName" type="text" placeholder="Enter your name" required />
-              </label>
-              <label class="field">
-                <span>Email address</span>
-                <input id="signupEmail" type="email" placeholder="you@example.com" required />
-              </label>
-              <label class="field">
-                <span>Password</span>
-                <input id="signupPassword" type="password" minlength="8" placeholder="At least 8 characters" required />
-              </label>
-              <label class="field">
-                <span>Confirm password</span>
-                <input id="signupPasswordConfirm" type="password" minlength="8" placeholder="Repeat password" required />
-              </label>
-              <button class="primary-btn wide" type="submit">Create account</button>
-              <p class="signup-status" id="signupStatus">You need an account before you can book lessons or message tutors.</p>
-            </form>
-
-            <form class="auth-panel" id="loginForm">
+            <form class="auth-panel" id="loginPanel">
               <h3>Log in</h3>
               <label class="field">
                 <span>Email address</span>
-                <input id="loginEmail" type="email" placeholder="you@example.com" required />
+                <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
               </label>
               <label class="field">
                 <span>Password</span>
-                <input id="loginPassword" type="password" placeholder="Enter your password" required />
+                <input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password" required />
               </label>
-              <button class="secondary-btn wide" type="submit">Log in</button>
-              <p class="signup-status" id="loginStatus">Create an account first if you do not have one yet.</p>
+              <button class="primary-btn wide" type="submit">Log in</button>
+            </form>
+
+            <form class="auth-panel" id="signupForm">
+              <h3>Student sign up</h3>
+              <input id="signupRole" type="hidden" value="student" />
+              <label class="field">
+                <span>Full name</span>
+                <input id="signupName" type="text" placeholder="Enter your name" autocomplete="name" required />
+              </label>
+              <label class="field">
+                <span>Date of birth</span>
+                <input id="signupDob" type="date" required />
+              </label>
+              <label class="field parent-field">
+                <span>Parent or guardian name</span>
+                <input id="signupParentName" type="text" placeholder="Required if under 18" />
+              </label>
+              <label class="field parent-field">
+                <span>Parent or guardian email</span>
+                <input id="signupParentEmail" type="email" placeholder="parent@example.com" />
+              </label>
+              <label class="field">
+                <span>Email address</span>
+                <input id="signupEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="signupPassword" type="password" placeholder="Create password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <label class="field">
+                <span>Retype password</span>
+                <input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <button class="secondary-btn wide" type="submit">Create student account</button>
             </form>
           </div>
+          <p class="signup-status" id="signupStatus">Tutor applications will use the Become a tutor form once the link is added.</p>
+        </div>
+        <aside class="account-side">
+          <strong>Student sign-up only</strong>
+          <p>Tutors do not self-register here. Tutor logins will be limited to approved tutor emails once verification is connected.</p>
+        </aside>
+      </section>
 
-          <form class="verify-panel" id="verifyForm" hidden>
-            <h3>Email verification</h3>
-            <p id="verifyText">Enter the verification code sent to your email.</p>
-            <label class="field">
-              <span>Verification code</span>
-              <input id="verifyCode" type="text" inputmode="numeric" pattern="[0-9]{6}" placeholder="6 digit code" required />
-            </label>
-            <button class="primary-btn wide" type="submit">Verify email</button>
-            <p class="signup-status" id="verifyStatus"></p>
-          </form>
+      <section class="account-details-page app-page" id="account-details" data-page="account-details">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Your profile</p>
+              <h2>Account details</h2>
+              <p>Only you can see and edit this information.</p>
+            </div>
+          </div>
+          <div class="settings-layout">
+            <form class="auth-panel" id="accountDetailsForm">
+              <h3>Personal information</h3>
+              <label class="field"><span>Full name</span><input id="accountName" type="text" required /></label>
+              <label class="field"><span>Email address</span><input id="accountEmail" type="email" required /></label>
+              <label class="field"><span>Date of birth</span><input id="accountDob" type="date" /></label>
+              <label class="field"><span>Parent or guardian name</span><input id="accountParentName" type="text" /></label>
+              <label class="field"><span>Parent or guardian email</span><input id="accountParentEmail" type="email" /></label>
+              <button class="secondary-btn wide" type="submit">Save account details</button>
+            </form>
+            <form class="auth-panel" id="passwordForm">
+              <h3>Change password</h3>
+              <label class="field"><span>Old password</span><input id="oldPassword" type="password" autocomplete="current-password" required /></label>
+              <label class="field"><span>New password</span><input id="newPassword" type="password" autocomplete="new-password" minlength="6" required /></label>
+              <label class="field"><span>Retype new password</span><input id="confirmNewPassword" type="password" autocomplete="new-password" minlength="6" required /></label>
+              <button class="primary-btn wide" type="submit">Change password</button>
+            </form>
+          </div>
+        </div>
+      </section>
 
+      <section class="info-page app-page" id="trial-space" data-page="trial-space">
+        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Trial lesson space</p><h2>Trial lessons</h2><p>Trial lesson links, notes, and prep tasks will appear here once a free trial is booked.</p></div></div></div>
+      </section>
+
+      <section class="info-page app-page" id="help" data-page="help">
+        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Help centre</p><h2>Help centre</h2><p>FAQs for bookings, payments, tutor profiles, reviews, and account access will live here.</p></div></div></div>
+      </section>
+
+      <section class="info-page app-page" id="support" data-page="support">
+        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Contact support</p><h2>Contact support</h2><p>Support contact details and issue forms will be added here.</p></div></div></div>
+      </section>
+
+      <section class="dashboard-page app-page" id="dashboard" data-page="dashboard">
+        <div class="dashboard-intro">
+          <div>
+            <p class="eyebrow">Your account</p>
+            <h2 id="dashboardTitle">Dashboard</h2>
+            <p id="dashboardSubtitle">Log in or create an account to see the right tools here.</p>
+          </div>
           <div class="account-actions">
             <button class="primary-btn" id="quickBook" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
-              Book a trial
+              Book lessons
             </button>
-            <button class="secondary-btn" id="messagesButton" type="button">View messages</button>
+            <button class="secondary-btn" id="messagesButton" type="button">Open chat</button>
           </div>
         </div>
-        <div class="dashboard" aria-label="Account preview dashboard">
+        <div class="login-confirmation" id="loginConfirmation" hidden></div>
+        <div class="dashboard" aria-label="Account dashboard">
           <div class="dash-header">
             <div>
               <span class="status-dot"></span>
@@ -242,72 +380,188 @@
             </div>
             <span id="dashMode">Live schedule</span>
           </div>
-          <div class="lesson-list" id="dashboardList">
-            <article>
-              <time>Mon 18:00</time>
-              <div>
-                <strong>A-level Biology</strong>
-                <span>Recurring weekly with your tutor</span>
+          <div class="role-tools" id="roleTools"></div>
+          <div class="dashboard-grid">
+            <section class="profile-panel" aria-labelledby="profileTitle">
+              <div class="section-title">
+                <h3 id="profileTitle">Profile</h3>
+                <span id="profileBadge">Set up</span>
               </div>
-              <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-            </article>
-            <article>
-              <time>Wed 19:30</time>
-              <div>
-                <strong>Mathematics trial</strong>
-                <span>Free 30-minute session with a tutor profile</span>
+              <form id="profileForm" class="profile-form">
+                <label class="field">
+                  <span>Display name</span>
+                  <input id="profileName" type="text" placeholder="Your name" />
+                </label>
+                <label class="field">
+                  <span id="profileSubjectLabel">Focus subject</span>
+                  <input id="profileSubject" type="text" placeholder="Biology, Mathematics, Computer Science" />
+                </label>
+                <label class="field">
+                  <span id="profileDetailLabel">Goal or teaching style</span>
+                  <input id="profileDetail" type="text" placeholder="Exam confidence, calm weekly structure" />
+                </label>
+                <label class="field tutor-profile-field">
+                  <span>University or qualification</span>
+                  <input id="profileUniversity" type="text" placeholder="Cambridge, Imperial, UCL..." />
+                </label>
+                <label class="field tutor-profile-field">
+                  <span>Hourly rate</span>
+                  <input id="profilePrice" type="number" min="10" max="120" step="1" placeholder="35" />
+                </label>
+                <label class="field tutor-profile-field">
+                  <span>About me</span>
+                  <textarea id="profileAbout" rows="4" placeholder="Tell students who you are and what you help with."></textarea>
+                </label>
+                <label class="field tutor-profile-field">
+                  <span>About my sessions</span>
+                  <textarea id="profileSessions" rows="4" placeholder="Describe how you teach and how lessons usually run."></textarea>
+                </label>
+                <button class="secondary-btn wide" type="submit">Save profile</button>
+              </form>
+            </section>
+
+            <section class="activity-panel" aria-labelledby="activityTitle">
+              <div class="section-title">
+                <h3 id="activityTitle">Live activity</h3>
+                <span id="activityCount">0 updates</span>
               </div>
-              <button class="icon-btn" type="button" title="Open lesson" aria-label="Open lesson"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-            </article>
+              <div class="activity-feed" id="activityFeed"></div>
+            </section>
           </div>
+          <div class="lesson-list" id="lessonList"></div>
           <div class="chat-card">
             <div class="chat-title">
-              <strong>Tutor chat</strong>
-              <span>Your tutor</span>
+              <strong id="chatTitle">Tutor chat</strong>
+              <span id="chatWith">Priya Shah</span>
             </div>
-            <p class="bubble incoming">Hi Maya, I’ve uploaded the respiration practice questions for Monday.</p>
-            <p class="bubble outgoing">Great, can we also cover synoptic essay structure?</p>
-            <div class="chat-input">
-              <span>Message your tutor...</span>
-              <button class="icon-btn" type="button" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+            <div id="chatMessages"></div>
+            <form class="chat-input" id="chatForm">
+              <input id="chatInput" type="text" placeholder="Message Priya..." autocomplete="off" />
+              <button class="icon-btn" type="submit" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+            </form>
+          </div>
+          <div class="ratings-panel" id="ratingsPanel"></div>
+        </div>
+      </section>
+
+      <section class="profile-page app-page" id="profile" data-page="profile">
+        <button class="text-link" type="button" data-route="tutors">Back to tutors</button>
+        <div class="public-profile" id="publicProfile"></div>
+      </section>
+
+      <section class="profile-page app-page" id="student-profile" data-page="student-profile">
+        <button class="text-link" type="button" data-route="messages">Back to messages</button>
+        <div class="public-profile" id="studentProfile"></div>
+      </section>
+
+      <section class="messages-page app-page" id="messages" data-page="messages">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Private messages</p>
+              <h2>Messages</h2>
+              <p>One private thread between each student or parent and tutor.</p>
+            </div>
+          </div>
+          <div class="messages-layout">
+            <aside class="thread-list" id="threadList"></aside>
+            <section class="message-room">
+              <div class="chat-title">
+                <div>
+                  <strong id="messagePageTitle">Tutor chat</strong>
+                  <span id="messagePageWith">Select a tutor</span>
+                </div>
+                <button class="secondary-btn" id="viewMessageProfile" type="button">View profile</button>
+              </div>
+              <div id="messagePageMessages"></div>
+              <form class="chat-input" id="messagePageForm">
+                <input id="messagePageInput" type="text" placeholder="Write a private message..." autocomplete="off" />
+                <button class="icon-btn" type="submit" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+              </form>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="bookings-page app-page" id="bookings" data-page="bookings">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Schedule</p>
+              <h2 id="bookingsPageTitle">Bookings</h2>
+              <p id="bookingsPageCopy">Book a new lesson, then track upcoming and previous sessions.</p>
+            </div>
+          </div>
+          <div class="bookings-layout">
+            <form class="booking-builder" id="bookingPageForm">
+              <label class="field">
+                <span id="bookingPersonLabel">Tutor</span>
+                <select id="bookingTutor"></select>
+              </label>
+              <label class="field">
+                <span>Lesson type</span>
+                <select id="bookingLessonType">
+                  <option value="Free trial">Free 30-minute trial</option>
+                  <option value="Weekly lesson">Weekly lesson</option>
+                  <option value="One-off lesson">One-off lesson</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Date and time</span>
+                <input id="bookingDateTime" type="datetime-local" />
+              </label>
+              <button class="primary-btn wide" id="bookingSubmitButton" type="submit">Book lesson</button>
+            </form>
+            <div class="booking-lists">
+              <section>
+                <div class="section-title">
+                  <h3>Upcoming</h3>
+                  <span id="upcomingCount">0</span>
+                </div>
+                <div class="schedule-list" id="upcomingBookings"></div>
+              </section>
+              <section>
+                <div class="section-title">
+                  <h3>Previous</h3>
+                  <span id="previousCount">0</span>
+                </div>
+                <div class="schedule-list" id="previousBookings"></div>
+              </section>
             </div>
           </div>
         </div>
       </section>
 
-      <footer class="site-footer" id="contact">
-        <div class="footer-brand">
-          <img src="assets/girlstem-logo.png" alt="GirlSTEM Tutoring logo" />
-          <div>
-            <strong>GirlSTEM Tutoring</strong>
-            <p>Supportive A-level tutoring for students, parents and tutors across the UK.</p>
+      <section class="reviews-page app-page" id="reviews" data-page="reviews">
+        <div class="page-shell">
+          <button class="text-link" type="button" data-route="profile">Back to profile</button>
+          <div class="reviews-layout">
+            <div>
+              <p class="eyebrow">Tutor reviews</p>
+              <h2 id="reviewsTitle">Reviews</h2>
+              <p id="reviewsSummary">Read student and parent feedback.</p>
+              <form class="review-form" id="reviewPageForm">
+                <label class="field">
+                  <span>Rating</span>
+                  <select id="reviewScore">
+                    <option value="5">5 stars</option>
+                    <option value="4">4 stars</option>
+                    <option value="3">3 stars</option>
+                    <option value="2">2 stars</option>
+                    <option value="1">1 star</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Review</span>
+                  <input id="reviewText" type="text" placeholder="What was helpful?" />
+                </label>
+                <button class="secondary-btn" type="submit">Write review</button>
+              </form>
+            </div>
+            <div class="review-list" id="reviewList"></div>
           </div>
         </div>
-
-        <div class="footer-grid">
-          <section>
-            <h2>Contact</h2>
-            <p>Email: <a href="mailto:girlstemuk@gmail.com">girlstemuk@gmail.com</a></p>
-            <p>For tutor enquiries, student support and partnership questions.</p>
-          </section>
-          <section>
-            <h2>Quick links</h2>
-            <a href="#tutors">Find tutors</a>
-            <a href="#how">How it works</a>
-            <a href="#accounts">Create account</a>
-          </section>
-          <section>
-            <h2>Support</h2>
-            <p>Account-first booking, tutor messaging and clear lesson arrangements.</p>
-            <p>Safeguarding and tutor checks can be added before launch.</p>
-          </section>
-        </div>
-
-        <div class="footer-bottom">
-          <span>© 2026 GirlSTEM Tutoring</span>
-          <span>Built for students, parents and tutors.</span>
-        </div>
-      </footer>
+      </section>
     </main>
 
     <dialog id="bookingDialog" aria-labelledby="bookingTitle">
@@ -345,14 +599,6 @@
             <span>Preferred time</span>
             <input type="datetime-local" />
           </label>
-          <label class="field">
-            <span>Need to reschedule?</span>
-            <select id="rescheduleChoice">
-              <option value="none">No reschedule requested</option>
-              <option value="student">Student requests a new time</option>
-              <option value="tutor">Tutor can suggest a new time after review</option>
-            </select>
-          </label>
           <div class="checkout-summary">
             <div><span>Due today</span><strong id="dueToday">GBP 0.00</strong></div>
             <div><span>Cancellation</span><strong>Full refund before 24 hours</strong></div>
@@ -361,7 +607,7 @@
         </div>
         <button class="primary-btn wide" id="stripeButton" value="confirm" type="submit">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
-          Confirm booking
+          Confirm with Stripe
         </button>
       </form>
     </dialog>
@@ -394,6 +640,32 @@
   </script>
 
 
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDYafm3ZqOLTJXj6KBTaS5jX0gEvx12Q1Y",
+        authDomain: "tutrstem-67155.firebaseapp.com",
+        projectId: "tutrstem-67155",
+        storageBucket: "tutrstem-67155.firebasestorage.app",
+        messagingSenderId: "80082219339",
+        appId: "1:80082219339:web:aace7f2ccb9bb56398f8ce",
+        measurementId: "G-R0R5VWXMKF"
+      };
+
+      const tutrStemApp = firebase.initializeApp(firebaseConfig);
+      window.tutrStemFirebase = {
+        app: tutrStemApp,
+        auth: firebase.auth(),
+        db: firebase.firestore()
+      };
+
+      if (firebase.analytics && location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+        firebase.analytics();
+      }
+    </script>
     <script src="app.js"></script>
   </body>
 </html>
