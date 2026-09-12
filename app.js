@@ -2440,8 +2440,7 @@ async function initializeSite() {
       setRole(currentAccount?.role || signupRole.value);
       updateAccess();
       renderTutors();
-      const initialRoute = getRouteFromHash();
-      showPage(initialRoute && initialRoute !== "home" ? initialRoute : "accounts", { instant: true });
+      showPage(getRouteFromHash() || "home", { instant: true });
       checkLessonReminders();
     });
   } else {
@@ -2451,8 +2450,7 @@ async function initializeSite() {
     setRole(currentAccount?.role || signupRole.value);
     updateAccess();
     renderTutors();
-    const initialRoute = getRouteFromHash();
-    showPage(initialRoute && initialRoute !== "home" ? initialRoute : "accounts", { instant: true });
+    showPage(getRouteFromHash() || "home", { instant: true });
     checkLessonReminders();
   }
   window.setInterval(checkLessonReminders, 60000);
@@ -2460,7 +2458,7 @@ async function initializeSite() {
 
 initializeSite();
 
-window.addEventListener("load", () => {
+function finishLoading() {
   const loadingScreen = document.querySelector("#loadingScreen");
   window.setTimeout(() => {
     loadingScreen?.classList.add("is-hidden");
@@ -2468,4 +2466,11 @@ window.addEventListener("load", () => {
     document.body.classList.add("site-ready");
     window.setTimeout(() => loadingScreen?.classList.add("is-gone"), 760);
   }, 950);
-});
+}
+
+if (document.readyState === "complete") {
+  finishLoading();
+} else {
+  window.addEventListener("load", finishLoading, { once: true });
+  window.setTimeout(finishLoading, 3500);
+}
