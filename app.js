@@ -233,12 +233,12 @@ const roleContent = {
 const roleDashboards = {
   student: {
     tools: [
-      ["Book tutors", "Browse available A-level tutors and request lessons."],
+      ["Book tutors", "Browse available GCSE, A-Level, and admissions tutors and request lessons."],
       ["Messages", "Chat with tutors once you have chosen who you want to work with."],
       ["Rate tutors", "Leave feedback once a lesson is complete."]
     ],
     lessons: [
-      ["Mon 18:00", "A-level Biology", "Recurring weekly with Priya Shah"],
+      ["Mon 18:00", "GCSE and A-Level Biology", "Recurring weekly with Priya Shah"],
       ["Wed 19:30", "Mathematics trial", "Free 30-minute session with Leo Grant"]
     ],
     chatTitle: "Tutor chat",
@@ -278,7 +278,7 @@ const roleDashboards = {
       ["Bookings", "Review student requests and keep lesson admin organised."]
     ],
     lessons: [
-      ["Today 16:30", "Trial request", "Maya wants A-level Biology support"],
+      ["Today 16:30", "Trial request", "Maya wants GCSE Biology support"],
       ["Fri 19:00", "Recurring lesson", "Essay planning with Hannah"]
     ],
     chatTitle: "Student and parent chat",
@@ -349,6 +349,9 @@ const profileName = document.querySelector("#profileName");
 const profileSubject = document.querySelector("#profileSubject");
 const profileDetail = document.querySelector("#profileDetail");
 const profileUniversity = document.querySelector("#profileUniversity");
+const profileLevel = document.querySelector("#profileLevel");
+const profilePhoto = document.querySelector("#profilePhoto");
+const profilePhotoPreview = document.querySelector("#profilePhotoPreview");
 const profileAbout = document.querySelector("#profileAbout");
 const profileSessions = document.querySelector("#profileSessions");
 const profileBadge = document.querySelector("#profileBadge");
@@ -395,6 +398,7 @@ let currentAccount = null;
 let pendingConfirmation = "";
 let cloudTutorProfiles = [];
 let cloudBookings = [];
+let pendingProfilePhoto = "";
 
 const firebaseBackend = window.tutrStemFirebase || null;
 const auth = firebaseBackend?.auth || null;
@@ -617,6 +621,61 @@ function accountKey() {
   return currentAccount?.email || "guest";
 }
 
+function isApprovedTutorAccount(account) {
+  if (account?.role !== "tutor") return true;
+  return account.approved === true || account.isApproved === true || account.status === "approved";
+}
+
+function tutorLevelLabel(tutor) {
+  return tutor.level || tutor.qualificationLevel || "A-Level";
+}
+
+function tutorPhotoMarkup(tutor, className = "profile-photo") {
+  const photo = tutor.photo || tutor.photoUrl || tutor.profilePhoto || "";
+  if (photo) {
+    return `<img class="${className}" src="${escapeHtml(photo)}" alt="${escapeHtml(tutor.name)} profile picture" />`;
+  }
+  return `<div class="${className}" aria-hidden="true">${escapeHtml(tutor.initials)}</div>`;
+}
+
+function updateProfilePhotoPreview(value, fallbackName = "") {
+  if (!profilePhotoPreview) return;
+  profilePhotoPreview.innerHTML = "";
+  if (value) {
+    const image = document.createElement("img");
+    image.src = value;
+    image.alt = "Profile picture preview";
+    profilePhotoPreview.append(image);
+    return;
+  }
+  profilePhotoPreview.textContent = initialsFromName(fallbackName || profileName.value || currentAccount?.name || "TS");
+}
+
+function resizeProfileImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read the image."));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Could not load the image."));
+      image.onload = () => {
+        const size = 420;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext("2d");
+        const sourceSize = Math.min(image.width, image.height);
+        const sx = (image.width - sourceSize) / 2;
+        const sy = (image.height - sourceSize) / 2;
+        context.drawImage(image, sx, sy, sourceSize, sourceSize, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function threadKey() {
   if (currentAccount?.role === "tutor") {
     const studentEmail = selectedStudentAccount?.email || "student-parent";
@@ -699,10 +758,12 @@ function saveProfile(profile) {
       rating: 5,
       lessons: Number(profile.lessons || 0),
       price: Number(profile.price || 35),
+      level: profile.level || "GCSE and A-Level",
       detail: profile.detail || "",
       style: profile.detail || "Supportive online lessons, exam practice, and confidence building",
       about: profile.about || "",
       sessions: profile.sessions || "",
+      photo: profile.photo || "",
       badges: ["New tutor", "Free trial", "Verified"],
       initials: initialsFromName(profile.name || currentAccount.name),
       score: 87
@@ -732,7 +793,7 @@ function studentSummary(account) {
   const profile = getProfileForAccount(account);
   return {
     name: profile.name || account?.name || "Student",
-    subject: profile.subject || "A-level support",
+    subject: profile.subject || "GCSE or A-Level support",
     detail: profile.detail || "Learning goals and lesson notes will appear here once saved.",
     about: profile.about || "This student has not added extra profile notes yet.",
     role: account?.role || "student",
@@ -760,11 +821,13 @@ function getTutorProfiles() {
         rating: 5,
         lessons: profile.lessons || 0,
         price: Number(profile.price || 35),
+        level: profile.level || "GCSE and A-Level",
         style: profile.detail || "Supportive online lessons, exam practice, and confidence building",
         badges: ["New tutor", "Free trial", "Verified"],
         initials: initialsFromName(profile.name || account.name),
         score: 87,
         email: account.email,
+        photo: profile.photo || "",
         about: profile.about || `Hi, I'm ${profile.name || account.name}. I help students feel calmer, clearer, and more prepared for exams.`,
         sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
       };
@@ -777,11 +840,13 @@ function getTutorProfiles() {
     rating: Number(profile.rating || 5),
     lessons: Number(profile.lessons || 0),
     price: Number(profile.price || 35),
+    level: profile.level || "GCSE and A-Level",
     style: profile.detail || profile.style || "Supportive online lessons, exam practice, and confidence building",
     badges: profile.badges || ["New tutor", "Free trial", "Verified"],
     initials: profile.initials || initialsFromName(profile.name || "Tutor"),
     score: Number(profile.score || 87),
     email: profile.email,
+    photo: profile.photo || profile.photoUrl || profile.profilePhoto || "",
     about: profile.about || `Hi, I'm ${profile.name || "a tutor"}. I help students feel calmer, clearer, and more prepared for exams.`,
     sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
   }));
@@ -844,7 +909,7 @@ function renderTutors() {
   tutorGrid.innerHTML = visibleTutors.map((tutor, index) => `
     <article class="tutor-card">
       <div class="tutor-head">
-        <div class="avatar" aria-hidden="true">${tutor.initials}</div>
+        ${tutorPhotoMarkup(tutor, "avatar")}
         <div>
           <h3>${escapeHtml(tutor.name)}</h3>
           <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
@@ -853,7 +918,8 @@ function renderTutors() {
       </div>
       <p>${escapeHtml(tutor.style)}</p>
       <div class="chips">
-        <span class="chip">${tutor.grade} at A-level</span>
+        <span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>
+        <span class="chip">Top exam grade: ${tutor.grade}</span>
         <span class="chip">${tutor.lessons} lessons</span>
         ${tutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
       </div>
@@ -1044,9 +1110,12 @@ function renderProfile(role) {
 
   const profile = getProfile();
   profileName.value = profile.name || currentAccount.name;
-  profileSubject.value = profile.subject || (role === "tutor" ? "Biology" : "A-level Biology");
+  profileSubject.value = profile.subject || (role === "tutor" ? "Biology" : "GCSE or A-Level Biology");
   profileDetail.value = profile.detail || (role === "tutor" ? "Exam technique and calm weekly structure" : "Mocks, confidence, and exam technique");
   profileUniversity.value = profile.university || "";
+  if (profileLevel) profileLevel.value = profile.level || "GCSE and A-Level";
+  pendingProfilePhoto = profile.photo || "";
+  updateProfilePhotoPreview(pendingProfilePhoto, profile.name || currentAccount.name);
   profileAbout.value = profile.about || "";
   profileSessions.value = profile.sessions || "";
   profileBadge.textContent = profile.updated ? "Saved" : "Draft";
@@ -1123,13 +1192,16 @@ function renderPublicProfile() {
   const isOwnTutorProfile = currentAccount?.role === "tutor" && selectedTutor.email === currentAccount.email;
   publicProfile.innerHTML = `
     <div class="profile-hero-card">
-      <div class="profile-photo">${escapeHtml(selectedTutor.initials)}</div>
+      ${tutorPhotoMarkup(selectedTutor, "profile-photo")}
       <div>
         <p class="eyebrow">Tutor profile</p>
         <h2>${escapeHtml(selectedTutor.name)}</h2>
         <p class="profile-rate">${escapeHtml(selectedTutor.subject)} support</p>
         <p>${escapeHtml(selectedTutor.subject)} · ${escapeHtml(selectedTutor.university)}</p>
-        <div class="chips">${selectedTutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}</div>
+        <div class="chips">
+          <span class="chip">${escapeHtml(tutorLevelLabel(selectedTutor))} tutoring</span>
+          ${selectedTutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
+        </div>
       </div>
       <aside class="profile-actions">
         <strong>${getTutorRating(selectedTutor).toFixed(2)} / 5</strong>
@@ -1694,9 +1766,11 @@ profileForm.addEventListener("submit", (event) => {
     subject: profileSubject.value.trim(),
     detail: profileDetail.value.trim(),
     university: currentAccount.role === "tutor" ? profileUniversity.value.trim() || "Tutor-created profile" : profileUniversity.value.trim(),
+    level: currentAccount.role === "tutor" ? profileLevel.value : "",
+    photo: currentAccount.role === "tutor" ? pendingProfilePhoto : "",
     grade: currentAccount.role === "tutor" ? "A*" : "",
     about: currentAccount.role === "tutor"
-      ? profileAbout.value.trim() || `Hi, I'm ${profileName.value.trim() || currentAccount.name}. I teach ${profileSubject.value.trim() || "A-level subjects"} and help students build confidence.`
+      ? profileAbout.value.trim() || `Hi, I'm ${profileName.value.trim() || currentAccount.name}. I teach ${profileSubject.value.trim() || "GCSE and A-Level subjects"} and help students build confidence.`
       : profileAbout.value.trim(),
     sessions: currentAccount.role === "tutor"
       ? profileSessions.value.trim() || profileDetail.value.trim() || "My sessions are structured around the student's goals, confidence, and exam practice."
@@ -1938,6 +2012,26 @@ signupForm.addEventListener("submit", async (event) => {
   setAccount(account, { confirm: true, redirect: true });
 });
 
+profilePhoto?.addEventListener("change", async () => {
+  const file = profilePhoto.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    signupStatus.textContent = "Please choose an image file for your tutor profile picture.";
+    signupStatus.classList.remove("success");
+    profilePhoto.value = "";
+    return;
+  }
+
+  try {
+    pendingProfilePhoto = await resizeProfileImage(file);
+    updateProfilePhotoPreview(pendingProfilePhoto, profileName.value || currentAccount?.name);
+    profileBadge.textContent = "Unsaved";
+  } catch {
+    signupStatus.textContent = "That profile picture could not be loaded. Try another image.";
+    signupStatus.classList.remove("success");
+  }
+});
+
 loginPanel.addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = loginEmail.value.trim().toLowerCase();
@@ -1948,6 +2042,12 @@ loginPanel.addEventListener("submit", async (event) => {
       const cloudAccount = await getCloudAccount(credentials.user);
       if (!cloudAccount) {
         signupStatus.textContent = "Login worked, but the profile data is missing. Create the profile record again.";
+        signupStatus.classList.remove("success");
+        return;
+      }
+      if (!isApprovedTutorAccount(cloudAccount)) {
+        await auth.signOut();
+        signupStatus.textContent = "Tutor login is only available after Amy approves your tutor record in Firebase. Please use Become a tutor first if you have not applied yet.";
         signupStatus.classList.remove("success");
         return;
       }
@@ -1967,6 +2067,13 @@ loginPanel.addEventListener("submit", async (event) => {
 
   if (!account) {
     signupStatus.textContent = "Login details do not match an account. Check the email and password, or create a new account.";
+    signupStatus.classList.remove("success");
+    loginPassword.focus();
+    return;
+  }
+
+  if (!isApprovedTutorAccount(account)) {
+    signupStatus.textContent = "Tutor login is only available after Amy approves your tutor record in Firebase. Please use Become a tutor first if you have not applied yet.";
     signupStatus.classList.remove("success");
     loginPassword.focus();
     return;

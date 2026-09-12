@@ -115,7 +115,7 @@
         <div class="strip-inner">
           <article>
             <span class="step">1</span>
-            <h2>Search by A-level subject</h2>
+            <h2>Search by subject and level</h2>
             <p>Students enter what they study, then filter tutors by university, exam results, availability, and teaching style.</p>
           </article>
           <article>
@@ -141,14 +141,19 @@
           <div class="page-title-row">
             <div>
               <p class="eyebrow">About us</p>
-              <h2>STEM tutoring from people who recently sat the exams.</h2>
-              <p>tutrSTEM helps students find specialist STEM tutors, manage messages and bookings, and keep all lesson admin in one calm workspace.</p>
+              <h2>Welcome to tutrSTEM. - Specialist STEM, Economics & Psychology Tutoring</h2>
+              <p>At tutrSTEM., we specialise in subject mastery and university admissions preparation for GCSE and A-Level candidates. Working with tutors from top-tier institutions, including Cambridge and Imperial, we deliver focused instruction across STEM subjects, Economics, and Psychology.</p>
             </div>
           </div>
           <div class="info-grid">
-            <article><strong>Specialist tutors</strong><span>Profiles focus on subject, university, teaching style, reviews, and availability.</span></article>
-            <article><strong>Student-first</strong><span>Students can search before logging in, then create an account when they are ready to book.</span></article>
-            <article><strong>Organised support</strong><span>Messages, bookings, reviews, and account details live in separate pages after login.</span></article>
+            <article><strong>Our Mission</strong><span>We make rigorous, subject-specific academic support accessible and effective by matching ambitious candidates with tutors who have mastered the qualifications and entrance assessments they are working toward.</span></article>
+            <article><strong>Top-Tier Tutors</strong><span>Our network includes tutors from leading universities like Cambridge and Imperial with deep expertise in their disciplines.</span></article>
+            <article><strong>Tailored Mentorship</strong><span>Structured guidance built around exam board specifications, learning style, and academic targets.</span></article>
+            <article><strong>Specialized University Admissions</strong><span>Dedicated coaching for competitive university entrance tests and challenging academic tracks.</span></article>
+            <article><strong>Flexible Learning</strong><span>Seamless online and local sessions structured around your timetable and revision schedule.</span></article>
+            <article><strong>Academic Subjects</strong><span>GCSE and A-Level Mathematics, Further Mathematics, Statistics, Mechanics, Physics, Chemistry, Biology, Economics, Psychology, Computer Science, programming, logic, and computer systems.</span></article>
+            <article><strong>Admissions Preparation</strong><span>Support for ESAT, TMUA, MAT, STEP, Oxbridge assessments, and targeted AQA, Edexcel, OCR, and Cambridge International preparation.</span></article>
+            <article><strong>Our Story</strong><span>tutrSTEM. was created to meet the growing demand for specialised, subject-focused support across STEM, Economics, and Psychology, helping learners build the analytical skills, subject knowledge, and exam strategies needed for competitive GCSEs, A-Levels, and university entrance tests.</span></article>
           </div>
         </div>
       </section>
@@ -166,7 +171,7 @@
           </label>
 
           <label class="field">
-            <span>A-level subject</span>
+            <span>Subject</span>
             <select id="subjectFilter">
               <option value="All">All subjects</option>
               <option>Mathematics</option>
@@ -235,6 +240,7 @@
           <div class="auth-grid">
             <form class="auth-panel" id="loginPanel">
               <h3>Log in</h3>
+              <p class="form-note">Want to become a tutor? Use the Become a tutor page first. Tutor logins only work after Amy has approved the tutor record in Firebase.</p>
               <label class="field">
                 <span>Email address</span>
                 <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
@@ -280,11 +286,11 @@
               <button class="secondary-btn wide" type="submit">Create student account</button>
             </form>
           </div>
-          <p class="signup-status" id="signupStatus">Tutor applications will use the Become a tutor form once the link is added.</p>
+          <p class="signup-status" id="signupStatus">Students can sign up here. Tutors should apply using Become a tutor, then log in only after approval.</p>
         </div>
         <aside class="account-side">
           <strong>Student sign-up only</strong>
-          <p>Tutors do not self-register here. Tutor logins will be limited to approved tutor emails once verification is connected.</p>
+          <p>Tutors do not self-register here. Tutor logins are limited to approved tutor records in Firebase.</p>
         </aside>
       </section>
 
@@ -323,7 +329,7 @@
       </section>
 
       <section class="info-page app-page" id="help" data-page="help">
-        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Help centre</p><h2>Help centre</h2><p>FAQs for bookings, payments, tutor profiles, reviews, and account access will live here.</p></div></div></div>
+        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Help centre</p><h2>Help centre</h2><p>FAQs for bookings, tutor profiles, reviews, and account access will live here.</p></div></div></div>
       </section>
 
       <section class="info-page app-page" id="support" data-page="support">
@@ -378,6 +384,20 @@
                   <span>University or qualification</span>
                   <input id="profileUniversity" type="text" placeholder="Cambridge, Imperial, UCL..." />
                 </label>
+                <label class="field tutor-profile-field">
+                  <span>Tutoring level</span>
+                  <select id="profileLevel">
+                    <option value="GCSE and A-Level">GCSE and A-Level</option>
+                    <option value="GCSE">GCSE</option>
+                    <option value="A-Level">A-Level</option>
+                    <option value="University admissions">University admissions</option>
+                  </select>
+                </label>
+                <label class="field tutor-profile-field">
+                  <span>Profile picture</span>
+                  <input id="profilePhoto" type="file" accept="image/*" />
+                </label>
+                <div class="profile-photo-preview tutor-profile-field" id="profilePhotoPreview" aria-label="Profile picture preview">TS</div>
                 <label class="field tutor-profile-field">
                   <span>About me</span>
                   <textarea id="profileAbout" rows="4" placeholder="Tell students who you are and what you help with."></textarea>
