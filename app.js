@@ -403,6 +403,7 @@ let pendingProfilePhoto = "";
 const firebaseBackend = window.tutrStemFirebase || null;
 const auth = firebaseBackend?.auth || null;
 const db = firebaseBackend?.db || null;
+const TUTOR_APPLICATION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform";
 
 function isCloudReady() {
   return Boolean(auth && db);
@@ -517,6 +518,10 @@ function publicAccount(account) {
   return safeAccount;
 }
 
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
 async function saveAccountToCloud(account, uid = auth?.currentUser?.uid) {
   if (!isCloudReady() || !uid) return;
   await db.collection("users").doc(uid).set({
@@ -537,22 +542,108 @@ async function getCloudAccount(user) {
   };
 }
 
+async function isApprovedTutorEmail(email) {
+  if (!isCloudReady() || !email) return false;
+  const approvedEmail = normalizeEmail(email);
+  const directSnapshot = await db.collection("approvedTutors").doc(approvedEmail).get();
+  if (directSnapshot.exists && directSnapshot.data()?.status === "approved") return true;
+
+  try {
+    const querySnapshot = await db.collection("approvedTutors")
+      .where("email", "==", approvedEmail)
+      .where("status", "==", "approved")
+      .limit(1)
+      .get();
+    return !querySnapshot.empty;
+  } catch {
+    return false;
+  }
+}
+
+async function getApprovedTutorRecord(email) {
+  if (!isCloudReady() || !email) return null;
+  const approvedEmail = normalizeEmail(email);
+  const directSnapshot = await db.collection("approvedTutors").doc(approvedEmail).get();
+  if (directSnapshot.exists) return { id: directSnapshot.id, ...directSnapshot.data() };
+
+  try {
+    const querySnapshot = await db.collection("approvedTutors")
+      .where("email", "==", approvedEmail)
+      .where("status", "==", "approved")
+      .limit(1)
+      .get();
+    if (querySnapshot.empty) return null;
+    return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() };
+  } catch {
+    return null;
+  }
+}
+
+async function createHiddenTutorProfile(account, approvedRecord = {}) {
+  if (!isCloudReady() || !account.uid) return;
+  await db.collection("tutorProfiles").doc(account.uid).set({
+    uid: account.uid,
+    email: account.email,
+    name: account.name,
+    subject: "Subject to be added",
+    university: "University to be added",
+    grade: "A*",
+    rating: 5,
+    lessons: 0,
+    level: "GCSE and A-Level",
+    price: 35,
+    style: "Supportive online lessons, exam practice, and confidence building",
+    about: "",
+    sessions: "",
+    photo: "",
+    badges: ["New tutor", "Free trial", "Verified"],
+    initials: initialsFromName(account.name),
+    score: 87,
+    visible: approvedRecord.visible === true,
+    approvedTutorId: approvedRecord.id || account.email,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+}
+
 async function loadCloudData() {
   if (!isCloudReady()) return;
-  const [profileSnapshot, bookingSnapshot] = await Promise.all([
-    db.collection("tutorProfiles").orderBy("name").get(),
-    db.collection("bookings").orderBy("createdAt", "desc").limit(120).get()
-  ]);
+  const profileSnapshot = await db.collection("tutorProfiles").where("visible", "==", true).get();
+  const profiles = profileSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-  cloudTutorProfiles = profileSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  if (auth.currentUser) {
+    const ownProfileSnapshot = await db.collection("tutorProfiles").doc(auth.currentUser.uid).get();
+    if (ownProfileSnapshot.exists && !profiles.some((profile) => profile.id === ownProfileSnapshot.id)) {
+      profiles.push({ id: ownProfileSnapshot.id, ...ownProfileSnapshot.data() });
+    }
+  }
+
+  cloudTutorProfiles = profiles.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+
+  if (!currentAccount?.email) {
+    cloudBookings = [];
+    return;
+  }
+
+  const bookingField = currentAccount.role === "tutor" ? "tutorEmail" : "studentEmail";
+  const bookingSnapshot = await db.collection("bookings")
+    .where(bookingField, "==", currentAccount.email)
+    .limit(120)
+    .get();
   cloudBookings = bookingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
 async function saveTutorProfileToCloud(profile, uid = auth?.currentUser?.uid) {
   if (!isCloudReady() || !uid) return;
+  const approvedRecord = await getApprovedTutorRecord(profile.email);
+  if (!approvedRecord || approvedRecord.status !== "approved") {
+    throw new Error("Tutor email is not approved.");
+  }
   await db.collection("tutorProfiles").doc(uid).set({
     ...profile,
     uid,
+    email: normalizeEmail(profile.email),
+    visible: approvedRecord.visible === true,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
   await loadCloudData();
@@ -810,6 +901,7 @@ function getTutorProfiles() {
   const profiles = readStore(storage.profiles, {});
   const accountProfiles = getAccounts()
     .filter((account) => account.role === "tutor")
+    .filter((account) => !isCloudReady() || account.email === currentAccount?.email)
     .map((account) => {
       const profile = profiles[account.email] || {};
       const subject = profile.subject || "Biology";
@@ -827,12 +919,15 @@ function getTutorProfiles() {
         initials: initialsFromName(profile.name || account.name),
         score: 87,
         email: account.email,
+        visible: !isCloudReady() || account.email === currentAccount?.email,
         photo: profile.photo || "",
         about: profile.about || `Hi, I'm ${profile.name || account.name}. I help students feel calmer, clearer, and more prepared for exams.`,
         sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
       };
     });
-  const cloudProfiles = cloudTutorProfiles.map((profile) => ({
+  const cloudProfiles = cloudTutorProfiles
+    .filter((profile) => profile.visible === true || profile.email === currentAccount?.email)
+    .map((profile) => ({
     name: profile.name || "Tutor",
     subject: profile.subject || "Subject to be added",
     university: profile.university || "University to be added",
@@ -846,6 +941,7 @@ function getTutorProfiles() {
     initials: profile.initials || initialsFromName(profile.name || "Tutor"),
     score: Number(profile.score || 87),
     email: profile.email,
+    visible: profile.visible === true,
     photo: profile.photo || profile.photoUrl || profile.profilePhoto || "",
     about: profile.about || `Hi, I'm ${profile.name || "a tutor"}. I help students feel calmer, clearer, and more prepared for exams.`,
     sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
@@ -860,6 +956,7 @@ function getTutorProfiles() {
 }
 
 function getAllTutors() {
+  if (isCloudReady()) return getTutorProfiles();
   return [...tutors, ...getTutorProfiles()];
 }
 
@@ -1007,6 +1104,24 @@ function saveMessage(message) {
   messages.push(message);
   allMessages[key] = messages;
   writeStore(storage.messages, allMessages);
+  saveMessageToCloud(key, message).catch(() => {});
+}
+
+async function saveMessageToCloud(key, message) {
+  if (!isCloudReady() || !currentAccount) return;
+  const participantEmails = currentAccount.role === "tutor"
+    ? [currentAccount.email, selectedStudentAccount?.email].filter(Boolean)
+    : [currentAccount.email, tutorEmail(selectedThreadTutor)].filter(Boolean);
+  await db.collection("messages").add({
+    threadKey: key,
+    participantEmails,
+    senderEmail: currentAccount.email,
+    senderRole: currentAccount.role,
+    body: message.text,
+    direction: message.direction,
+    timeLabel: message.time,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
 }
 
 function renderChat(role) {
@@ -1948,11 +2063,11 @@ signupRole.addEventListener("change", () => {
 
 signupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const email = signupEmail.value.trim().toLowerCase();
+  const email = normalizeEmail(signupEmail.value);
   const password = signupPassword.value;
   const confirmPassword = signupConfirmPassword.value;
   const accounts = getAccounts();
-  const role = signupRole.value === "parent" ? "parent" : "student";
+  const role = signupRole.value;
   const age = ageFromDob(signupDob.value);
 
   if (role === "student" && age !== null && age < 18 && (!signupParentName.value.trim() || !signupParentEmail.value.trim())) {
@@ -1983,19 +2098,34 @@ signupForm.addEventListener("submit", async (event) => {
     email,
     dob: signupDob.value,
     parentName: role === "student" ? signupParentName.value.trim() : "",
-    parentEmail: role === "student" ? signupParentEmail.value.trim().toLowerCase() : "",
+    parentEmail: role === "student" ? normalizeEmail(signupParentEmail.value) : "",
     password
   };
 
   if (isCloudReady()) {
     try {
       signupForm.querySelector("button").disabled = true;
+      let approvedRecord = null;
+      if (role === "tutor") {
+        signupStatus.textContent = "Checking tutor approval...";
+        approvedRecord = await getApprovedTutorRecord(email);
+        if (!approvedRecord || approvedRecord.status !== "approved") {
+          signupStatus.textContent = "This tutor email has not been approved yet. Please apply first or ask the tutrSTEM team to approve the exact email.";
+          signupStatus.classList.remove("success");
+          signupForm.querySelector("button").disabled = false;
+          return;
+        }
+      }
       signupStatus.textContent = "Creating your account...";
       const credentials = await auth.createUserWithEmailAndPassword(email, password);
       account.uid = credentials.user.uid;
       delete account.password;
       await credentials.user.updateProfile({ displayName: account.name });
       await saveAccountToCloud(account, credentials.user.uid);
+      if (role === "tutor") {
+        await createHiddenTutorProfile(account, approvedRecord);
+        await loadCloudData();
+      }
       accounts.push(account);
       saveAccounts(accounts);
       signupDob.value = "";
@@ -2014,6 +2144,12 @@ signupForm.addEventListener("submit", async (event) => {
       signupStatus.classList.remove("success");
       return;
     }
+  }
+
+  if (role === "tutor") {
+    signupStatus.textContent = "Tutor approval needs Firebase. Please apply first, then create the tutor login after the tutrSTEM team approves the email.";
+    signupStatus.classList.remove("success");
+    return;
   }
 
   accounts.push(account);
@@ -2048,7 +2184,7 @@ profilePhoto?.addEventListener("change", async () => {
 
 loginPanel.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const email = loginEmail.value.trim().toLowerCase();
+  const email = normalizeEmail(loginEmail.value);
   if (isCloudReady()) {
     try {
       signupStatus.textContent = "Logging in...";
@@ -2059,12 +2195,14 @@ loginPanel.addEventListener("submit", async (event) => {
         signupStatus.classList.remove("success");
         return;
       }
-      if (!isApprovedTutorAccount(cloudAccount)) {
+      if (cloudAccount.role === "tutor" && !(await isApprovedTutorEmail(email))) {
         await auth.signOut();
-        signupStatus.textContent = "Tutor login is only available after the tutrSTEM team approves your tutor record. Please use Become a tutor first if you have not applied yet.";
+        signupStatus.textContent = "Tutor login is only available after the tutrSTEM team approves your email in Firestore.";
         signupStatus.classList.remove("success");
+        loginPassword.focus();
         return;
       }
+      currentAccount = cloudAccount;
       await loadCloudData();
       loginPassword.value = "";
       setAccount(cloudAccount, { confirm: true, redirect: true });
@@ -2104,7 +2242,7 @@ accountDetailsForm.addEventListener("submit", (event) => {
     return;
   }
 
-  const updatedEmail = accountEmail.value.trim().toLowerCase();
+  const updatedEmail = normalizeEmail(accountEmail.value);
   const accounts = getAccounts();
   const emailTaken = accounts.some((account) => account.email === updatedEmail && account.email !== currentAccount.email);
   if (emailTaken) {
@@ -2119,7 +2257,7 @@ accountDetailsForm.addEventListener("submit", (event) => {
     email: updatedEmail,
     dob: accountDob.value,
     parentName: accountParentName.value.trim(),
-    parentEmail: accountParentEmail.value.trim().toLowerCase()
+    parentEmail: normalizeEmail(accountParentEmail.value)
   };
 
   saveAccounts(accounts.map((account) => account.email === currentAccount.email ? updated : account));
@@ -2133,10 +2271,36 @@ accountDetailsForm.addEventListener("submit", (event) => {
   renderDashboard(currentAccount.role);
 });
 
-passwordForm.addEventListener("submit", (event) => {
+passwordForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentAccount) {
     promptForAccount();
+    return;
+  }
+
+  if (isCloudReady() && auth?.currentUser?.email) {
+    if (newPassword.value !== confirmNewPassword.value) {
+      signupStatus.textContent = "New passwords do not match.";
+      signupStatus.classList.remove("success");
+      confirmNewPassword.focus();
+      return;
+    }
+
+    try {
+      const credential = firebase.auth.EmailAuthProvider.credential(auth.currentUser.email, oldPassword.value);
+      await auth.currentUser.reauthenticateWithCredential(credential);
+      await auth.currentUser.updatePassword(newPassword.value);
+      oldPassword.value = "";
+      newPassword.value = "";
+      confirmNewPassword.value = "";
+      signupStatus.textContent = "Password changed.";
+      signupStatus.classList.add("success");
+      addActivity("Changed password", "Account");
+    } catch {
+      signupStatus.textContent = "Password could not be changed. Check the old password and try again.";
+      signupStatus.classList.remove("success");
+      oldPassword.focus();
+    }
     return;
   }
 
@@ -2236,7 +2400,7 @@ logoutButton.addEventListener("click", () => {
 
 becomeTutorLink.addEventListener("click", (event) => {
   event.preventDefault();
-  window.open("https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform", "_blank", "noopener");
+  window.open(TUTOR_APPLICATION_URL, "_blank", "noopener");
 });
 
 lessonType.addEventListener("change", updateDueToday);
@@ -2251,17 +2415,23 @@ async function initializeSite() {
   if (isCloudReady()) {
     auth.onAuthStateChanged(async (user) => {
       try {
-        await loadCloudData();
         if (user) {
           const cloudAccount = await getCloudAccount(user);
           if (cloudAccount) {
-            currentAccount = cloudAccount;
-            localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(cloudAccount));
+            if (cloudAccount.role === "tutor" && !(await isApprovedTutorEmail(cloudAccount.email))) {
+              await auth.signOut();
+              currentAccount = null;
+              localStorage.removeItem("girlstemTutoringCurrentAccount");
+            } else {
+              currentAccount = cloudAccount;
+              localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(cloudAccount));
+            }
           }
         } else {
           currentAccount = null;
           localStorage.removeItem("girlstemTutoringCurrentAccount");
         }
+        await loadCloudData();
       } catch {
         signupStatus.textContent = "Firebase is connected, but Firestore is not ready. Check test mode is on.";
         signupStatus.classList.remove("success");

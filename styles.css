@@ -1345,7 +1345,7 @@ img.profile-photo {
 .activity-panel,
 .chat-title,
 .lesson-list article,
-.checkout-summary div {
+.request-summary div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1671,7 +1671,7 @@ dialog::backdrop {
   gap: 14px;
 }
 
-.checkout-summary {
+.request-summary {
   display: grid;
   gap: 1px;
   overflow: hidden;
@@ -1679,12 +1679,12 @@ dialog::backdrop {
   border-radius: 8px;
 }
 
-.checkout-summary div {
+.request-summary div {
   padding: 14px;
   background: var(--soft);
 }
 
-.checkout-summary span {
+.request-summary span {
   color: var(--muted);
   font-weight: 700;
 }
