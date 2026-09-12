@@ -240,7 +240,7 @@
           <div class="auth-grid">
             <form class="auth-panel" id="loginPanel">
               <h3>Log in</h3>
-              <p class="form-note">Want to become a tutor? Use the Become a tutor page first. Tutor logins only work after Amy has approved the tutor record in Firebase.</p>
+              <p class="form-note">Want to become a tutor? Use the Become a tutor page first. Tutor logins only work after the tutrSTEM team has approved the tutor record.</p>
               <label class="field">
                 <span>Email address</span>
                 <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
@@ -253,8 +253,14 @@
             </form>
 
             <form class="auth-panel" id="signupForm">
-              <h3>Student sign up</h3>
-              <input id="signupRole" type="hidden" value="student" />
+              <h3>Create account</h3>
+              <label class="field">
+                <span>Account type</span>
+                <select id="signupRole">
+                  <option value="student">Student</option>
+                  <option value="parent">Parent or guardian</option>
+                </select>
+              </label>
               <label class="field">
                 <span>Full name</span>
                 <input id="signupName" type="text" placeholder="Enter your name" autocomplete="name" required />
@@ -283,13 +289,13 @@
                 <span>Retype password</span>
                 <input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
               </label>
-              <button class="secondary-btn wide" type="submit">Create student account</button>
+              <button class="secondary-btn wide" type="submit">Create account</button>
             </form>
           </div>
-          <p class="signup-status" id="signupStatus">Students can sign up here. Tutors should apply using Become a tutor, then log in only after approval.</p>
+          <p class="signup-status" id="signupStatus">Students and parents can sign up here. Tutors should apply using Become a tutor, then log in only after approval.</p>
         </div>
         <aside class="account-side">
-          <strong>Student sign-up only</strong>
+          <strong>Student and parent sign-up</strong>
           <p>Tutors do not self-register here. Tutor logins are limited to approved tutor records in Firebase.</p>
         </aside>
       </section>

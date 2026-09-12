@@ -1702,6 +1702,18 @@ function requestRating() {
   showPage("dashboard");
 }
 
+function updateSignupMode() {
+  const role = signupRole.value;
+  const heading = signupForm.querySelector("h3");
+  const button = signupForm.querySelector("button[type='submit']");
+  heading.textContent = role === "parent" ? "Parent sign up" : "Student sign up";
+  button.textContent = role === "parent" ? "Create parent account" : "Create student account";
+  document.querySelectorAll(".parent-field").forEach((field) => {
+    field.hidden = role === "parent";
+  });
+  signupDob.required = true;
+}
+
 document.querySelector("[data-search-form]").addEventListener("submit", (event) => {
   event.preventDefault();
   if (currentAccount?.role === "tutor") {
@@ -1927,6 +1939,7 @@ reviewPageForm.addEventListener("submit", (event) => {
 });
 
 signupRole.addEventListener("change", () => {
+  updateSignupMode();
   if (!currentAccount) {
     setRole(signupRole.value);
     updateAccess();
@@ -1939,9 +1952,10 @@ signupForm.addEventListener("submit", async (event) => {
   const password = signupPassword.value;
   const confirmPassword = signupConfirmPassword.value;
   const accounts = getAccounts();
+  const role = signupRole.value === "parent" ? "parent" : "student";
   const age = ageFromDob(signupDob.value);
 
-  if (age !== null && age < 18 && (!signupParentName.value.trim() || !signupParentEmail.value.trim())) {
+  if (role === "student" && age !== null && age < 18 && (!signupParentName.value.trim() || !signupParentEmail.value.trim())) {
     signupStatus.textContent = "Parent or guardian details are required for students under 18.";
     signupStatus.classList.remove("success");
     signupParentName.focus();
@@ -1964,12 +1978,12 @@ signupForm.addEventListener("submit", async (event) => {
 
   const account = {
     uid: "",
-    role: "student",
+    role,
     name: signupName.value.trim(),
     email,
     dob: signupDob.value,
-    parentName: signupParentName.value.trim(),
-    parentEmail: signupParentEmail.value.trim().toLowerCase(),
+    parentName: role === "student" ? signupParentName.value.trim() : "",
+    parentEmail: role === "student" ? signupParentEmail.value.trim().toLowerCase() : "",
     password
   };
 
@@ -2047,7 +2061,7 @@ loginPanel.addEventListener("submit", async (event) => {
       }
       if (!isApprovedTutorAccount(cloudAccount)) {
         await auth.signOut();
-        signupStatus.textContent = "Tutor login is only available after Amy approves your tutor record in Firebase. Please use Become a tutor first if you have not applied yet.";
+        signupStatus.textContent = "Tutor login is only available after the tutrSTEM team approves your tutor record. Please use Become a tutor first if you have not applied yet.";
         signupStatus.classList.remove("success");
         return;
       }
@@ -2073,7 +2087,7 @@ loginPanel.addEventListener("submit", async (event) => {
   }
 
   if (!isApprovedTutorAccount(account)) {
-    signupStatus.textContent = "Tutor login is only available after Amy approves your tutor record in Firebase. Please use Become a tutor first if you have not applied yet.";
+    signupStatus.textContent = "Tutor login is only available after the tutrSTEM team approves your tutor record. Please use Become a tutor first if you have not applied yet.";
     signupStatus.classList.remove("success");
     loginPassword.focus();
     return;
@@ -2252,6 +2266,7 @@ async function initializeSite() {
         signupStatus.textContent = "Firebase is connected, but Firestore is not ready. Check test mode is on.";
         signupStatus.classList.remove("success");
       }
+      updateSignupMode();
       setRole(currentAccount?.role || signupRole.value);
       updateAccess();
       renderTutors();
@@ -2262,6 +2277,7 @@ async function initializeSite() {
   } else {
     const savedAccount = readStore("girlstemTutoringCurrentAccount", null);
     if (savedAccount?.email) currentAccount = savedAccount;
+    updateSignupMode();
     setRole(currentAccount?.role || signupRole.value);
     updateAccess();
     renderTutors();
