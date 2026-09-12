@@ -858,16 +858,16 @@ input[type="range"] {
   grid-column: 1 / -1;
 }
 
-.price {
+.lesson-note {
   display: grid;
   gap: 2px;
 }
 
-.price strong {
+.lesson-note strong {
   font-size: 1.15rem;
 }
 
-.price span {
+.lesson-note span {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;

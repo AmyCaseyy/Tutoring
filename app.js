@@ -212,19 +212,19 @@ const tutors = [
 const roleContent = {
   student: {
     title: "Student account",
-    text: "Book tutors, pay with Stripe, message your tutor, manage lessons, and leave ratings after completed sessions.",
+    text: "Book tutors, message your tutor, manage lessons, and leave ratings after completed sessions.",
     dash: "Student dashboard",
     mode: "Bookings and chat"
   },
   parent: {
     title: "Parent account",
-    text: "Book tutors for your child, pay with Stripe, message tutors, manage cancellations, and leave ratings after lessons.",
+    text: "Book tutors for your child, message tutors, manage cancellations, and leave ratings after lessons.",
     dash: "Parent dashboard",
     mode: "Family lessons"
   },
   tutor: {
     title: "Tutor account",
-    text: "Manage your profile, subjects, availability, student messages, bookings, ratings, and Stripe payout setup.",
+    text: "Manage your profile, subjects, availability, student messages, bookings, and ratings.",
     dash: "Tutor dashboard",
     mode: "Tutor workspace"
   }
@@ -233,8 +233,8 @@ const roleContent = {
 const roleDashboards = {
   student: {
     tools: [
-      ["Book tutors", "Browse available A-level tutors and reserve trials or paid lessons."],
-      ["Stripe checkout", "Pay securely when confirming a paid lesson."],
+      ["Book tutors", "Browse available A-level tutors and request lessons."],
+      ["Messages", "Chat with tutors once you have chosen who you want to work with."],
       ["Rate tutors", "Leave feedback once a lesson is complete."]
     ],
     lessons: [
@@ -254,7 +254,7 @@ const roleDashboards = {
   parent: {
     tools: [
       ["Book for a student", "Choose tutors and times for your child."],
-      ["Stripe payments", "Review lesson cost before checkout."],
+      ["Messages", "Keep tutor conversations and lesson arrangements together."],
       ["Tutor ratings", "Rate tutors after completed sessions."]
     ],
     lessons: [
@@ -273,9 +273,9 @@ const roleDashboards = {
   },
   tutor: {
     tools: [
-      ["Profile", "Update subjects, grades, teaching style, and hourly rate."],
+      ["Profile", "Update subjects, grades, teaching style, and session notes."],
       ["Availability", "Approve trials, block busy times, and manage recurring lessons."],
-      ["Stripe payouts", "Connect Stripe to receive lesson payouts."]
+      ["Bookings", "Review student requests and keep lesson admin organised."]
     ],
     lessons: [
       ["Today 16:30", "Trial request", "Maya wants A-level Biology support"],
@@ -299,14 +299,11 @@ const subjectFilter = document.querySelector("#subjectFilter");
 const uniFilter = document.querySelector("#uniFilter");
 const gradeFilter = document.querySelector("#gradeFilter");
 const sortFilter = document.querySelector("#sortFilter");
-const budgetFilter = document.querySelector("#budgetFilter");
-const budgetValue = document.querySelector("#budgetValue");
 const trialOnly = document.querySelector("#trialOnly");
 const matchCount = document.querySelector("#matchCount");
 const dialog = document.querySelector("#bookingDialog");
 const bookingTitle = document.querySelector("#bookingTitle");
 const lessonType = document.querySelector("#lessonType");
-const dueToday = document.querySelector("#dueToday");
 const signupForm = document.querySelector("#signupForm");
 const loginPanel = document.querySelector("#loginPanel");
 const signupRole = document.querySelector("#signupRole");
@@ -352,7 +349,6 @@ const profileName = document.querySelector("#profileName");
 const profileSubject = document.querySelector("#profileSubject");
 const profileDetail = document.querySelector("#profileDetail");
 const profileUniversity = document.querySelector("#profileUniversity");
-const profilePrice = document.querySelector("#profilePrice");
 const profileAbout = document.querySelector("#profileAbout");
 const profileSessions = document.querySelector("#profileSessions");
 const profileBadge = document.querySelector("#profileBadge");
@@ -418,7 +414,7 @@ const storage = {
 };
 
 function showPage(pageName, options = {}) {
-  const publicPages = ["home", "tutors", "how", "prices", "about", "accounts", "profile", "reviews"];
+  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews"];
   const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "trial-space", "help", "support"];
   const fallback = currentAccount ? "dashboard" : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
@@ -437,7 +433,7 @@ function showPage(pageName, options = {}) {
 
   if (nextPage === "tutors" && currentAccount?.role === "tutor") {
     nextPage = "dashboard";
-    showConfirmation("Tutor accounts use this dashboard for availability, requests, chat, ratings, and payouts.");
+    showConfirmation("Tutor accounts use this dashboard for availability, requests, chat, and ratings.");
   }
 
   if (nextPage === "profile" && currentAccount?.role === "tutor") {
@@ -819,22 +815,18 @@ function getFilteredTutors() {
   const subject = subjectFilter.value;
   const university = uniFilter.value.trim().toLowerCase();
   const minGrade = gradeFilter.value;
-  const maxBudget = Number(budgetFilter.value);
 
   const filtered = getAllTutors().filter((tutor) => {
     const nameMatch = !tutorName || tutor.name.toLowerCase().includes(tutorName);
     const subjectMatch = subject === "All" || tutor.subject === subject;
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
     const gradeMatch = minGrade === "Any" || gradeRank(tutor.grade) >= gradeRank(minGrade);
-    const budgetMatch = tutor.price <= maxBudget;
     const trialMatch = !trialOnly.checked || tutor.badges.includes("Free trial");
-    return nameMatch && subjectMatch && uniMatch && gradeMatch && budgetMatch && trialMatch;
+    return nameMatch && subjectMatch && uniMatch && gradeMatch && trialMatch;
   });
 
   return filtered.sort((a, b) => {
     if (sortFilter.value === "grade") return gradeRank(b.grade) - gradeRank(a.grade) || b.rating - a.rating;
-    if (sortFilter.value === "priceLow") return a.price - b.price;
-    if (sortFilter.value === "priceHigh") return b.price - a.price;
     if (sortFilter.value === "rating") return b.rating - a.rating;
     return b.score - a.score;
   });
@@ -843,10 +835,9 @@ function getFilteredTutors() {
 function renderTutors() {
   const visibleTutors = getFilteredTutors();
   matchCount.textContent = `${visibleTutors.length} tutor${visibleTutors.length === 1 ? "" : "s"} match`;
-  budgetValue.textContent = `GBP ${budgetFilter.value}`;
 
   if (!visibleTutors.length) {
-    tutorGrid.innerHTML = `<div class="empty-state"><h3>No tutors found</h3><p>Try widening the subject, university, grade, or budget filters.</p></div>`;
+    tutorGrid.innerHTML = `<div class="empty-state"><h3>No tutors found</h3><p>Try widening the subject, university, or grade filters.</p></div>`;
     return;
   }
 
@@ -867,9 +858,9 @@ function renderTutors() {
         ${tutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
       </div>
       <div class="card-footer">
-        <div class="price">
-          <strong>GBP ${tutor.price}/hr</strong>
-          <span>Trial: free 30 mins</span>
+        <div class="lesson-note">
+          <strong>Free trial available</strong>
+          <span>30-minute fit check</span>
         </div>
         <div class="card-actions">
           <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
@@ -1056,7 +1047,6 @@ function renderProfile(role) {
   profileSubject.value = profile.subject || (role === "tutor" ? "Biology" : "A-level Biology");
   profileDetail.value = profile.detail || (role === "tutor" ? "Exam technique and calm weekly structure" : "Mocks, confidence, and exam technique");
   profileUniversity.value = profile.university || "";
-  profilePrice.value = profile.price || "";
   profileAbout.value = profile.about || "";
   profileSessions.value = profile.sessions || "";
   profileBadge.textContent = profile.updated ? "Saved" : "Draft";
@@ -1137,7 +1127,7 @@ function renderPublicProfile() {
       <div>
         <p class="eyebrow">Tutor profile</p>
         <h2>${escapeHtml(selectedTutor.name)}</h2>
-        <p class="profile-rate">GBP ${selectedTutor.price}/hr</p>
+        <p class="profile-rate">${escapeHtml(selectedTutor.subject)} support</p>
         <p>${escapeHtml(selectedTutor.subject)} · ${escapeHtml(selectedTutor.university)}</p>
         <div class="chips">${selectedTutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}</div>
       </div>
@@ -1499,12 +1489,11 @@ function renderDashboard(role) {
 function openBooking() {
   if (!canBook()) return;
   bookingTitle.textContent = `Book ${selectedTutor.name}`;
-  updateDueToday();
   dialog.showModal();
 }
 
 function updateDueToday() {
-  dueToday.textContent = lessonType.value === "trial" ? "GBP 0.00" : `GBP ${selectedTutor.price}.00`;
+  return;
 }
 
 function setRole(role) {
@@ -1604,7 +1593,7 @@ function canBook() {
   }
 
   if (currentAccount.role === "tutor") {
-    signupStatus.textContent = "Tutor accounts manage profiles, availability, chat, ratings, and payouts. Students and parents book lessons.";
+    signupStatus.textContent = "Tutor accounts manage profiles, availability, chat, and ratings. Students and parents book lessons.";
     signupStatus.classList.remove("success");
     showPage("dashboard");
     return false;
@@ -1644,7 +1633,7 @@ function requestRating() {
 document.querySelector("[data-search-form]").addEventListener("submit", (event) => {
   event.preventDefault();
   if (currentAccount?.role === "tutor") {
-    signupStatus.textContent = "Tutor accounts use the dashboard for availability, messages, ratings, and payout setup.";
+    signupStatus.textContent = "Tutor accounts use the dashboard for availability, messages, and ratings.";
     signupStatus.classList.add("success");
     showPage("dashboard");
     return;
@@ -1678,7 +1667,7 @@ window.addEventListener("hashchange", () => {
   showPage(getRouteFromHash(), { keepScroll: true });
 });
 
-[nameFilter, subjectFilter, uniFilter, gradeFilter, sortFilter, budgetFilter, trialOnly].forEach((control) => {
+[nameFilter, subjectFilter, uniFilter, gradeFilter, sortFilter, trialOnly].forEach((control) => {
   control.addEventListener("input", renderTutors);
   control.addEventListener("change", renderTutors);
 });
@@ -1689,7 +1678,6 @@ document.querySelector("#resetFilters").addEventListener("click", () => {
   uniFilter.value = "";
   gradeFilter.value = "Any";
   sortFilter.value = "recommended";
-  budgetFilter.value = "60";
   trialOnly.checked = true;
   renderTutors();
 });
@@ -1706,7 +1694,6 @@ profileForm.addEventListener("submit", (event) => {
     subject: profileSubject.value.trim(),
     detail: profileDetail.value.trim(),
     university: currentAccount.role === "tutor" ? profileUniversity.value.trim() || "Tutor-created profile" : profileUniversity.value.trim(),
-    price: currentAccount.role === "tutor" ? Number(profilePrice.value || 35) : "",
     grade: currentAccount.role === "tutor" ? "A*" : "",
     about: currentAccount.role === "tutor"
       ? profileAbout.value.trim() || `Hi, I'm ${profileName.value.trim() || currentAccount.name}. I teach ${profileSubject.value.trim() || "A-level subjects"} and help students build confidence.`
@@ -2135,7 +2122,7 @@ lessonType.addEventListener("change", updateDueToday);
 
 dialog.addEventListener("close", () => {
   if (!currentAccount || dialog.returnValue !== "confirm") return;
-  addActivity(`Booked ${lessonType.value === "trial" ? "a free trial" : "a paid lesson"} with ${selectedTutor.name}`, "Booking");
+  addActivity(`Requested ${lessonType.value === "trial" ? "a free trial" : "a lesson"} with ${selectedTutor.name}`, "Booking");
   renderDashboard(currentAccount.role);
 });
 

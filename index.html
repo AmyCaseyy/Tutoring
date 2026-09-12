@@ -35,7 +35,6 @@
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#tutors" data-route="tutors" data-hide-tutor-nav>Find a tutor</a>
         <a href="#how" data-route="how" data-public-only>How it works</a>
-        <a href="#prices" data-route="prices" data-public-only>Prices</a>
         <a href="#about" data-route="about" data-public-only>About us</a>
         <a href="#" id="becomeTutorLink" data-public-only>Become a tutor</a>
         <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
@@ -111,13 +110,13 @@
         <div class="page-heading">
           <p class="eyebrow">How it works</p>
           <h2>Keep the journey simple.</h2>
-          <p>Students and parents find tutors first. Account tools, messages, ratings, and payments live behind the right dashboard.</p>
+          <p>Students and parents find tutors first. Account tools, messages, ratings, and bookings live behind the right dashboard.</p>
         </div>
         <div class="strip-inner">
           <article>
             <span class="step">1</span>
             <h2>Search by A-level subject</h2>
-            <p>Students enter what they study, then filter tutors by university, exam results, availability, teaching style, and price.</p>
+            <p>Students enter what they study, then filter tutors by university, exam results, availability, and teaching style.</p>
           </article>
           <article>
             <span class="step">2</span>
@@ -131,26 +130,9 @@
           </article>
           <article>
             <span class="step">4</span>
-            <h2>Pay and message</h2>
-            <p>Stripe handles checkout, platform commission, tutor payouts, receipts, and the shared chat for arrangements.</p>
+            <h2>Confirm and message</h2>
+            <p>Keep lesson requests, schedule changes, reviews, and the shared chat in one organised place.</p>
           </article>
-        </div>
-      </section>
-
-      <section class="info-page app-page" id="prices" data-page="prices">
-        <div class="page-shell">
-          <div class="page-title-row">
-            <div>
-              <p class="eyebrow">Prices</p>
-              <h2>Clear prices before every lesson.</h2>
-              <p>Students can browse tutor rates before signing up. Free trial availability, hourly price, and cancellation terms are shown before a booking is requested.</p>
-            </div>
-          </div>
-          <div class="info-grid">
-            <article><strong>Free trials</strong><span>Many tutors offer a free 30-minute trial so students can check fit first.</span></article>
-            <article><strong>Hourly lessons</strong><span>Tutor rates are shown on each profile, with filters for budget and subject.</span></article>
-            <article><strong>Secure payments</strong><span>Paid lessons can connect to Stripe checkout when the backend is added.</span></article>
-          </div>
         </div>
       </section>
 
@@ -218,17 +200,9 @@
             <select id="sortFilter">
               <option value="recommended">Recommended</option>
               <option value="grade">Highest grades</option>
-              <option value="priceLow">Price: low to high</option>
-              <option value="priceHigh">Price: high to low</option>
               <option value="rating">Highest rated</option>
             </select>
           </label>
-
-          <div class="range-row">
-            <label for="budgetFilter">Max hourly rate</label>
-            <output id="budgetValue">GBP 60</output>
-          </div>
-          <input id="budgetFilter" type="range" min="20" max="80" step="5" value="60" />
 
           <div class="toggle-row">
             <input id="trialOnly" type="checkbox" checked />
@@ -403,10 +377,6 @@
                 <label class="field tutor-profile-field">
                   <span>University or qualification</span>
                   <input id="profileUniversity" type="text" placeholder="Cambridge, Imperial, UCL..." />
-                </label>
-                <label class="field tutor-profile-field">
-                  <span>Hourly rate</span>
-                  <input id="profilePrice" type="number" min="10" max="120" step="1" placeholder="35" />
                 </label>
                 <label class="field tutor-profile-field">
                   <span>About me</span>
@@ -600,14 +570,14 @@
             <input type="datetime-local" />
           </label>
           <div class="checkout-summary">
-            <div><span>Due today</span><strong id="dueToday">GBP 0.00</strong></div>
-            <div><span>Cancellation</span><strong>Full refund before 24 hours</strong></div>
-            <div><span>After 24 hours</span><strong>Tutor is paid</strong></div>
+            <div><span>Lesson request</span><strong>Sent to tutor</strong></div>
+            <div><span>Changes</span><strong>Confirm before 24 hours</strong></div>
+            <div><span>Next step</span><strong>Tutor replies in messages</strong></div>
           </div>
         </div>
         <button class="primary-btn wide" id="stripeButton" value="confirm" type="submit">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
-          Confirm with Stripe
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+          Send booking request
         </button>
       </form>
     </dialog>
