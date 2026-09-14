@@ -419,7 +419,7 @@ const storage = {
 };
 
 function showPage(pageName, options = {}) {
-  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements"];
+  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy"];
   const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "trial-space", "help", "support"];
   const fallback = currentAccount ? "dashboard" : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
