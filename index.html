@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260913-legal-footer" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -558,7 +558,73 @@
           </div>
         </div>
       </section>
+
+      <section class="info-page app-page" id="pricing-faq" data-page="pricing-faq">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Pricing & FAQ</p>
+              <h2>Simple lesson requests, clear next steps.</h2>
+              <p>Students and parents can request a free trial, message tutors, and confirm lesson details from their account. Tutor fees and platform payment terms are explained in our Terms of Service.</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article><strong>Free trial</strong><span>Students can request a free 30-minute trial before arranging ongoing lessons.</span></article>
+            <article><strong>Booking requests</strong><span>Lesson requests are sent to tutors, who can accept, reject, or suggest another time.</span></article>
+            <article><strong>Payment terms</strong><span>Platform rules, tutor fees, cancellations, refunds, and payment terms are set out in the Terms of Service.</span></article>
+            <article><strong>Data protection</strong><span>Parent, student, tutor, booking, message, and payment-related data handling is explained in the Privacy Policy.</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="info-page app-page" id="tutor-requirements" data-page="tutor-requirements">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Tutor Requirements</p>
+              <h2>Apply to become a tutrSTEM. tutor.</h2>
+              <p>Tutors apply through the Become a Tutor form and can log in only after the tutrSTEM team approves their tutor record.</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article><strong>Academic fit</strong><span>Applicants should be confident teaching GCSE or A-Level STEM, Economics, Psychology, or admissions preparation.</span></article>
+            <article><strong>Profile quality</strong><span>Approved tutors keep subjects, levels, availability, teaching style, and profile picture up to date.</span></article>
+            <article><strong>Safeguarding</strong><span>Tutors must keep communication on tutrSTEM. and follow platform rules for online lessons.</span></article>
+            <article><strong>Approval first</strong><span>Tutor portal access is available only after approval by the tutrSTEM team.</span></article>
+          </div>
+        </div>
+      </section>
     </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img src="assets/tutrstem-wordmark.png" alt="tutrSTEM." />
+          <strong>tutrSTEM.</strong>
+          <p>Connecting students with top-tier STEM tutors.</p>
+          <span>&copy; 2026 tutrSTEM. All rights reserved.</span>
+        </div>
+        <nav class="footer-column" aria-label="Student and parent links">
+          <h2>For Students/Parents</h2>
+          <a href="#tutors" data-route="tutors">Find Tutors</a>
+          <a href="#how" data-route="how">How It Works</a>
+          <a href="#pricing-faq" data-route="pricing-faq">Pricing & FAQ</a>
+        </nav>
+        <nav class="footer-column" aria-label="Tutor links">
+          <h2>For Tutors</h2>
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform" target="_blank" rel="noopener">Become a Tutor</a>
+          <a href="#tutor-requirements" data-route="tutor-requirements">Tutor Requirements</a>
+          <a href="#accounts" data-route="accounts">Tutor Portal Login</a>
+        </nav>
+        <nav class="footer-column" aria-label="Legal and contact links">
+          <h2>Legal</h2>
+          <a href="assets/Terms-and-Conditions.docx">Terms of Service</a>
+          <a href="assets/tutrSTEM-Privacy-Policy.docx">Privacy Policy</a>
+          <a href="https://www.linkedin.com/company/tutrstem" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:tutrstem@gmail.com">tutrstem@gmail.com</a>
+        </nav>
+      </div>
+    </footer>
 
     <dialog id="bookingDialog" aria-labelledby="bookingTitle">
       <form method="dialog" class="booking-modal">
@@ -634,6 +700,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260912-loading-fix"></script>
+    <script src="app.js?v=20260913-legal-footer"></script>
   </body>
 </html>
