@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260914-legal-pages" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -35,7 +35,6 @@
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#tutors" data-route="tutors" data-hide-tutor-nav>Find a tutor</a>
         <a href="#how" data-route="how" data-public-only>How it works</a>
-        <a href="#prices" data-route="prices" data-public-only>Prices</a>
         <a href="#about" data-route="about" data-public-only>About us</a>
         <a href="#" id="becomeTutorLink" data-public-only>Become a tutor</a>
         <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
@@ -111,17 +110,17 @@
         <div class="page-heading">
           <p class="eyebrow">How it works</p>
           <h2>Keep the journey simple.</h2>
-          <p>Students and parents find tutors first. Account tools, messages, ratings, and payments live behind the right dashboard.</p>
+          <p>Students and parents find tutors first. Account tools, messages, ratings, and bookings live behind the right dashboard.</p>
         </div>
         <div class="strip-inner">
           <article>
             <span class="step">1</span>
-            <h2>Search by A-level subject</h2>
-            <p>Students enter what they study, then filter tutors by university, exam results, availability, teaching style, and price.</p>
+            <h2>Search by subject and level</h2>
+            <p>Students enter what they study, then filter tutors by university, exam results, availability, and teaching style.</p>
           </article>
           <article>
             <span class="step">2</span>
-            <h2>Trial before paying</h2>
+            <h2>Try a lesson first</h2>
             <p>Every tutor offers one free 30-minute trial so the student can check fit before committing.</p>
           </article>
           <article>
@@ -131,26 +130,9 @@
           </article>
           <article>
             <span class="step">4</span>
-            <h2>Pay and message</h2>
-            <p>Stripe handles checkout, platform commission, tutor payouts, receipts, and the shared chat for arrangements.</p>
+            <h2>Confirm and message</h2>
+            <p>Keep lesson requests, schedule changes, reviews, and the shared chat in one organised place.</p>
           </article>
-        </div>
-      </section>
-
-      <section class="info-page app-page" id="prices" data-page="prices">
-        <div class="page-shell">
-          <div class="page-title-row">
-            <div>
-              <p class="eyebrow">Prices</p>
-              <h2>Clear prices before every lesson.</h2>
-              <p>Students can browse tutor rates before signing up. Free trial availability, hourly price, and cancellation terms are shown before a booking is requested.</p>
-            </div>
-          </div>
-          <div class="info-grid">
-            <article><strong>Free trials</strong><span>Many tutors offer a free 30-minute trial so students can check fit first.</span></article>
-            <article><strong>Hourly lessons</strong><span>Tutor rates are shown on each profile, with filters for budget and subject.</span></article>
-            <article><strong>Secure payments</strong><span>Paid lessons can connect to Stripe checkout when the backend is added.</span></article>
-          </div>
         </div>
       </section>
 
@@ -159,14 +141,19 @@
           <div class="page-title-row">
             <div>
               <p class="eyebrow">About us</p>
-              <h2>STEM tutoring from people who recently sat the exams.</h2>
-              <p>tutrSTEM helps students find specialist STEM tutors, manage messages and bookings, and keep all lesson admin in one calm workspace.</p>
+              <h2>Welcome to tutrSTEM. - Specialist STEM, Economics & Psychology Tutoring</h2>
+              <p>At tutrSTEM., we specialise in subject mastery and university admissions preparation for GCSE and A-Level candidates. Working with tutors from top-tier institutions, including Cambridge and Imperial, we deliver focused instruction across STEM subjects, Economics, and Psychology.</p>
             </div>
           </div>
           <div class="info-grid">
-            <article><strong>Specialist tutors</strong><span>Profiles focus on subject, university, teaching style, reviews, and availability.</span></article>
-            <article><strong>Student-first</strong><span>Students can search before logging in, then create an account when they are ready to book.</span></article>
-            <article><strong>Organised support</strong><span>Messages, bookings, reviews, and account details live in separate pages after login.</span></article>
+            <article><strong>Our Mission</strong><span>We make rigorous, subject-specific academic support accessible and effective by matching ambitious candidates with tutors who have mastered the qualifications and entrance assessments they are working toward.</span></article>
+            <article><strong>Top-Tier Tutors</strong><span>Our network includes tutors from leading universities like Cambridge and Imperial with deep expertise in their disciplines.</span></article>
+            <article><strong>Tailored Mentorship</strong><span>Structured guidance built around exam board specifications, learning style, and academic targets.</span></article>
+            <article><strong>Specialized University Admissions</strong><span>Dedicated coaching for competitive university entrance tests and challenging academic tracks.</span></article>
+            <article><strong>Flexible Learning</strong><span>Seamless online and local sessions structured around your timetable and revision schedule.</span></article>
+            <article><strong>Academic Subjects</strong><span>GCSE and A-Level Mathematics, Further Mathematics, Statistics, Mechanics, Physics, Chemistry, Biology, Economics, Psychology, Computer Science, programming, logic, and computer systems.</span></article>
+            <article><strong>Admissions Preparation</strong><span>Support for ESAT, TMUA, MAT, STEP, Oxbridge assessments, and targeted AQA, Edexcel, OCR, and Cambridge International preparation.</span></article>
+            <article><strong>Our Story</strong><span>tutrSTEM. was created to meet the growing demand for specialised, subject-focused support across STEM, Economics, and Psychology, helping learners build the analytical skills, subject knowledge, and exam strategies needed for competitive GCSEs, A-Levels, and university entrance tests.</span></article>
           </div>
         </div>
       </section>
@@ -184,7 +171,7 @@
           </label>
 
           <label class="field">
-            <span>A-level subject</span>
+            <span>Subject</span>
             <select id="subjectFilter">
               <option value="All">All subjects</option>
               <option>Mathematics</option>
@@ -218,17 +205,9 @@
             <select id="sortFilter">
               <option value="recommended">Recommended</option>
               <option value="grade">Highest grades</option>
-              <option value="priceLow">Price: low to high</option>
-              <option value="priceHigh">Price: high to low</option>
               <option value="rating">Highest rated</option>
             </select>
           </label>
-
-          <div class="range-row">
-            <label for="budgetFilter">Max hourly rate</label>
-            <output id="budgetValue">GBP 60</output>
-          </div>
-          <input id="budgetFilter" type="range" min="20" max="80" step="5" value="60" />
 
           <div class="toggle-row">
             <input id="trialOnly" type="checkbox" checked />
@@ -247,7 +226,7 @@
           <p class="eyebrow">tutrSTEM marketplace</p>
               <h2>Browse tutors who fit your goals</h2>
             </div>
-            <p class="account-lock-note">Students and parents can book, message, pay, and rate tutors from their account.</p>
+            <p class="account-lock-note">Students and parents can book, message, and rate tutors from their account.</p>
           </div>
           <div class="tutor-grid" id="tutorGrid"></div>
         </section>
@@ -261,6 +240,7 @@
           <div class="auth-grid">
             <form class="auth-panel" id="loginPanel">
               <h3>Log in</h3>
+              <p class="form-note">Want to become a tutor? Use the Become a tutor page first. Tutor logins only work after the tutrSTEM team has approved the tutor record.</p>
               <label class="field">
                 <span>Email address</span>
                 <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
@@ -273,8 +253,14 @@
             </form>
 
             <form class="auth-panel" id="signupForm">
-              <h3>Student sign up</h3>
-              <input id="signupRole" type="hidden" value="student" />
+              <h3>Create account</h3>
+              <label class="field">
+                <span>Account type</span>
+                <select id="signupRole">
+                  <option value="student">Student</option>
+                  <option value="parent">Parent or guardian</option>
+                </select>
+              </label>
               <label class="field">
                 <span>Full name</span>
                 <input id="signupName" type="text" placeholder="Enter your name" autocomplete="name" required />
@@ -303,14 +289,14 @@
                 <span>Retype password</span>
                 <input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
               </label>
-              <button class="secondary-btn wide" type="submit">Create student account</button>
+              <button class="secondary-btn wide" type="submit">Create account</button>
             </form>
           </div>
-          <p class="signup-status" id="signupStatus">Tutor applications will use the Become a tutor form once the link is added.</p>
+          <p class="signup-status" id="signupStatus">Students and parents can sign up here. Tutors should apply using Become a tutor, then log in only after approval.</p>
         </div>
         <aside class="account-side">
-          <strong>Student sign-up only</strong>
-          <p>Tutors do not self-register here. Tutor logins will be limited to approved tutor emails once verification is connected.</p>
+          <strong>Student and parent sign-up</strong>
+          <p>Tutors do not self-register here. Tutor logins are limited to approved tutor records in Firebase.</p>
         </aside>
       </section>
 
@@ -349,7 +335,7 @@
       </section>
 
       <section class="info-page app-page" id="help" data-page="help">
-        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Help centre</p><h2>Help centre</h2><p>FAQs for bookings, payments, tutor profiles, reviews, and account access will live here.</p></div></div></div>
+        <div class="page-shell"><div class="page-title-row"><div><p class="eyebrow">Help centre</p><h2>Help centre</h2><p>FAQs for bookings, tutor profiles, reviews, and account access will live here.</p></div></div></div>
       </section>
 
       <section class="info-page app-page" id="support" data-page="support">
@@ -405,9 +391,19 @@
                   <input id="profileUniversity" type="text" placeholder="Cambridge, Imperial, UCL..." />
                 </label>
                 <label class="field tutor-profile-field">
-                  <span>Hourly rate</span>
-                  <input id="profilePrice" type="number" min="10" max="120" step="1" placeholder="35" />
+                  <span>Tutoring level</span>
+                  <select id="profileLevel">
+                    <option value="GCSE and A-Level">GCSE and A-Level</option>
+                    <option value="GCSE">GCSE</option>
+                    <option value="A-Level">A-Level</option>
+                    <option value="University admissions">University admissions</option>
+                  </select>
                 </label>
+                <label class="field tutor-profile-field">
+                  <span>Profile picture</span>
+                  <input id="profilePhoto" type="file" accept="image/*" />
+                </label>
+                <div class="profile-photo-preview tutor-profile-field" id="profilePhotoPreview" aria-label="Profile picture preview">TS</div>
                 <label class="field tutor-profile-field">
                   <span>About me</span>
                   <textarea id="profileAbout" rows="4" placeholder="Tell students who you are and what you help with."></textarea>
@@ -562,7 +558,283 @@
           </div>
         </div>
       </section>
+
+      <section class="info-page app-page" id="pricing-faq" data-page="pricing-faq">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Pricing & FAQ</p>
+              <h2>Simple lesson requests, clear next steps.</h2>
+              <p>Students and parents can request a free trial, message tutors, and confirm lesson details from their account. Tutor fees and platform payment terms are explained in our Terms of Service.</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article><strong>Free trial</strong><span>Students can request a free 30-minute trial before arranging ongoing lessons.</span></article>
+            <article><strong>Booking requests</strong><span>Lesson requests are sent to tutors, who can accept, reject, or suggest another time.</span></article>
+            <article><strong>Payment terms</strong><span>Platform rules, tutor fees, cancellations, refunds, and payment terms are set out in the Terms of Service.</span></article>
+            <article><strong>Data protection</strong><span>Parent, student, tutor, booking, message, and payment-related data handling is explained in the Privacy Policy.</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="info-page app-page" id="tutor-requirements" data-page="tutor-requirements">
+        <div class="page-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Tutor Requirements</p>
+              <h2>Apply to become a tutrSTEM. tutor.</h2>
+              <p>Tutors apply through the Become a Tutor form and can log in only after the tutrSTEM team approves their tutor record.</p>
+            </div>
+          </div>
+          <div class="info-grid">
+            <article><strong>Academic fit</strong><span>Applicants should be confident teaching GCSE or A-Level STEM, Economics, Psychology, or admissions preparation.</span></article>
+            <article><strong>Profile quality</strong><span>Approved tutors keep subjects, levels, availability, teaching style, and profile picture up to date.</span></article>
+            <article><strong>Safeguarding</strong><span>Tutors must keep communication on tutrSTEM. and follow platform rules for online lessons.</span></article>
+            <article><strong>Approval first</strong><span>Tutor portal access is available only after approval by the tutrSTEM team.</span></article>
+          </div>
+        </div>
+      </section>
+      <section class="legal-page app-page" id="terms" data-page="terms">
+        <div class="page-shell legal-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Terms of Service</p>
+              <h2>tutrSTEM. Terms and Conditions</h2>
+              <p>Platform rules, booking terms, payment terms, safeguarding expectations, and user responsibilities.</p>
+            </div>
+          </div>
+          <article class="legal-content">
+              <p>Trading as tutrSTEM., a sole trader · Last updated: 14 September 2026</p>
+              <p>By using our website at https://tutrstem.co.uk (&quot;Our Site&quot;) or any of the services described in these Terms and Conditions (together, the &quot;Services&quot;), you agree to be bound by these Terms and Conditions in full. If you do not agree to them, you must stop using Our Site and the Services immediately.</p>
+              <p>Our Site connects students studying towards GCSE and A-Level qualifications (&quot;Students&quot;) with tutors who are themselves current A-Level or university students (&quot;Tutors&quot;) for the purpose of arranging paid online tutoring sessions (&quot;Tutorials&quot;). Communication between Students and Tutors takes place through the messaging/chat facility on Our Site (&quot;Site Chat&quot;), and Tutorials themselves are conducted using Google Meet, a third-party video-calling service.</p>
+              <p>Please read these Terms and Conditions carefully. They contain important provisions limiting our liability and describing the basis on which the Services are provided. If any part of these Terms and Conditions is unclear, please contact us using the details in Part 1 below before you register or make a booking.</p>
+              <h3>Part 1 — Who We Are and How to Contact Us</h3>
+              <p>We are tutrSTEM., a sole trader (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;), trading from the United Kingdom.</p>
+              <p>You can contact us by email at tutrstem@gmail.com.</p>
+              <p>Nothing in these Terms and Conditions affects your right to contact us with a question or complaint about the Services.</p>
+              <h3>Part 2 — Definitions</h3>
+              <p>In these Terms and Conditions, the following words have the following meanings:</p>
+              <p>&quot;Account&quot; means the registered account through which a user accesses Our Site and the Services.</p>
+              <p>&quot;Content&quot; means any text, images, video, audio, messages or other material appearing on, submitted to, or transmitted through Our Site, including UGC (defined below).</p>
+              <p>&quot;Customer&quot;, &quot;you&quot; or &quot;your&quot; means a Student, or (if the Student is under 18) the Student&#x27;s Sponsor, who registers to use the Services.</p>
+              <p>&quot;Sponsor&quot; means the parent, guardian or other responsible adult who registers on behalf of a Student under the age of 18 and who is responsible for that Student&#x27;s use of the Services and for payment of Tutor Fees.</p>
+              <p>&quot;Tutorial&quot; means a pre-arranged, one-to-one or small-group online tutoring session conducted via Google Meet and booked through Our Site.</p>
+              <p>&quot;Tutor Fees&quot; means the fees payable to a Tutor for a Tutorial, as shown on Our Site at the time of booking.</p>
+              <p>&quot;Platform Fee&quot; means any additional fee we charge for the use of Our Site and the Services, as shown on Our Site at the time of booking.</p>
+              <p>&quot;UGC&quot; means any content a user uploads, posts or otherwise submits to Our Site, including profile information, messages sent via Site Chat, and feedback or ratings.</p>
+              <p>&quot;Third-Party Services&quot; means any service not operated by us that the Services rely on or link to, including without limitation Google Meet and Stripe, our secure payment processor.</p>
+              <h3>Part 3 — Eligibility and Registration</h3>
+              <p>Our Site is intended for use by residents of the United Kingdom.</p>
+              <p>If a Student is under 18 years old, a Sponsor must register and hold the Account on that Student&#x27;s behalf, and remains responsible at all times for the Student&#x27;s use of Our Site, for approving Tutorials, and for payment of all fees. A Student under 18 may not hold their own Account.</p>
+              <p>Tutors must be at least 16 years old and must be currently studying A-Levels (or equivalent) or enrolled at a university.</p>
+              <p>You must provide accurate, current and complete information when registering and must keep it up to date. You are responsible for maintaining the confidentiality of your login details and for all activity that takes place under your Account. You must tell us immediately if you suspect any unauthorised use of your Account.</p>
+              <p>We may refuse to register any person, or may suspend or close any Account, at our sole discretion and without giving a reason, in particular where we reasonably suspect the information provided is false or that these Terms and Conditions have been breached.</p>
+              <h3>Part 4 — Important Notice: Tutor Vetting and Safeguarding</h3>
+              <p>Please read this Part carefully. It is central to how the Services work.</p>
+              <p>We operate Our Site as a platform that introduces Students to Tutors. We are not a tutoring agency, an employment business, and we are not the Tutor. Tutors are independent individuals who provide Tutorials on their own account, and not as our employees, workers or agents.</p>
+              <p>Tutors are current A-Level or university students, not qualified teachers, and are not currently subject to any enhanced background check (such as a DBS check) carried out by us before they are permitted to tutor. We intend to introduce a formal vetting process in due course, but until then no such check is carried out, and any qualifications, experience, or subjects listed on a Tutor&#x27;s profile are entirely self-declared by the Tutor and are not verified, validated or checked by us in any way.</p>
+              <p>You are solely responsible for satisfying yourself as to the suitability of a Tutor before booking or continuing with any Tutorial, including by making any enquiries you consider necessary. We strongly encourage Sponsors to be involved in the selection of a Tutor for a Student under 18, and to remain reasonably aware of the arrangement.</p>
+              <p>To help keep Students safe, the following rules apply at all times and must not be circumvented:</p>
+              <p>Tutors and Students/Sponsors must communicate only via Site Chat, and Tutorials must take place only via the Google Meet link generated through Our Site. Personal contact details (phone numbers, personal email addresses, social media handles, home addresses) must never be requested, shared or used to communicate outside Our Site.</p>
+              <p>No in-person meetings should ever be arranged between a Tutor and a Student.</p>
+              <p>We strongly recommend that a Sponsor or other responsible adult is present in the home, reasonably nearby, and/or periodically checks in during Tutorials involving a Student under 18.</p>
+              <p>If a Tutor asks a Student for personal contact details, suggests meeting outside Our Site, or behaves in a way that makes you uncomfortable, you must stop the Tutorial and report it to us immediately at tutrstem@gmail.com.</p>
+              <p>We may investigate, suspend or terminate any Account and remove any Content at our sole discretion where we consider it necessary for safeguarding reasons, and we may report concerns to the relevant authorities where appropriate. We accept no liability for any delay in doing so.</p>
+              <p>Nothing in this Part 4, or elsewhere in these Terms and Conditions, creates any obligation on us to vet, supervise, or monitor any Tutorial, and to the fullest extent permitted by law we exclude all liability in connection with the conduct, competence, actions or omissions of any Tutor, whether during a Tutorial or otherwise, save as set out in Part 9.</p>
+              <h3>Part 5 — Booking, Site Chat and Google Meet</h3>
+              <p>Tutorials are booked through Our Site. A booking is only confirmed once you receive written confirmation from us or from the relevant Tutor via Our Site.</p>
+              <p>Site Chat. Site Chat is provided to facilitate arranging Tutorials. We do not actively monitor every message sent via Site Chat, although we reserve the right to review messages where we reasonably suspect misuse, a breach of these Terms and Conditions, or a safeguarding concern, and to remove any Content at our discretion.</p>
+              <p>Google Meet. Tutorials take place using Google Meet, a Third-Party Service operated by Google and not by us. Your use of Google Meet is subject to Google&#x27;s own terms of service and privacy policy, which you should check independently. We do not control, and accept no responsibility or liability for, the availability, performance, security, or functioning of Google Meet, including any outage, bug, data loss, or connection failure, or for any content or conduct that Google Meet enables or fails to prevent (such as unauthorised recording by another participant).</p>
+              <p>You are responsible for having a suitable device, a stable internet connection, and any accounts or software needed to access Site Chat and Google Meet. We accept no liability for any Tutorial that is disrupted, shortened, or cannot take place because of a problem with your equipment, software, or internet connection.</p>
+              <p>We do not record Tutorials or store any recording of them. Any recording is a matter between the Tutor and Student/Sponsor and any applicable law, and we accept no responsibility for it.</p>
+              <h3>Part 6 — Fees, Payment and Refunds</h3>
+              <p>Tutor Fees and any Platform Fee are shown on Our Site before you confirm a booking. Payment is taken through Our Site&#x27;s payment system at the time of booking (or as otherwise stated on Our Site), using Stripe, our secure third-party payment processor.</p>
+              <p>All fees are quoted in pounds sterling. We reserve the right to change fees at any time; changes will not affect a booking you have already paid for.</p>
+              <p>Cancellations by you. If you cancel or need to reschedule a Tutorial:</p>
+              <p>giving more than 24 hours&#x27; notice before the scheduled start time, you may reschedule (subject to the Tutor&#x27;s availability) or receive a full refund of the Tutor Fee;</p>
+              <p>giving 24 hours&#x27; notice or less, or if the Student fails to attend without notice, no refund will be given.</p>
+              <p>Cancellations by the Tutor. If a Tutor cancels a Tutorial, you will be offered a rescheduled Tutorial or a full refund of the Tutor Fee, at your choice.</p>
+              <p>Refund requests should be sent to tutrstem@gmail.com. Refunds are made to the original payment method and may take a number of days to reach you, depending on your bank or card provider.</p>
+              <p>You acknowledge that, because the Services are provided on demand and tailored to your booking, the standard 14-day cooling-off period under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013 may not apply once a Tutorial has been booked and confirmed; this does not affect your other statutory rights, including those summarised in Part 12.</p>
+              <p>Any dispute about a Tutor Fee should first be raised with us at tutrstem@gmail.com; we will try to help resolve it between you and the Tutor, but we are not obliged to and are not a party to that payment dispute (see Part 4.1).</p>
+              <h3>Part 7 — Acceptable Use</h3>
+              <p>You must use Our Site and the Services only for lawful purposes and in accordance with these Terms and Conditions. In particular, you must not:</p>
+              <p>behave abusively, threateningly, or in a discriminatory or harassing way towards any Tutor, Student, Sponsor or member of our team;</p>
+              <p>post or transmit any content that is unlawful, defamatory, obscene, or otherwise objectionable;</p>
+              <p>share, or ask another user to share, personal contact details or attempt to communicate or transact outside Our Site (see Part 4.4);</p>
+              <p>attempt to gain unauthorised access to Our Site, another user&#x27;s Account, or any system connected to Our Site;</p>
+              <p>introduce any virus, malware or other harmful code, or attempt a denial-of-service attack against Our Site;</p>
+              <p>use Our Site for any purpose other than arranging and receiving genuine tutoring services.</p>
+              <p>If you breach this Part 7, we may suspend or terminate your Account immediately, remove any relevant Content, and/or take any other action we reasonably consider appropriate, without any liability to you.</p>
+              <h3>Part 8 — Content and Intellectual Property</h3>
+              <p>All Content on Our Site (excluding UGC) — including text, design, logos and software — belongs to us or our licensors and is protected by copyright and other intellectual property laws. You may view and print pages from Our Site for your own personal, non-commercial use only.</p>
+              <p>By submitting UGC (including messages, profile information, and feedback) you grant us a non-exclusive, royalty-free, worldwide licence to use, store, reproduce and display that UGC solely for the purposes of operating and improving the Services (for example, showing feedback on a Tutor&#x27;s profile). You remain responsible for anything you submit and confirm that it does not infringe any third party&#x27;s rights.</p>
+              <p>Any teaching materials a Tutor prepares themselves remain that Tutor&#x27;s property, and are shared with a Student solely for that Student&#x27;s personal study use.</p>
+              <h3>Part 9 — Disclaimers and Limitation of Liability</h3>
+              <p>Please read this Part carefully — it sets out important limits on our responsibility to you.</p>
+              <p>Our Site and the Services are provided on an &quot;as is&quot; and &quot;as available&quot; basis. We do not guarantee that Our Site will be available, uninterrupted, secure, or error-free at all times, and we may suspend or withdraw all or part of the Services at any time.</p>
+              <p>We are a platform, not a tutor. We do not deliver, supervise or guarantee the quality, accuracy, or outcome of any Tutorial. We give no warranty as to any Tutor&#x27;s competence, qualifications, conduct, punctuality, or the academic results a Student may or may not achieve. Any advice, teaching, or information given by a Tutor is given by that Tutor personally, and not by us or on our behalf.</p>
+              <p>To the fullest extent permitted by law, we exclude all conditions, warranties, representations and other terms which might otherwise apply to Our Site or the Services, whether express or implied.</p>
+              <p>Nothing in these Terms and Conditions excludes or limits our liability for: death or personal injury caused by our negligence; fraud or fraudulent misrepresentation; or any other liability which cannot lawfully be excluded or limited under English law (including certain rights you have as a consumer under the Consumer Rights Act 2015).</p>
+              <p>Subject always to clause 9.4, and to the fullest extent permitted by law:</p>
+              <p>we exclude all liability for any loss or damage arising out of or in connection with the conduct, actions, omissions, advice, or content of any Tutor, or any interaction between users, whether occurring on Our Site, via Site Chat, or during a Tutorial on Google Meet;</p>
+              <p>we exclude all liability for any loss or damage arising from Third-Party Services (including Google Meet and Stripe, our secure payment processor), or from your equipment, software, or internet connection;</p>
+              <p>we exclude all liability for loss of profit, business, opportunity, goodwill, anticipated savings, or for any indirect or consequential loss, however arising; and</p>
+              <p>our total liability to you arising out of or in connection with these Terms and Conditions and your use of the Services, whether in contract, tort (including negligence), or otherwise, shall not exceed the total amount you have paid to us in the three months before the event giving rise to the claim.</p>
+              <p>If you are a consumer, this Part 9 does not affect your statutory rights (see Part 12), and we only supply the Services for domestic and private use. You agree not to use the Services for any commercial purpose.</p>
+              <h3>Part 10 — Indemnity</h3>
+              <p>To the fullest extent permitted by law, you agree to indemnify us against any claims, losses, damages, costs or expenses (including reasonable legal fees) arising out of or in connection with: your breach of these Terms and Conditions; any UGC you submit; or your, or (in the case of a Sponsor) a Student&#x27;s, misuse of Our Site or the Services. This does not apply to the extent a claim arises from our own negligence, fraud, or breach of a right that cannot lawfully be excluded.</p>
+              <h3>Part 11 — Suspension, Termination and Changes</h3>
+              <p>You may close your Account at any time by contacting us. This will not affect any Tutorial already booked and paid for, which will be dealt with in line with Part 6.</p>
+              <p>We may suspend or terminate your Account immediately, without notice, if we reasonably believe you have breached these Terms and Conditions (including Parts 4 or 7), provided false information, or acted in a way that could put a Student&#x27;s safety, or our reputation, at risk.</p>
+              <p>We may change these Terms and Conditions at any time. The version in force at the time you use Our Site or make a booking applies to that use. We will try to give reasonable notice of significant changes where we can (for example, by email or a notice on Our Site).</p>
+              <p>We may also change or discontinue Our Site or any part of the Services at any time.</p>
+              <h3>Part 12 — Your Legal Rights</h3>
+              <p>Nothing in these Terms and Conditions affects your statutory rights as a consumer. In summary, the Consumer Rights Act 2015 provides that a service must be carried out with reasonable care and skill, within a reasonable time if no time was agreed, and for a reasonable price if none was agreed. Further information about your rights is available from Citizens Advice at www.citizensadvice.org.uk or by calling 0800 144 8848.</p>
+              <h3>Part 13 — Data Protection</h3>
+              <p>We will only use your personal information as set out in our Privacy Policy, available at https://tutrstem.co.uk/#privacy. By using Our Site, you confirm that you have read and understood it.</p>
+              <h3>Part 14 — General</h3>
+              <p>No partnership. Nothing in these Terms and Conditions creates a partnership, agency, or employment relationship between you, us, and/or any Tutor.</p>
+              <p>Severability. If any part of these Terms and Conditions is found to be invalid or unenforceable, the rest will remain in full force and effect.</p>
+              <p>Assignment. You may not transfer your rights or obligations under these Terms and Conditions without our written consent. We may transfer ours at any time.</p>
+              <p>Entire agreement. These Terms and Conditions, together with our Privacy Policy, form the entire agreement between you and us relating to your use of Our Site and the Services.</p>
+              <p>Third-party rights. No one other than you and us has any right to enforce these Terms and Conditions.</p>
+              <p>Governing law and jurisdiction. These Terms and Conditions are governed by the law of England and Wales. If you are a consumer, any dispute will be subject to the jurisdiction of the courts of the part of the UK in which you live; otherwise, the courts of England and Wales will have exclusive jurisdiction.</p>
+              <p>These Terms and Conditions were prepared as a starting template and have not been reviewed by a solicitor. Given that the Services involve under-18 users, we recommend having them checked by a solicitor with safeguarding and consumer-contract experience before publishing them live, and putting a separate Safeguarding Policy and Privacy Policy in place alongside them.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="legal-page app-page" id="privacy" data-page="privacy">
+        <div class="page-shell legal-shell">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Privacy Policy</p>
+              <h2>tutrSTEM Privacy Policy</h2>
+              <p>How tutrSTEM. stores parent, student, tutor, booking, message, and payment-related data.</p>
+            </div>
+          </div>
+          <article class="legal-content">
+              <p>Last updated: 14 September 2026</p>
+              <p>tutrSTEM (&quot;tutrSTEM&quot;, &quot;we&quot;, &quot;us&quot; or &quot;our&quot;) operates the website https://tutrstem.co.uk (the &quot;Site&quot;) and the tutoring services offered through it (the &quot;Services&quot;). tutrSTEM is currently operated as a sole trader business, and for the purposes of UK data protection law is the &quot;data controller&quot; of the personal information described in this policy.</p>
+              <p>This policy explains what personal information we collect from users of the Site — whether you are a parent, a pupil/student, or a tutor — how and why we use it, who we share it with, and what rights you have over it. It should be read alongside our Terms of Service and Cookie Policy (see Section 8 below).</p>
+              <p>We may update this policy from time to time. If we make significant changes we will update the &quot;last updated&quot; date above and, where appropriate, let you know directly.</p>
+              <p>1. Who this policy applies to</p>
+              <p>References in this policy to &quot;you&quot; mean any user of the Site, including:</p>
+              <p>Clients — parents, guardians or students who book tutoring through tutrSTEM; and</p>
+              <p>Tutors — individuals who apply to, and are accepted to, offer tutoring services through tutrSTEM.</p>
+              <p>tutrSTEM operates as a marketplace: we connect independent tutors with students and parents, and facilitate bookings, communication and payment between them through the Site.</p>
+              <p>2. Information we collect</p>
+              <p>2.1 Information you give us directly</p>
+              <p>To create an account and use the Services, we ask you to provide certain personal information. Depending on whether you are a parent, student or tutor, this may include:</p>
+              <p>Account information: your name, email address, phone number, and (for students) age range or year group, so we can set up and manage your account.</p>
+              <p>Tutor application details: if you apply to tutor with us, your subjects and levels taught, educational background and qualifications, a profile photo, a short bio or introduction video, your hourly rate, and your availability.</p>
+              <p>Communications: messages you send to other users through the Site, enquiries and requests you make, and your correspondence with tutrSTEM support.</p>
+              <p>Booking information: details of lessons booked or requested, including subject, level, scheduling, and status (e.g. confirmed, completed, cancelled).</p>
+              <p>Referral and promotional information: details of any referral codes or promotional offers you share or redeem.</p>
+              <p>We do not currently carry out DBS (criminal record) checks, record tutoring sessions, or run a schools referral programme. If this changes, we will update this policy and tell you before doing so.</p>
+              <p>2.2 Information we collect automatically</p>
+              <p>When you use the Site, we automatically collect some technical information, including your IP address, device and browser type, the pages you visit, how you got to the Site, and the date, time and duration of your visit. This helps us keep the Site secure, understand how it is used, and improve it. See our Cookie Policy (Section 8) for details of the specific technologies we use to collect this information.</p>
+              <p>2.3 Information we receive from other sources</p>
+              <p>Reviews: if a client leaves a review of a tutor after a lesson, that review (and the fact that it came from a specific booking) is shared with the tutor and may be displayed publicly on the tutor&#x27;s profile.</p>
+              <p>Other sources: where permitted by law, we may receive information about you from other users of the Site (for example, if someone reports a concern about your account) or from third parties such as fraud prevention services.</p>
+              <p>2.4 Financial information</p>
+              <p>To process payments, tutors provide us with bank account details for payouts, and clients provide payment card details, which are processed by Stripe, our secure third-party payment provider (see Section 6). We do not store full card numbers ourselves. We keep records of invoices, payments made and received, and payment history for accounting and tax purposes.</p>
+              <p>3. How we use your information</p>
+              <p>We use your personal information for the following purposes.</p>
+              <p>To provide the Services (performance of our contract with you):</p>
+              <p>creating and administering your account;</p>
+              <p>enabling tutors to build and publish a profile, and enabling clients to search for and book tutors;</p>
+              <p>facilitating communication and bookings between clients and tutors;</p>
+              <p>processing payments to and from you;</p>
+              <p>providing customer support; and</p>
+              <p>sending essential service communications (e.g. booking confirmations, account notices).</p>
+              <p>For our legitimate business interests:</p>
+              <p>keeping the Site secure and preventing fraud, spam or abuse;</p>
+              <p>understanding how the Site is used so we can maintain and improve it;</p>
+              <p>enforcing our Terms of Service; and</p>
+              <p>meeting our safeguarding responsibilities where we become aware of a concern about a user&#x27;s safety or conduct.</p>
+              <p>With your consent:</p>
+              <p>sending you marketing communications about tutrSTEM&#x27;s own services (see Section 4); and</p>
+              <p>any other purpose for which we specifically ask your permission.</p>
+              <p>To comply with the law:</p>
+              <p>meeting our tax, accounting and other legal or regulatory obligations.</p>
+              <p>4. Marketing communications</p>
+              <p>We may send you email updates about tutrSTEM&#x27;s own services, such as new features, tips for getting the most from tutoring, or occasional offers. You can opt out of these at any time by using the unsubscribe link included in every marketing email, or by emailing tutrstem@gmail.com with &quot;UNSUBSCRIBE&quot; in the subject line. Opting out of marketing does not affect essential service emails (such as booking confirmations), which we need to send you to provide the Services.</p>
+              <p>We do not sell your personal information to third parties for their own marketing purposes, and we do not currently share your details with third parties for their direct marketing.</p>
+              <p>5. Legal bases for processing</p>
+              <p>Under UK data protection law, we rely on the following legal bases to process your personal information:</p>
+              <p>Contract — processing necessary to provide the Services you have signed up for, such as managing bookings and payments.</p>
+              <p>Legitimate interests — processing necessary for our legitimate business interests (such as keeping the Site secure, preventing misuse, and improving our Services), provided this is not overridden by your own rights and interests.</p>
+              <p>Consent — where we ask for your specific permission, such as for marketing emails. You can withdraw consent at any time.</p>
+              <p>Legal obligation — where we need to process information to comply with the law, such as keeping financial records for tax purposes.</p>
+              <p>6. Who we share your information with</p>
+              <p>Other users of the Site. If you book a tutor, the tutor receives the information needed to deliver the lesson (such as your first name, the subject/level requested, and your messages). If you are a tutor, the profile information you provide (name, subjects, qualifications, photo, rate, reviews) is visible to prospective clients browsing the Site.</p>
+              <p>Service providers. We use a small number of third-party providers to help us run tutrSTEM, including:</p>
+              <p>Stripe, our secure payment processor, to handle card payments and payouts;</p>
+              <p>email and messaging tools, to enable communications and notifications; and</p>
+              <p>website hosting and basic analytics tools, to run and understand use of the Site.</p>
+              <p>We only share the information these providers need to perform their function, and we require them to keep it secure and use it only for the purposes we specify.</p>
+              <p>Legal and safety reasons. We may disclose personal information where we reasonably believe it is necessary to comply with the law, to respond to a valid legal request, to enforce our Terms of Service, or to protect the safety, rights or property of tutrSTEM, our users, or others.</p>
+              <p>Business transfers. If tutrSTEM&#x27;s business, or part of it, is sold or transferred, personal information may be transferred as part of that transaction, subject to the same protections described in this policy.</p>
+              <p>7. International transfers</p>
+              <p>Some of our service providers may store or process information outside the UK (for example, a payment or email provider based in the US or EU). Where this happens, we take steps to ensure your information remains protected to a standard consistent with UK data protection law — for example, by using providers that participate in an approved data protection framework, or by relying on standard contractual clauses approved for use under UK law. You can contact us for more information about the safeguards in place for any particular transfer.</p>
+              <p>8. Cookies</p>
+              <p>We use cookies and similar technologies on the Site. Strictly necessary cookies keep the Site working (for example, keeping you logged in); with your consent, we may also use analytics cookies to help us understand how the Site is used, so we can improve it. You can control or delete cookies through your browser settings at any time — see your browser&#x27;s help pages for instructions (Chrome, Firefox, Safari and Edge all publish these). Blocking non-essential cookies will not stop you using the core features of the Site, but some strictly necessary cookies cannot be disabled without affecting how the Site works.</p>
+              <p>9. How we protect your information</p>
+              <p>We take reasonable technical and organisational steps to protect your personal information, including using encrypted (HTTPS) connections between your browser and our Site, and limiting access to personal information to what is needed to run tutrSTEM. No method of transmission over the internet is completely secure, so while we work hard to protect your information, we cannot guarantee its absolute security — for example, we are not responsible for the security of information you choose to send us by unencrypted email.</p>
+              <h3>10. How long we keep your information</h3>
+              <p>We keep personal information for as long as your account is active, and for a reasonable period afterwards in case you wish to reactivate it or raise a query about past bookings. We will delete or anonymise your personal information when it is no longer needed for these purposes, unless we are required to keep it for longer to meet a legal, tax or accounting obligation, or to resolve a dispute. Where possible, information you have shared with other users (such as a review) may remain visible after your account is deleted, but will no longer be linked to identifying details about you.</p>
+              <h3>11. Children and parents</h3>
+              <p>tutrSTEM&#x27;s Services are intended to support the tutoring of school-age students. Where a student is under 18, we expect a parent or guardian to set up and manage the account, book lessons, and agree to our Terms of Service on the student&#x27;s behalf. If you are a parent or guardian and believe your child has provided us with personal information other than as described above, please contact us at tutrstem@gmail.com and we will address this.</p>
+              <h3>12. Your rights</h3>
+              <p>Under UK data protection law, you have the right to:</p>
+              <p>access the personal information we hold about you;</p>
+              <p>ask us to correct inaccurate or incomplete information;</p>
+              <p>ask us to delete your information in certain circumstances;</p>
+              <p>ask us to restrict how we use your information, or object to processing based on our legitimate interests or for direct marketing;</p>
+              <p>ask us to provide your information in a portable, machine-readable format, where we process it by automated means with your consent or to perform a contract; and</p>
+              <p>withdraw consent at any time, where we rely on your consent to process your information.</p>
+              <p>To exercise any of these rights, please email tutrstem@gmail.com. We will respond within one month. We may need to verify your identity before actioning your request, and in some cases the law allows us to decline a request — if so, we will explain why.</p>
+              <h3>13. Complaints</h3>
+              <p>We hope we can resolve any concern you have about how we handle your personal information — please contact us first at tutrstem@gmail.com. You also have the right to complain to the UK&#x27;s data protection regulator, the Information Commissioner&#x27;s Office (ICO), at ico.org.uk or by calling 0303 123 1113.</p>
+              <h3>14. Contact us</h3>
+              <p>If you have any questions about this policy or how we handle your personal information, please contact us at:</p>
+              <p>tutrSTEM Email: tutrstem@gmail.com Website: https://tutrstem.co.uk</p>
+          </article>
+        </div>
+      </section>
     </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img src="assets/tutrstem-wordmark.png" alt="tutrSTEM." />
+          <strong>tutrSTEM.</strong>
+          <p>Connecting students with top-tier STEM tutors.</p>
+          <span>&copy; 2026 tutrSTEM. All rights reserved.</span>
+        </div>
+        <nav class="footer-column" aria-label="Student and parent links">
+          <h2>For Students/Parents</h2>
+          <a href="#tutors" data-route="tutors">Find Tutors</a>
+          <a href="#how" data-route="how">How It Works</a>
+          <a href="#pricing-faq" data-route="pricing-faq">Pricing & FAQ</a>
+        </nav>
+        <nav class="footer-column" aria-label="Tutor links">
+          <h2>For Tutors</h2>
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform" target="_blank" rel="noopener">Become a Tutor</a>
+          <a href="#tutor-requirements" data-route="tutor-requirements">Tutor Requirements</a>
+          <a href="#accounts" data-route="accounts">Tutor Portal Login</a>
+        </nav>
+        <nav class="footer-column" aria-label="Legal and contact links">
+          <h2>Legal</h2>
+          <a href="#terms" data-route="terms">Terms of Service</a>
+          <a href="#privacy" data-route="privacy">Privacy Policy</a>
+          <a href="https://www.linkedin.com/company/tutrstem" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="mailto:tutrstem@gmail.com">tutrstem@gmail.com</a>
+        </nav>
+      </div>
+    </footer>
 
     <dialog id="bookingDialog" aria-labelledby="bookingTitle">
       <form method="dialog" class="booking-modal">
@@ -599,15 +871,15 @@
             <span>Preferred time</span>
             <input type="datetime-local" />
           </label>
-          <div class="checkout-summary">
-            <div><span>Due today</span><strong id="dueToday">GBP 0.00</strong></div>
-            <div><span>Cancellation</span><strong>Full refund before 24 hours</strong></div>
-            <div><span>After 24 hours</span><strong>Tutor is paid</strong></div>
+          <div class="request-summary">
+            <div><span>Lesson request</span><strong>Sent to tutor</strong></div>
+            <div><span>Changes</span><strong>Confirm before 24 hours</strong></div>
+            <div><span>Next step</span><strong>Tutor replies in messages</strong></div>
           </div>
         </div>
-        <button class="primary-btn wide" id="stripeButton" value="confirm" type="submit">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
-          Confirm with Stripe
+        <button class="primary-btn wide" id="bookingRequestButton" value="confirm" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+          Send booking request
         </button>
       </form>
     </dialog>
@@ -666,6 +938,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js"></script>
+    <script src="app.js?v=20260914-legal-pages"></script>
   </body>
 </html>
