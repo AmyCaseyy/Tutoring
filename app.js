@@ -1470,6 +1470,37 @@ function bookingStatusClass(status = "Pending tutor approval") {
   return status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
+function localDateTimeInputValue(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function nextTenMinuteSlot(date = new Date()) {
+  const next = new Date(date.getTime());
+  next.setSeconds(0, 0);
+  const remainder = next.getMinutes() % 10;
+  if (remainder) next.setMinutes(next.getMinutes() + (10 - remainder));
+  if (next.getTime() <= date.getTime()) next.setMinutes(next.getMinutes() + 10);
+  return next;
+}
+
+function updateBookingDateConstraints() {
+  if (!bookingDateTime) return;
+  bookingDateTime.step = "600";
+  bookingDateTime.min = localDateTimeInputValue(nextTenMinuteSlot());
+}
+
+function validateBookingDateTime(value) {
+  if (!value) return "Choose a lesson time.";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Choose a valid lesson time.";
+  if (date.getTime() <= Date.now()) return "Choose a future lesson time.";
+  if (date.getMinutes() % 10 !== 0 || date.getSeconds() !== 0 || date.getMilliseconds() !== 0) {
+    return "Lesson times must start on a 10-minute slot, for example 19:30, 19:40, or 19:50.";
+  }
+  return "";
+}
+
 function updateBookingEverywhere(id, updates) {
   const allBookings = readStore(storage.bookings, {});
   Object.keys(allBookings).forEach((key) => {
@@ -1486,20 +1517,23 @@ function updateBookingEverywhere(id, updates) {
 
 function bookingActions(booking) {
   const id = escapeHtml(booking.id);
+  const status = booking.status || "Pending tutor approval";
+  if (["Cancelled by student", "Cancelled by tutor"].includes(status)) return "";
+  const needsTutorDecision = status === "Pending tutor approval" || status === "Reschedule requested by student";
 
   if (currentAccount?.role === "tutor") {
     return `
-      <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
-      <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>
+      ${needsTutorDecision ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>` : ""}
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by tutor" data-booking-id="${id}">Suggest time</button>
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Cancelled by tutor" data-booking-id="${id}">Cancel</button>
       ${booking.studentEmail ? `<button class="secondary-btn compact-btn" type="button" data-view-student="${escapeHtml(booking.studentEmail)}">Student</button>` : ""}
     `;
   }
 
   return `
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept time</button>
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject time</button>
     <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by student" data-booking-id="${id}">Reschedule</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Cancelled by student" data-booking-id="${id}">Cancel</button>
   `;
 }
 
@@ -1507,7 +1541,7 @@ function checkLessonReminders() {
   const allBookings = readStore(storage.bookings, {});
   const now = Date.now();
   Object.values(allBookings).flat().forEach((booking) => {
-    if (!booking.dateTime || booking.status === "Rejected") return;
+    if (!booking.dateTime || ["Rejected", "Cancelled by student", "Cancelled by tutor"].includes(booking.status)) return;
     const start = new Date(booking.dateTime).getTime();
     const minsUntil = (start - now) / 60000;
     if (minsUntil > 0 && minsUntil <= 10) {
@@ -1581,6 +1615,7 @@ function renderBookingsPage() {
       control.disabled = true;
     });
   } else {
+    updateBookingDateConstraints();
     const availableTutors = getAllTutors();
     bookingPersonLabel.textContent = "Tutor";
     bookingSubmitButton.textContent = "Book lesson";
@@ -1595,7 +1630,7 @@ function renderBookingsPage() {
   bookingsPageTitle.textContent = currentAccount.role === "tutor" ? "Lesson requests" : "Bookings";
   bookingsPageCopy.textContent = currentAccount.role === "tutor"
     ? "Accept, reject, or request a new time for student and parent booking requests."
-    : "Request a lesson time, then accept, reject, or reschedule if the tutor suggests a change.";
+    : "Request a lesson time, then reschedule or cancel if plans change.";
 
   const bookings = getBookings();
   const now = Date.now();
@@ -1970,6 +2005,14 @@ bookingPageForm.addEventListener("submit", async (event) => {
   }
 
   if (!canBook()) return;
+
+  const bookingTimeError = validateBookingDateTime(bookingDateTime.value);
+  if (bookingTimeError) {
+    signupStatus.textContent = bookingTimeError;
+    signupStatus.classList.remove("success");
+    bookingDateTime.focus();
+    return;
+  }
 
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value) || selectedTutor;
   selectedTutor = tutor;
