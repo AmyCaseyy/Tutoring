@@ -932,7 +932,7 @@ function getStudentAccounts() {
 
 function getStudentsForTutor() {
   const bookings = getBookings();
-  const bookedEmails = new Set(bookings.map((booking) => booking.studentEmail).filter(Boolean));
+  const bookedEmails = new Set(bookings.map((booking) => normalizeEmail(booking.studentEmail)).filter(Boolean));
   const messageEmails = cloudMessages
     .flatMap((message) => message.participantEmails || [])
     .map(normalizeEmail)
@@ -960,8 +960,8 @@ function getStudentsForTutor() {
     }
   });
   const students = [...studentsByEmail.values()];
-  const bookedStudents = students.filter((account) => bookedEmails.has(account.email));
-  const otherStudents = students.filter((account) => !bookedEmails.has(account.email));
+  const bookedStudents = students.filter((account) => bookedEmails.has(normalizeEmail(account.email)));
+  const otherStudents = students.filter((account) => !bookedEmails.has(normalizeEmail(account.email)));
   return [...bookedStudents, ...otherStudents];
 }
 
@@ -2080,6 +2080,12 @@ window.addEventListener("hashchange", () => {
   control.addEventListener("change", renderTutors);
 });
 
+bookingTutorSearch?.addEventListener("input", renderBookingTutorOptions);
+bookingTutor?.addEventListener("change", () => {
+  const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value);
+  if (tutor) selectedTutor = tutor;
+});
+
 document.querySelector("#resetFilters").addEventListener("click", () => {
   nameFilter.value = "";
   subjectFilter.value = "All";
@@ -2189,9 +2195,15 @@ bookingPageForm.addEventListener("submit", async (event) => {
   }
 
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value) || selectedTutor;
+  if (!tutor || !bookingTutor.value) {
+    signupStatus.textContent = "Choose a tutor before booking.";
+    signupStatus.classList.remove("success");
+    bookingTutor.focus();
+    return;
+  }
   selectedTutor = tutor;
   const items = getBookings();
-  let booking = {
+  const baseBooking = {
     id: createId("booking"),
     tutor: tutor.name,
     tutorEmail: tutorEmail(tutor),
@@ -2204,30 +2216,32 @@ bookingPageForm.addEventListener("submit", async (event) => {
     studentEmail: currentAccount.email,
     created: nowLabel()
   };
+  let savedBookings = buildBookingSeries(baseBooking);
   try {
-    booking = await saveBookingToCloud(booking);
+    savedBookings = await Promise.all(savedBookings.map((booking) => saveBookingToCloud(booking)));
   } catch {
-    booking.id = createId("booking");
     showConfirmation("Booking saved on this device, but Firebase did not accept it yet. Check Firestore is still in test mode.");
   }
-  items.push(booking);
+  items.push(...savedBookings);
   saveBookings(items);
 
   if (tutor.email) {
     const allBookings = readStore(storage.bookings, {});
     const tutorItems = allBookings[tutor.email] || [];
-    tutorItems.push({
+    tutorItems.push(...savedBookings.map((booking) => ({
       ...booking,
       initials: initialsFromName(currentAccount.name)
-    });
+    })));
     allBookings[tutor.email] = tutorItems;
     writeStore(storage.bookings, allBookings);
   }
 
   bookingDateTime.value = "";
-  queueEmail(booking.tutorEmail, "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} for ${formatBookingDate(booking.dateTime)}.`, {
-    key: `new-booking-${booking.id}`,
-    bookingId: booking.id
+  const firstBooking = savedBookings[0];
+  queueEmail(firstBooking.tutorEmail, "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${savedBookings.length > 1 ? ` (${savedBookings.length} upcoming lessons created)` : ""}.`, {
+    key: `new-booking-${firstBooking.id}`,
+    bookingId: firstBooking.id,
+    bookingIds: savedBookings.map((booking) => booking.id)
   });
   addActivity(`Requested ${bookingLessonType.value} with ${tutor.name}`, "Booking");
   checkLessonReminders();
