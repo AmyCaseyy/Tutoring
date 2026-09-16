@@ -45,6 +45,7 @@
       <div class="top-actions">
         <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages" data-auth-only>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+          <span class="message-badge icon-message-badge" id="topMessageBadge" hidden>0</span>
         </button>
         <a class="secondary-btn" href="#accounts" data-route="accounts" data-guest-only>Log in</a>
         <a class="primary-btn" href="#accounts" data-route="accounts" data-guest-only>Sign up</a>
@@ -226,22 +227,14 @@
       </section>
 
       <section class="account-zone app-page" id="accounts" data-page="accounts">
-        <div class="account-shell">
-          <div class="account-topbar">
-            <a class="brand text-brand" href="#home" data-route="home">tutrSTEM.</a>
-            <button class="account-close" type="button" data-route="home" aria-label="Close">×</button>
-          </div>
-
-          <div class="account-login-view" id="accountLoginView">
-            <h2 id="accountTitle">Log in</h2>
-            <p id="accountText">Choose the account you want to access.</p>
-            <div class="login-choice-list">
-              <button class="login-choice-card" type="button" data-login-role="parent"><span>Parent log in</span></button>
-              <button class="login-choice-card" type="button" data-login-role="student"><span>Student log in</span></button>
-              <button class="login-choice-card tutor-login-card" type="button" data-login-role="tutor"><span>Tutor log in</span></button>
-            </div>
-            <form class="auth-panel login-form-panel" id="loginPanel" hidden>
+        <div class="account-copy" id="accountLoginView">
+          <p class="eyebrow">Log in</p>
+          <h2 id="accountTitle">Welcome back</h2>
+          <p id="accountText">Students, parents, and approved tutors can create or access the right account area here.</p>
+          <div class="auth-grid">
+            <form class="auth-panel" id="loginPanel">
               <h3 id="loginPanelTitle">Log in</h3>
+              <p class="form-note">Want to become a tutor? Apply first using Become a Tutor. Tutor access only works after the tutrSTEM team approves the exact email.</p>
               <label class="field">
                 <span>Email address</span>
                 <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
@@ -252,103 +245,54 @@
               </label>
               <button class="primary-btn wide" type="submit">Log in</button>
             </form>
-            <button class="text-link account-switch" type="button" id="showSignupFlow">Create a student or parent account</button>
-          </div>
 
-          <form class="signup-wizard" id="signupForm" hidden>
-            <h3>Create account</h3>
-            <div class="signup-progress"><span id="signupProgressBar"></span></div>
-            <p class="signup-context" id="signupContext">Subject: <strong>Not chosen</strong> | Level: <strong>Not chosen</strong></p>
-
-            <section class="signup-step active" data-signup-step="subject">
-              <h2>Which subject do you need a tutor for?</h2>
-              <p>Choose one to help us show the right tutors.</p>
-              <div class="option-grid subject-options">
-                <button type="button" data-subject-choice="Mathematics">Maths</button>
-                <button type="button" data-subject-choice="Further Mathematics">Further Maths</button>
-                <button type="button" data-subject-choice="Biology">Biology</button>
-                <button type="button" data-subject-choice="Chemistry">Chemistry</button>
-                <button type="button" data-subject-choice="Physics">Physics</button>
-                <button type="button" data-subject-choice="Computer Science">Computer Science</button>
-                <button type="button" data-subject-choice="Economics">Economics</button>
-                <button type="button" data-subject-choice="Psychology">Psychology</button>
-              </div>
-              <label class="field compact-field">
-                <span>Or search a subject</span>
-                <select id="signupSubject">
-                  <option value="">Search a subject</option>
-                  <option>Mathematics</option>
-                  <option>Further Mathematics</option>
-                  <option>Biology</option>
-                  <option>Chemistry</option>
-                  <option>Physics</option>
-                  <option>Computer Science</option>
-                  <option>Economics</option>
-                  <option>Psychology</option>
+            <form class="auth-panel" id="signupForm">
+              <h3>Create account</h3>
+              <label class="field">
+                <span>Account type</span>
+                <select id="signupRole">
+                  <option value="student">Student</option>
+                  <option value="parent">Parent or guardian</option>
+                  <option value="tutor">Approved tutor</option>
                 </select>
               </label>
-            </section>
-
-            <section class="signup-step" data-signup-step="level">
-              <h2>Which level are you looking for?</h2>
-              <p>This helps us find tutors with the right experience.</p>
-              <div class="option-stack">
-                <button type="button" data-level-choice="GCSE">GCSE</button>
-                <button type="button" data-level-choice="A-Level">A-Level</button>
-              </div>
-            </section>
-
-            <section class="signup-step" data-signup-step="role">
-              <h2>Are you a parent or a student?</h2>
-              <div class="option-stack">
-                <button type="button" data-role-choice="parent">Parent or guardian</button>
-                <button type="button" data-role-choice="student">Student</button>
-                <button type="button" data-role-choice="student">Student (18+)</button>
-              </div>
-              <p class="wizard-link">Looking to become a tutor? <a href="https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform" target="_blank" rel="noopener">Apply here</a></p>
-            </section>
-
-            <section class="signup-step" data-signup-step="name">
-              <h2>What’s your full name?</h2>
-              <label class="field solo-field"><input id="signupName" type="text" placeholder="Type your first and last name" autocomplete="name" required /></label>
-              <button class="primary-btn wide" type="button" data-next-signup>Next</button>
-            </section>
-
-            <section class="signup-step" data-signup-step="dob">
-              <h2>What’s your date of birth?</h2>
-              <p>So we know what academic year you’re in.</p>
-              <label class="field solo-field"><input id="signupDob" type="text" placeholder="DD/MM/YYYY" required /></label>
-              <small>Example: 03/12/2001.</small>
-              <button class="primary-btn wide" type="button" data-next-signup>Next</button>
-            </section>
-
-            <section class="signup-step" data-signup-step="email">
-              <h2 id="signupEmailTitle">What’s your email?</h2>
-              <p>Let's get your account set up so you can start browsing tutors.</p>
-              <label class="field solo-field"><input id="signupEmail" type="email" placeholder="Enter your email address" autocomplete="email" required /></label>
-              <label class="checkbox-line"><input id="marketingOptIn" type="checkbox" /> <span>I would like to receive news, tips, and offers by email</span></label>
-              <button class="primary-btn wide" type="button" data-next-signup>Next</button>
-              <p class="terms-note">By clicking next you agree to our <a href="#terms" data-route="terms">Terms and Conditions</a> and <a href="#privacy" data-route="privacy">Privacy Policy</a>.</p>
-            </section>
-
-            <section class="signup-step" data-signup-step="password">
-              <h2>Create a password</h2>
-              <label class="field solo-field"><input id="signupPassword" type="password" placeholder="Create password" autocomplete="new-password" minlength="6" required /></label>
-              <label class="field solo-field"><input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required /></label>
-              <button class="primary-btn wide" type="submit">Create account</button>
-            </section>
-
-            <select id="signupRole" hidden>
-              <option value="student">Student</option>
-              <option value="parent">Parent or guardian</option>
-              <option value="tutor">Approved tutor</option>
-            </select>
-            <input id="signupParentName" type="hidden" />
-            <input id="signupParentEmail" type="hidden" />
-            <button class="text-link account-switch" type="button" id="showLoginFlow">Already have an account?</button>
-          </form>
-          <p class="signup-status" id="signupStatus">Students and parents can sign up here. Approved tutors log in after approval.</p>
+              <label class="field">
+                <span>Full name</span>
+                <input id="signupName" type="text" placeholder="Enter your name" autocomplete="name" required />
+              </label>
+              <label class="field">
+                <span>Date of birth</span>
+                <input id="signupDob" type="date" required />
+              </label>
+              <label class="field parent-field">
+                <span>Parent or guardian name</span>
+                <input id="signupParentName" type="text" placeholder="Required if under 18" />
+              </label>
+              <label class="field parent-field">
+                <span>Parent or guardian email</span>
+                <input id="signupParentEmail" type="email" placeholder="parent@example.com" />
+              </label>
+              <label class="field">
+                <span>Email address</span>
+                <input id="signupEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="signupPassword" type="password" placeholder="Create password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <label class="field">
+                <span>Retype password</span>
+                <input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <button class="secondary-btn wide" type="submit">Create account</button>
+            </form>
+          </div>
+          <p class="signup-status" id="signupStatus">Students and parents can sign up here. Approved tutors can create a tutor account after their email is added to approvedTutors.</p>
         </div>
+        <aside class="account-side">
+          <strong>Account access</strong>
+          <p>Students and parents can register straight away. Tutors must apply first, then use the approved email to create a tutor account and access the tutor dashboard.</p>
+        </aside>
       </section>
 
       <section class="account-details-page app-page" id="account-details" data-page="account-details">

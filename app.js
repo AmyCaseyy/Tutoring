@@ -344,6 +344,7 @@ const confirmNewPassword = document.querySelector("#confirmNewPassword");
 const quickBook = document.querySelector("#quickBook");
 const messagesButton = document.querySelector("#messagesButton");
 const messageBadge = document.querySelector("#messageBadge");
+const topMessageBadge = document.querySelector("#topMessageBadge");
 const topMessagesButton = document.querySelector("#topMessagesButton");
 const roleTools = document.querySelector("#roleTools");
 const lessonList = document.querySelector("#lessonList");
@@ -508,7 +509,7 @@ function showLoginAccountView() {
 function showSignupAccountView() {
   accountLoginView.hidden = true;
   signupForm.hidden = false;
-  renderSignupStep("subject");
+  updateSignupMode();
 }
 
 function renderSignupStep(stepName = signupWizard.steps[signupWizard.stepIndex]) {
@@ -795,6 +796,11 @@ async function queueCloudEmail(to, subject, body, meta = {}) {
     to,
     subject,
     body,
+    message: {
+      subject,
+      text: body,
+      html: `<p>${escapeHtml(body)}</p>`
+    },
     meta,
     status: "queued",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -911,18 +917,26 @@ function messageTimestamp(message) {
 }
 
 function updateMessageBadge() {
-  if (!messageBadge || !currentAccount?.email) {
-    if (messageBadge) messageBadge.hidden = true;
+  const badges = [messageBadge, topMessageBadge].filter(Boolean);
+  if (!badges.length || !currentAccount?.email) {
+    badges.forEach((badge) => {
+      badge.hidden = true;
+    });
     return;
   }
   const ownEmail = normalizeEmail(currentAccount.email);
   const unread = cloudMessages.filter((message) => {
     const recipient = normalizeEmail(message.recipientEmail);
+    const sender = normalizeEmail(message.senderEmail);
+    const participants = (message.participantEmails || []).map(normalizeEmail);
     const readBy = (message.readBy || []).map(normalizeEmail);
-    return recipient === ownEmail && !readBy.includes(ownEmail);
+    const isIncoming = sender !== ownEmail && (recipient === ownEmail || participants.includes(ownEmail));
+    return isIncoming && !readBy.includes(ownEmail);
   }).length;
-  messageBadge.textContent = String(unread);
-  messageBadge.hidden = unread === 0;
+  badges.forEach((badge) => {
+    badge.textContent = String(unread);
+    badge.hidden = unread === 0;
+  });
 }
 
 function cloudMessageToBubble(message) {

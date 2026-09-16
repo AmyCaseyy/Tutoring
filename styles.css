@@ -135,6 +135,17 @@ body {
   display: none;
 }
 
+.icon-btn {
+  position: relative;
+}
+
+.icon-message-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  margin-left: 0;
+}
+
 @keyframes loadingPulse {
   0%,
   100% {
@@ -907,62 +918,33 @@ img.avatar {
 }
 
 .account-zone {
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
   min-height: calc(100vh - 72px);
-  padding: 0;
-  background: #f4eee9;
+  gap: 42px;
+  align-items: start;
+  padding: 70px clamp(18px, 5vw, 72px);
 }
 
-.account-shell {
-  position: relative;
-  min-height: calc(100vh - 72px);
-  padding: clamp(24px, 5vw, 64px);
+.account-side {
+  align-self: start;
+  padding: 22px;
+  background: rgba(255, 253, 250, 0.76);
+  border: 1px solid rgba(228, 219, 221, 0.78);
+  border-radius: 8px;
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(18px);
 }
 
-.account-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: clamp(28px, 6vw, 80px);
+.account-side strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1.08rem;
 }
 
-.text-brand {
-  color: var(--ink);
-  font-size: 1.7rem;
-  font-weight: 900;
-  text-decoration: none;
-}
-
-.account-close {
-  width: 58px;
-  height: 58px;
-  color: var(--ink);
-  background: transparent;
-  border: 0;
-  font-size: 4rem;
-  line-height: 1;
-}
-
-.account-login-view,
-.signup-wizard {
-  width: min(980px, 100%);
-  margin: 0 auto;
-  text-align: center;
-}
-
-.account-login-view h2,
-.signup-step h2 {
-  margin: 0 0 26px;
-  font-family: Inter, sans-serif;
-  font-size: clamp(2.2rem, 5vw, 4.1rem);
-  letter-spacing: 0;
-}
-
-.account-login-view > p,
-.signup-step > p {
-  margin: -10px 0 34px;
+.account-side p {
+  margin: 0;
   color: var(--muted);
-  font-size: clamp(1.1rem, 2.4vw, 1.65rem);
-  font-weight: 700;
+  line-height: 1.55;
 }
 
 .login-choice-list,
@@ -988,25 +970,18 @@ img.avatar {
 }
 
 .login-choice-card {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  align-items: center;
+  display: block;
 }
 
 .login-choice-card::before {
-  content: "";
-  width: 76px;
-  height: 76px;
-  margin-inline: auto;
-  background: #12c6b8;
-  border-radius: 14px;
+  content: none;
 }
 
 .tutor-login-card span {
-  color: var(--ink);
-  background: #12c6b8;
-  border-radius: 8px;
-  padding: 22px;
+  color: inherit;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 .option-grid {
@@ -1330,7 +1305,6 @@ img.profile-photo {
 .message-room,
 .thread-list,
 .booking-builder,
-.booking-lists section,
 .review-form,
 .review-card {
   padding: 20px;
@@ -1444,20 +1418,16 @@ img.profile-photo {
 
 .booking-lists {
   display: grid;
-  gap: 0;
-  padding: 22px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(25, 24, 21, 0.08);
-  border-radius: 8px;
+  gap: 24px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .booking-lists section {
-  padding: 12px 0 26px;
-  border-bottom: 1px solid rgba(25, 24, 21, 0.1);
-}
-
-.booking-lists section:last-child {
-  border-bottom: 0;
+  padding: 0;
+  border: 0;
 }
 
 .schedule-list {
@@ -2025,7 +1995,6 @@ body.site-ready .hero-media {
 .message-room,
 .thread-list,
 .booking-builder,
-.booking-lists section,
 .review-form,
 .review-card,
 .role-tools article,
@@ -2051,7 +2020,6 @@ body.site-ready .hero-media {
 .tutor-card,
 .profile-hero-card,
 .message-room,
-.booking-lists section,
 .review-card,
 .lesson-list article,
 .chat-card {
