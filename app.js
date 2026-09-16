@@ -376,6 +376,9 @@ const bookingTutor = document.querySelector("#bookingTutor");
 const bookingTutorSearch = document.querySelector("#bookingTutorSearch");
 const bookingPersonLabel = document.querySelector("#bookingPersonLabel");
 const bookingLessonType = document.querySelector("#bookingLessonType");
+const bookingDate = document.querySelector("#bookingDate");
+const bookingHour = document.querySelector("#bookingHour");
+const bookingMinute = document.querySelector("#bookingMinute");
 const bookingDateTime = document.querySelector("#bookingDateTime");
 const bookingSubmitButton = document.querySelector("#bookingSubmitButton");
 const bookingsPageTitle = document.querySelector("#bookingsPageTitle");
@@ -525,6 +528,10 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
 async function saveAccountToCloud(account, uid = auth?.currentUser?.uid) {
   if (!isCloudReady() || !uid) return;
   await db.collection("users").doc(uid).set({
@@ -630,15 +637,16 @@ async function loadCloudData() {
     return;
   }
 
+  const accountEmail = normalizeEmail(currentAccount.email);
   const bookingField = currentAccount.role === "tutor" ? "tutorEmail" : "studentEmail";
   const bookingSnapshot = await db.collection("bookings")
-    .where(bookingField, "==", currentAccount.email)
+    .where(bookingField, "==", accountEmail)
     .limit(120)
     .get();
   cloudBookings = bookingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   const messageSnapshot = await db.collection("messages")
-    .where("participantEmails", "array-contains", currentAccount.email)
+    .where("participantEmails", "array-contains", accountEmail)
     .limit(200)
     .get();
   cloudMessages = messageSnapshot.docs
@@ -667,6 +675,8 @@ async function saveBookingToCloud(booking) {
   if (!isCloudReady()) return booking;
   const payload = {
     ...booking,
+    tutorEmail: normalizeEmail(booking.tutorEmail),
+    studentEmail: normalizeEmail(booking.studentEmail),
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -1171,7 +1181,7 @@ function getMessages() {
     .sort((a, b) => (a.clientCreatedAt || 0) - (b.clientCreatedAt || 0));
 }
 
-function saveMessage(message) {
+async function saveMessage(message) {
   const allMessages = readStore(storage.messages, {});
   const key = threadKey();
   const messages = allMessages[key] || [];
@@ -1186,7 +1196,17 @@ function saveMessage(message) {
   messages.push(enrichedMessage);
   allMessages[key] = messages;
   writeStore(storage.messages, allMessages);
-  saveMessageToCloud(key, enrichedMessage).catch(() => {});
+  try {
+    const cloudMessage = await saveMessageToCloud(key, enrichedMessage);
+    if (cloudMessage) {
+      cloudMessages = [
+        ...cloudMessages.filter((item) => item.id !== cloudMessage.id),
+        cloudMessage
+      ].sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
+    }
+  } catch {
+    showConfirmation("Message saved on this device, but Firebase did not save it yet. Check Firestore rules and try again.");
+  }
   queueEmail(recipientEmail, "New tutrSTEM message", `${currentAccount.name} sent you a message on tutrSTEM. Log in to read and reply.`, {
     key: `message-${enrichedMessage.id}`,
     threadKey: key,
@@ -1198,22 +1218,23 @@ function saveMessage(message) {
 async function saveMessageToCloud(key, message) {
   if (!isCloudReady() || !currentAccount) return;
   const recipientEmail = normalizeEmail(message.recipientEmail || currentRecipientEmail());
-  const participantEmails = currentAccount.role === "tutor"
-    ? [currentAccount.email, recipientEmail].filter(Boolean)
-    : [currentAccount.email, recipientEmail].filter(Boolean);
-  await db.collection("messages").add({
+  const senderEmail = normalizeEmail(currentAccount.email);
+  const participantEmails = [senderEmail, recipientEmail].filter(Boolean);
+  const payload = {
     threadKey: key,
     participantEmails: participantEmails.map(normalizeEmail),
-    senderEmail: currentAccount.email,
+    senderEmail,
     recipientEmail,
     senderRole: currentAccount.role,
     body: message.text,
     direction: message.direction,
     timeLabel: message.time,
-    readBy: [currentAccount.email],
+    readBy: [senderEmail],
     clientCreatedAt: message.clientCreatedAt,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  };
+  await db.collection("messages").doc(message.id).set(payload, { merge: true });
+  return { id: message.id, ...payload };
 }
 
 function markCurrentThreadRead() {
@@ -1535,10 +1556,11 @@ function renderReviewsPage() {
 
 function getBookings() {
   if (cloudBookings.length && currentAccount?.email) {
+    const ownEmail = normalizeEmail(currentAccount.email);
     return cloudBookings.filter((booking) => (
       currentAccount.role === "tutor"
-        ? booking.tutorEmail === currentAccount.email
-        : booking.studentEmail === currentAccount.email
+        ? normalizeEmail(booking.tutorEmail) === ownEmail
+        : normalizeEmail(booking.studentEmail) === ownEmail
     ));
   }
   const bookings = readStore(storage.bookings, {});
@@ -1584,8 +1606,11 @@ function bookingStatusClass(status = "Pending tutor approval") {
 }
 
 function localDateTimeInputValue(date) {
-  const pad = (value) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function localDateInputValue(date) {
+  return localDateTimeInputValue(date).slice(0, 10);
 }
 
 function nextTenMinuteSlot(date = new Date()) {
@@ -1598,9 +1623,29 @@ function nextTenMinuteSlot(date = new Date()) {
 }
 
 function updateBookingDateConstraints() {
-  if (!bookingDateTime) return;
-  bookingDateTime.step = "600";
-  bookingDateTime.min = localDateTimeInputValue(nextTenMinuteSlot());
+  const nextSlot = nextTenMinuteSlot();
+  if (bookingDate) bookingDate.min = localDateInputValue(nextSlot);
+  const createdHours = bookingHour && !bookingHour.options.length;
+  if (bookingHour && !bookingHour.options.length) {
+    bookingHour.innerHTML = Array.from({ length: 24 }, (_, hour) => (
+      `<option value="${pad2(hour)}">${pad2(hour)}</option>`
+    )).join("");
+  }
+  if (bookingHour && (createdHours || !bookingHour.value)) bookingHour.value = pad2(nextSlot.getHours());
+  if (bookingMinute && (!bookingMinute.dataset.ready || !bookingMinute.value)) {
+    bookingMinute.value = pad2(nextSlot.getMinutes());
+    bookingMinute.dataset.ready = "true";
+  }
+  syncBookingDateTime();
+}
+
+function syncBookingDateTime() {
+  if (!bookingDateTime) return "";
+  const date = bookingDate?.value || "";
+  const hour = bookingHour?.value || "";
+  const minute = bookingMinute?.value || "";
+  bookingDateTime.value = date && hour && minute ? `${date}T${hour}:${minute}` : "";
+  return bookingDateTime.value;
 }
 
 function validateBookingDateTime(value) {
@@ -2085,6 +2130,10 @@ bookingTutor?.addEventListener("change", () => {
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value);
   if (tutor) selectedTutor = tutor;
 });
+[bookingDate, bookingHour, bookingMinute].forEach((control) => {
+  control?.addEventListener("change", syncBookingDateTime);
+  control?.addEventListener("input", syncBookingDateTime);
+});
 
 document.querySelector("#resetFilters").addEventListener("click", () => {
   nameFilter.value = "";
@@ -2131,7 +2180,7 @@ profileForm.addEventListener("submit", (event) => {
   renderTutors();
 });
 
-chatForm.addEventListener("submit", (event) => {
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentAccount) {
     promptForAccount("Log in first, then you can send messages.");
@@ -2141,7 +2190,7 @@ chatForm.addEventListener("submit", (event) => {
   const text = chatInput.value.trim();
   if (!text) return;
 
-  saveMessage({
+  await saveMessage({
     direction: "outgoing",
     text,
     time: nowLabel()
@@ -2151,7 +2200,7 @@ chatForm.addEventListener("submit", (event) => {
   renderChat(currentAccount.role);
 });
 
-messagePageForm.addEventListener("submit", (event) => {
+messagePageForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentAccount) {
     promptForAccount("Log in first, then you can send messages.");
@@ -2161,7 +2210,7 @@ messagePageForm.addEventListener("submit", (event) => {
   const text = messagePageInput.value.trim();
   if (!text) return;
 
-  saveMessage({
+  await saveMessage({
     direction: "outgoing",
     text,
     time: nowLabel()
@@ -2186,11 +2235,12 @@ bookingPageForm.addEventListener("submit", async (event) => {
 
   if (!canBook()) return;
 
-  const bookingTimeError = validateBookingDateTime(bookingDateTime.value);
+  const bookingDateTimeValue = syncBookingDateTime();
+  const bookingTimeError = validateBookingDateTime(bookingDateTimeValue);
   if (bookingTimeError) {
     signupStatus.textContent = bookingTimeError;
     signupStatus.classList.remove("success");
-    bookingDateTime.focus();
+    bookingDate?.focus();
     return;
   }
 
@@ -2210,7 +2260,7 @@ bookingPageForm.addEventListener("submit", async (event) => {
     initials: tutor.initials,
     subject: tutor.subject,
     type: bookingLessonType.value,
-    dateTime: bookingDateTime.value,
+    dateTime: bookingDateTimeValue,
     status: "Pending tutor approval",
     student: currentAccount.name,
     studentEmail: currentAccount.email,
@@ -2236,6 +2286,7 @@ bookingPageForm.addEventListener("submit", async (event) => {
     writeStore(storage.bookings, allBookings);
   }
 
+  bookingDate.value = "";
   bookingDateTime.value = "";
   const firstBooking = savedBookings[0];
   queueEmail(firstBooking.tutorEmail, "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${savedBookings.length > 1 ? ` (${savedBookings.length} upcoming lessons created)` : ""}.`, {

@@ -509,7 +509,19 @@
               </label>
               <label class="field">
                 <span>Date and time</span>
-                <input id="bookingDateTime" type="datetime-local" step="600" />
+                <div class="booking-time-grid">
+                  <input id="bookingDate" type="date" aria-label="Lesson date" />
+                  <select id="bookingHour" aria-label="Lesson hour"></select>
+                  <select id="bookingMinute" aria-label="Lesson minute">
+                    <option value="00">00</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="40">40</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+                <input id="bookingDateTime" type="hidden" />
               </label>
               <button class="primary-btn wide" id="bookingSubmitButton" type="submit">Book lesson</button>
             </form>
@@ -874,7 +886,7 @@
           </label>
           <label class="field">
             <span>Preferred time</span>
-            <input type="datetime-local" />
+            <input type="date" />
           </label>
           <div class="request-summary">
             <div><span>Lesson request</span><strong>Sent to tutor</strong></div>

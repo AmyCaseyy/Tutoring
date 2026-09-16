@@ -1229,6 +1229,12 @@ img.profile-photo {
   margin-bottom: 8px;
 }
 
+.booking-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 88px 88px;
+  gap: 8px;
+}
+
 .booking-lists {
   display: grid;
   gap: 18px;
