@@ -1442,7 +1442,7 @@ img.profile-photo {
 
 .thread-button {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 10px;
@@ -1462,6 +1462,13 @@ img.profile-photo {
 .thread-button small {
   display: block;
   color: var(--muted);
+}
+
+.thread-unread {
+  justify-self: end;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
 }
 
 .small-avatar {
@@ -1717,6 +1724,36 @@ img.profile-photo {
   background: transparent;
   border: 0;
   box-shadow: none;
+}
+
+body.editing-profile .dashboard-page {
+  place-items: start center;
+}
+
+body.editing-profile .account-actions,
+body.editing-profile .dash-header,
+body.editing-profile .role-tools,
+body.editing-profile .activity-panel,
+body.editing-profile .lesson-list,
+body.editing-profile .chat-card,
+body.editing-profile .ratings-panel {
+  display: none;
+}
+
+body.editing-profile .dashboard {
+  width: min(760px, 100%);
+}
+
+body.editing-profile .dashboard-grid {
+  grid-template-columns: 1fr;
+}
+
+body.editing-profile .profile-panel {
+  padding: clamp(22px, 4vw, 34px);
+  background: rgba(255, 253, 248, 0.92);
+  border: 1px solid rgba(25, 24, 21, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 18px 46px rgba(25, 24, 21, 0.08);
 }
 
 .dash-header,

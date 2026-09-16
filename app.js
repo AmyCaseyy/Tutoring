@@ -476,6 +476,13 @@ function showPage(pageName, options = {}) {
   if (nextPage === "reviews") renderReviewsPage();
   if (nextPage === "account-details") populateAccountDetails();
 
+  const editingProfile = nextPage === "dashboard" && options.editProfile === true;
+  document.body.classList.toggle("editing-profile", editingProfile);
+  if (editingProfile) {
+    dashboardTitle.textContent = "Edit profile";
+    dashboardSubtitle.textContent = "Update your tutor profile picture, subjects, bio, and session details.";
+  }
+
   pages.forEach((page) => {
     page.classList.toggle("active", page.dataset.page === nextPage);
   });
@@ -491,6 +498,29 @@ function showPage(pageName, options = {}) {
   if (!options.keepScroll) {
     window.scrollTo({ top: 0, behavior: options.instant ? "auto" : "smooth" });
   }
+}
+
+function messageIsInThread(message, studentEmail, tutorAddress) {
+  const student = normalizeEmail(studentEmail);
+  const tutor = normalizeEmail(tutorAddress);
+  const sender = normalizeEmail(message.senderEmail);
+  const recipient = normalizeEmail(message.recipientEmail);
+  const participants = (message.participantEmails || []).map(normalizeEmail);
+  return message.threadKey === threadKeyFor(student, tutor)
+    || (participants.includes(student) && participants.includes(tutor))
+    || ((sender === student && recipient === tutor) || (sender === tutor && recipient === student));
+}
+
+function unreadCountForThread(studentEmail, tutorAddress) {
+  if (!currentAccount?.email) return 0;
+  const ownEmail = normalizeEmail(currentAccount.email);
+  return cloudMessages.filter((message) => {
+    const sender = normalizeEmail(message.senderEmail);
+    const readBy = (message.readBy || []).map(normalizeEmail);
+    return sender !== ownEmail
+      && messageIsInThread(message, studentEmail, tutorAddress)
+      && !readBy.includes(ownEmail);
+  }).length;
 }
 
 function getRouteFromHash() {
@@ -1379,13 +1409,16 @@ async function saveMessageToCloud(key, message) {
 
 function markCurrentThreadRead() {
   if (!currentAccount?.email) return;
-  const key = threadKey();
   const ownEmail = normalizeEmail(currentAccount.email);
-  const unread = cloudMessages.filter((message) => (
-    message.threadKey === key
-    && normalizeEmail(message.recipientEmail) === ownEmail
-    && !(message.readBy || []).map(normalizeEmail).includes(ownEmail)
-  ));
+  const studentEmail = currentAccount.role === "tutor" ? selectedStudentAccount?.email : currentAccount.email;
+  const tutorAddress = currentAccount.role === "tutor" ? currentAccount.email : tutorEmail(selectedThreadTutor);
+  const unread = cloudMessages.filter((message) => {
+    const sender = normalizeEmail(message.senderEmail);
+    const readBy = (message.readBy || []).map(normalizeEmail);
+    return sender !== ownEmail
+      && messageIsInThread(message, studentEmail, tutorAddress)
+      && !readBy.includes(ownEmail);
+  });
   if (!unread.length) {
     updateMessageBadge();
     return;
@@ -1440,12 +1473,15 @@ function renderMessagesPage() {
       return;
     }
 
+    markCurrentThreadRead();
     threadList.innerHTML = students.map((student) => {
       const summary = studentSummary(student);
+      const unread = unreadCountForThread(student.email, currentAccount.email);
       return `
         <button class="thread-button ${student.email === selectedStudentAccount.email ? "active" : ""}" type="button" data-student-thread="${escapeHtml(student.email)}">
           <span class="avatar small-avatar">${escapeHtml(summary.initials)}</span>
           <span><strong>${escapeHtml(summary.name)}</strong><small>${escapeHtml(summary.subject)}</small></span>
+          ${unread ? `<span class="message-badge thread-unread">${unread}</span>` : ""}
         </button>
       `;
     }).join("");
@@ -1466,12 +1502,17 @@ function renderMessagesPage() {
   } else {
     const availableTutors = getAllTutors();
     if (!selectedThreadTutor) selectedThreadTutor = availableTutors[0];
-    threadList.innerHTML = availableTutors.map((tutor) => `
-      <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
-        <span class="avatar small-avatar">${escapeHtml(tutor.initials)}</span>
-        <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutor.subject)}</small></span>
-      </button>
-    `).join("");
+    markCurrentThreadRead();
+    threadList.innerHTML = availableTutors.map((tutor) => {
+      const unread = unreadCountForThread(currentAccount.email, tutorEmail(tutor));
+      return `
+        <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
+          <span class="avatar small-avatar">${escapeHtml(tutor.initials || initialsFromName(tutor.name))}</span>
+          <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutor.subject)}</small></span>
+          ${unread ? `<span class="message-badge thread-unread">${unread}</span>` : ""}
+        </button>
+      `;
+    }).join("");
 
     threadList.querySelectorAll("[data-thread]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1493,7 +1534,6 @@ function renderMessagesPage() {
 
   messagePageInput.placeholder = `Message ${messagePageWith.textContent}...`;
   const messages = getMessages();
-  markCurrentThreadRead();
   messagePageMessages.innerHTML = messages.length ? messages.map((message) => `
     <p class="bubble ${message.direction}">
       ${escapeHtml(message.text)}
@@ -1610,7 +1650,7 @@ function renderPublicProfile() {
     </div>` : ""}
   `;
 
-  document.querySelector("#profileEdit")?.addEventListener("click", () => showPage("dashboard"));
+  document.querySelector("#profileEdit")?.addEventListener("click", () => showPage("dashboard", { editProfile: true }));
   document.querySelector("#profileBook")?.addEventListener("click", () => {
     if (!canBook()) return;
     showPage("bookings");
