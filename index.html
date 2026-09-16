@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260914-legal-pages" />
+    <link rel="stylesheet" href="styles.css?v=20260916-profile-cards" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -40,7 +40,6 @@
         <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
         <a href="#messages" data-route="messages" data-auth-only>Messages <span class="message-badge" id="messageBadge" hidden>0</span></a>
         <a href="#bookings" data-route="bookings" data-auth-only>Bookings</a>
-        <a href="#dashboard" data-route="dashboard" data-auth-only>Dashboard</a>
       </nav>
       <div class="top-actions">
         <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages" data-auth-only>
@@ -107,7 +106,7 @@
         <div class="page-heading">
           <p class="eyebrow">How it works</p>
           <h2>Keep the journey simple.</h2>
-          <p>Students and parents find tutors first. Account tools, messages, ratings, and bookings live behind the right dashboard.</p>
+          <p>Students and parents find tutors first. Messages, ratings, and bookings live inside the right account tools.</p>
         </div>
         <div class="strip-inner">
           <article>
@@ -291,7 +290,7 @@
         </div>
         <aside class="account-side">
           <strong>Account access</strong>
-          <p>Students and parents can register straight away. Tutors must apply first, then use the approved email to create a tutor account and access the tutor dashboard.</p>
+          <p>Students and parents can register straight away. Tutors must apply first, then use the approved email to create a tutor account and manage their profile.</p>
         </aside>
       </section>
 
@@ -337,7 +336,7 @@
         <div class="dashboard-intro">
           <div>
             <p class="eyebrow">Your account</p>
-            <h2 id="dashboardTitle">Dashboard</h2>
+            <h2 id="dashboardTitle">Profile tools</h2>
             <p id="dashboardSubtitle">Log in or create an account to see the right tools here.</p>
           </div>
           <div class="account-actions">
@@ -349,11 +348,11 @@
           </div>
         </div>
         <div class="login-confirmation" id="loginConfirmation" hidden></div>
-        <div class="dashboard" aria-label="Account dashboard">
+        <div class="dashboard" aria-label="Account tools">
           <div class="dash-header">
             <div>
               <span class="status-dot"></span>
-              <strong id="dashRole">Student dashboard preview</strong>
+              <strong id="dashRole">Student tools preview</strong>
             </div>
             <span id="dashMode">Live schedule</span>
           </div>
@@ -917,6 +916,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260916-booking-chat-recurring"></script>
+    <script src="app.js?v=20260916-profile-cards"></script>
   </body>
 </html>

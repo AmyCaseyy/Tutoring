@@ -213,19 +213,19 @@ const roleContent = {
   student: {
     title: "Student account",
     text: "Book tutors, message your tutor, manage lessons, and leave ratings after completed sessions.",
-    dash: "Student dashboard",
+    dash: "Student tools",
     mode: "Bookings and chat"
   },
   parent: {
     title: "Parent account",
     text: "Book tutors for your child, message tutors, manage cancellations, and leave ratings after lessons.",
-    dash: "Parent dashboard",
+    dash: "Parent tools",
     mode: "Family lessons"
   },
   tutor: {
     title: "Tutor account",
     text: "Manage your profile, subjects, availability, student messages, bookings, and ratings.",
-    dash: "Tutor dashboard",
+    dash: "Tutor tools",
     mode: "Tutor workspace"
   }
 };
@@ -443,7 +443,7 @@ const storage = {
 function showPage(pageName, options = {}) {
   const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy"];
   const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "help", "support"];
-  const fallback = currentAccount ? "dashboard" : "accounts";
+  const fallback = currentAccount ? (currentAccount.role === "tutor" ? "profile" : "tutors") : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
 
   if (!currentAccount && !publicPages.includes(nextPage)) {
@@ -459,8 +459,9 @@ function showPage(pageName, options = {}) {
   }
 
   if (nextPage === "tutors" && currentAccount?.role === "tutor") {
-    nextPage = "dashboard";
-    showConfirmation("Tutor accounts use this dashboard for availability, requests, chat, and ratings.");
+    nextPage = "profile";
+    selectedTutor = getCurrentTutorProfile() || selectedTutor;
+    showConfirmation("Tutor accounts use their profile, messages, and bookings.");
   }
 
   if (nextPage === "profile" && currentAccount?.role === "tutor") {
@@ -1223,23 +1224,22 @@ function renderTutors() {
 
   tutorGrid.innerHTML = visibleTutors.map((tutor, index) => `
     <article class="tutor-card">
-      <div class="tutor-head">
+      <div class="tutor-card-main">
         ${tutorPhotoMarkup(tutor, "avatar")}
-        <div>
+        <div class="tutor-card-copy">
           <h3>${escapeHtml(tutor.name)}</h3>
           <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
+          ${tutor.style ? `<p>${escapeHtml(tutor.style)}</p>` : ""}
+          <div class="chips">
+            ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
+            ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
+            ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
+            ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
+          </div>
         </div>
-        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span class="rating">${getTutorRating(tutor).toFixed(2)}</span>` : ""}
-      </div>
-      ${tutor.style ? `<p>${escapeHtml(tutor.style)}</p>` : ""}
-      <div class="chips">
-        ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
-        ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
-        ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
-        ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
+        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span class="rating tutor-card-rating">${getTutorRating(tutor).toFixed(2)} / 5</span>` : ""}
       </div>
       <div class="card-footer">
-        <span></span>
         <div class="card-actions">
           <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
@@ -2013,7 +2013,7 @@ function renderDashboard(role) {
   ratingsPanel.classList.remove("highlight");
   dashboardTitle.textContent = roleContent[role].dash;
   dashboardSubtitle.textContent = currentAccount
-    ? `${currentAccount.name}, this is your ${role} dashboard.`
+    ? `${currentAccount.name}, these are your ${role} account tools.`
     : "Log in or create an account to see the right tools here.";
   document.querySelector("#dashMode").textContent = dashboard.mode;
   roleTools.innerHTML = dashboard.tools.map(([title, text]) => `
@@ -2160,7 +2160,8 @@ function setAccount(account, options = {}) {
 
   if (options.redirect) {
     if (account.role === "tutor") {
-      showPage("dashboard");
+      selectedTutor = getCurrentTutorProfile() || selectedTutor;
+      showPage("profile");
     } else {
       applyLearningFilters(account);
       showPage("tutors");
@@ -2184,7 +2185,8 @@ function canBook() {
   if (currentAccount.role === "tutor") {
     signupStatus.textContent = "Tutor accounts manage profiles, availability, chat, and ratings. Students and parents book lessons.";
     signupStatus.classList.remove("success");
-    showPage("dashboard");
+    selectedTutor = getCurrentTutorProfile() || selectedTutor;
+    showPage("profile");
     return false;
   }
 
@@ -2228,12 +2230,13 @@ function requestRating() {
   if (currentAccount.role === "tutor") {
     signupStatus.textContent = "Tutor accounts can view received ratings, but students and parents leave ratings.";
     signupStatus.classList.remove("success");
-    showPage("dashboard");
+    selectedTutor = getCurrentTutorProfile() || selectedTutor;
+    showPage("profile");
     return;
   }
 
   renderRatings(currentAccount.role);
-  showPage("dashboard");
+  showPage("reviews");
 }
 
 function updateSignupMode() {
@@ -2251,9 +2254,10 @@ function updateSignupMode() {
 document.querySelector("[data-search-form]").addEventListener("submit", (event) => {
   event.preventDefault();
   if (currentAccount?.role === "tutor") {
-    signupStatus.textContent = "Tutor accounts use the dashboard for availability, messages, and ratings.";
+    signupStatus.textContent = "Tutor accounts use Profile, Messages, and Bookings.";
     signupStatus.classList.add("success");
-    showPage("dashboard");
+    selectedTutor = getCurrentTutorProfile() || selectedTutor;
+    showPage("profile");
     return;
   }
 
@@ -2343,7 +2347,7 @@ profileForm.addEventListener("submit", (event) => {
   const accounts = getAccounts().map((account) => account.email === currentAccount.email ? currentAccount : account);
   saveAccounts(accounts);
   profileBadge.textContent = "Saved";
-  dashboardSubtitle.textContent = `${currentAccount.name}, this is your ${currentAccount.role} dashboard.`;
+  dashboardSubtitle.textContent = `${currentAccount.name}, these are your ${currentAccount.role} account tools.`;
   addActivity("Updated profile details", "Profile");
   renderTutors();
 });
