@@ -443,7 +443,7 @@ const storage = {
 
 function showPage(pageName, options = {}) {
   const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy"];
-  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "help", "support"];
+  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support"];
   const fallback = currentAccount ? (currentAccount.role === "tutor" ? "profile" : "tutors") : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
 
@@ -853,7 +853,7 @@ function tutorPhotoMarkup(tutor, className = "profile-photo") {
   if (photo) {
     return `<img class="${className}" src="${escapeHtml(photo)}" alt="${escapeHtml(tutor.name)} profile picture" />`;
   }
-  return "";
+  return `<div class="${className}" aria-label="${escapeHtml(tutor.name)} profile picture">${escapeHtml(tutor.initials || initialsFromName(tutor.name || ""))}</div>`;
 }
 
 function updateProfilePhotoPreview(value, fallbackName = "") {
@@ -1227,30 +1227,26 @@ function renderTutors() {
 
   tutorGrid.innerHTML = visibleTutors.map((tutor, index) => `
     <article class="tutor-card">
-      <div class="tutor-card-top">
-        ${tutorPhotoMarkup(tutor, "avatar tutor-card-photo")}
-        <div class="tutor-card-title">
+      <div class="tutor-card-main">
+        ${tutorPhotoMarkup(tutor, "avatar")}
+        <div class="tutor-card-copy">
           <h3>${escapeHtml(tutor.name)}</h3>
-          ${(Array.isArray(tutor.badges) && tutor.badges[0]) ? `<span class="tutor-badge">${escapeHtml(tutor.badges[0])}</span>` : tutorLevelLabel(tutor) ? `<span class="tutor-badge">${escapeHtml(tutorLevelLabel(tutor))} tutor</span>` : ""}
+          <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
+          ${tutor.style ? `<p>${escapeHtml(tutor.style)}</p>` : ""}
+          <div class="chips">
+            ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
+            ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
+            ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
+            ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
+          </div>
         </div>
-        <div class="tutor-card-subject">${escapeHtml(tutor.subject || "STEM tutor")}</div>
-      </div>
-      <div class="tutor-card-meta">
-        ${tutor.university ? `<span><strong>⌂</strong>${escapeHtml(tutor.university)}</span>` : ""}
-        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span><strong class="stars">★★★★★</strong>${getTutorRating(tutor).toFixed(1)} / 5 ${getReviewsFor(tutor).length ? `(${getReviewsFor(tutor).length})` : ""}</span>` : ""}
-        ${Number(tutor.lessons) ? `<span><strong>▱</strong>${Number(tutor.lessons)} lessons</span>` : ""}
-      </div>
-      ${tutor.style ? `<p class="tutor-card-bio">${escapeHtml(tutor.style)}</p>` : ""}
-      <div class="chips">
-        ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
-        ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
-        ${(Array.isArray(tutor.badges) ? tutor.badges.slice(1) : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
+        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span class="rating tutor-card-rating">${getTutorRating(tutor).toFixed(2)} / 5</span>` : ""}
       </div>
       <div class="card-footer">
-        <button class="primary-btn tutor-profile-cta" type="button" data-profile="${index}">View ${escapeHtml(tutor.name.split(" ")[0] || "tutor")}'s profile</button>
         <div class="card-actions">
+          <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
-          <button class="secondary-btn" type="button" data-book="${index}">
+          <button class="primary-btn" type="button" data-book="${index}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
             Book
           </button>
@@ -2128,7 +2124,11 @@ function updateAccess() {
   userMenu.hidden = !currentAccount;
   if (currentAccount) {
     userMenuName.textContent = currentAccount.name;
-    userMenuInitials.textContent = initialsFromName(currentAccount.name);
+    const accountProfile = getProfileForAccount(currentAccount);
+    const accountPhoto = accountProfile.photo || accountProfile.photoUrl || accountProfile.profilePhoto || "";
+    userMenuInitials.innerHTML = accountPhoto
+      ? `<img src="${escapeHtml(accountPhoto)}" alt="${escapeHtml(currentAccount.name)} profile picture" />`
+      : escapeHtml(initialsFromName(currentAccount.name));
     populateAccountDetails();
   } else {
     userDropdown.hidden = true;
