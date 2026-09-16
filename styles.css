@@ -115,6 +115,26 @@ body {
   animation-delay: 600ms;
 }
 
+.message-badge {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 5px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.message-badge[hidden] {
+  display: none;
+}
+
 @keyframes loadingPulse {
   0%,
   100% {
@@ -1203,6 +1223,10 @@ img.profile-photo {
   display: grid;
   gap: 14px;
   align-content: start;
+}
+
+#bookingTutorSearch {
+  margin-bottom: 8px;
 }
 
 .booking-lists {

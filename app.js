@@ -336,6 +336,7 @@ const newPassword = document.querySelector("#newPassword");
 const confirmNewPassword = document.querySelector("#confirmNewPassword");
 const quickBook = document.querySelector("#quickBook");
 const messagesButton = document.querySelector("#messagesButton");
+const messageBadge = document.querySelector("#messageBadge");
 const topMessagesButton = document.querySelector("#topMessagesButton");
 const roleTools = document.querySelector("#roleTools");
 const lessonList = document.querySelector("#lessonList");
@@ -372,6 +373,7 @@ const messagePageInput = document.querySelector("#messagePageInput");
 const viewMessageProfile = document.querySelector("#viewMessageProfile");
 const bookingPageForm = document.querySelector("#bookingPageForm");
 const bookingTutor = document.querySelector("#bookingTutor");
+const bookingTutorSearch = document.querySelector("#bookingTutorSearch");
 const bookingPersonLabel = document.querySelector("#bookingPersonLabel");
 const bookingLessonType = document.querySelector("#bookingLessonType");
 const bookingDateTime = document.querySelector("#bookingDateTime");
@@ -398,6 +400,7 @@ let currentAccount = null;
 let pendingConfirmation = "";
 let cloudTutorProfiles = [];
 let cloudBookings = [];
+let cloudMessages = [];
 let pendingProfilePhoto = "";
 
 const firebaseBackend = window.tutrStemFirebase || null;
@@ -622,6 +625,8 @@ async function loadCloudData() {
 
   if (!currentAccount?.email) {
     cloudBookings = [];
+    cloudMessages = [];
+    updateMessageBadge();
     return;
   }
 
@@ -631,6 +636,15 @@ async function loadCloudData() {
     .limit(120)
     .get();
   cloudBookings = bookingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+  const messageSnapshot = await db.collection("messages")
+    .where("participantEmails", "array-contains", currentAccount.email)
+    .limit(200)
+    .get();
+  cloudMessages = messageSnapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
+  updateMessageBadge();
 }
 
 async function saveTutorProfileToCloud(profile, uid = auth?.currentUser?.uid) {
@@ -767,13 +781,58 @@ function resizeProfileImage(file) {
   });
 }
 
+function threadKeyFor(studentEmail, tutorAddress) {
+  return `${normalizeEmail(studentEmail)}::${normalizeEmail(tutorAddress)}`;
+}
+
+function currentRecipientEmail() {
+  if (!currentAccount) return "";
+  return currentAccount.role === "tutor"
+    ? normalizeEmail(selectedStudentAccount?.email)
+    : normalizeEmail(tutorEmail(selectedThreadTutor));
+}
+
 function threadKey() {
   if (currentAccount?.role === "tutor") {
-    const studentEmail = selectedStudentAccount?.email || "student-parent";
-    return `${studentEmail}::${accountKey()}`;
+    return threadKeyFor(selectedStudentAccount?.email || "", currentAccount.email);
   }
 
-  return `${accountKey()}::${tutorId(selectedThreadTutor)}`;
+  return threadKeyFor(currentAccount?.email || "", tutorEmail(selectedThreadTutor));
+}
+
+function messageTimestamp(message) {
+  if (typeof message.clientCreatedAt === "number") return message.clientCreatedAt;
+  if (typeof message.createdAt?.toMillis === "function") return message.createdAt.toMillis();
+  if (typeof message.createdAt?.seconds === "number") return message.createdAt.seconds * 1000;
+  return 0;
+}
+
+function updateMessageBadge() {
+  if (!messageBadge || !currentAccount?.email) {
+    if (messageBadge) messageBadge.hidden = true;
+    return;
+  }
+  const ownEmail = normalizeEmail(currentAccount.email);
+  const unread = cloudMessages.filter((message) => {
+    const recipient = normalizeEmail(message.recipientEmail);
+    const readBy = (message.readBy || []).map(normalizeEmail);
+    return recipient === ownEmail && !readBy.includes(ownEmail);
+  }).length;
+  messageBadge.textContent = String(unread);
+  messageBadge.hidden = unread === 0;
+}
+
+function cloudMessageToBubble(message) {
+  return {
+    id: message.id,
+    direction: normalizeEmail(message.senderEmail) === normalizeEmail(currentAccount?.email) ? "outgoing" : "incoming",
+    text: message.body || message.text || "",
+    time: message.timeLabel || nowLabel(),
+    senderEmail: message.senderEmail,
+    recipientEmail: message.recipientEmail,
+    readBy: message.readBy || [],
+    clientCreatedAt: message.clientCreatedAt || messageTimestamp(message)
+  };
 }
 
 function nowLabel() {
@@ -874,7 +933,33 @@ function getStudentAccounts() {
 function getStudentsForTutor() {
   const bookings = getBookings();
   const bookedEmails = new Set(bookings.map((booking) => booking.studentEmail).filter(Boolean));
-  const students = getStudentAccounts();
+  const messageEmails = cloudMessages
+    .flatMap((message) => message.participantEmails || [])
+    .map(normalizeEmail)
+    .filter((email) => email && email !== normalizeEmail(currentAccount?.email));
+  const studentsByEmail = new Map(getStudentAccounts().map((account) => [normalizeEmail(account.email), account]));
+  bookings.forEach((booking) => {
+    const email = normalizeEmail(booking.studentEmail);
+    if (email && !studentsByEmail.has(email)) {
+      studentsByEmail.set(email, {
+        role: "student",
+        name: booking.student || email,
+        email,
+        subject: booking.subject || "Lesson support"
+      });
+    }
+  });
+  messageEmails.forEach((email) => {
+    if (!studentsByEmail.has(email)) {
+      studentsByEmail.set(email, {
+        role: "student",
+        name: email,
+        email,
+        subject: "Message thread"
+      });
+    }
+  });
+  const students = [...studentsByEmail.values()];
   const bookedStudents = students.filter((account) => bookedEmails.has(account.email));
   const otherStudents = students.filter((account) => !bookedEmails.has(account.email));
   return [...bookedStudents, ...otherStudents];
@@ -1068,60 +1153,93 @@ function renderTutors() {
   });
 }
 
-function defaultMessagesFor(role) {
-  if (role === "tutor") {
-    const student = selectedStudentAccount ? studentSummary(selectedStudentAccount).name : "there";
-    return [
-      ["incoming", `Hi, I'm ${student}. Could we arrange a lesson?`],
-      ["outgoing", "Yes, send me the topic and a few times that work."]
-    ];
-  }
-
-  return [
-    ["incoming", `Hi, I'm ${selectedThreadTutor.name}. Send me what you want to work on and we can plan the first session.`],
-    ["outgoing", "Hi, I'd like help building confidence before mocks."]
-  ];
-}
-
 function getMessages() {
   const allMessages = readStore(storage.messages, {});
   const key = threadKey();
-  if (!allMessages[key]) {
-    allMessages[key] = defaultMessagesFor(currentAccount?.role || "student").map(([direction, text]) => ({
-      direction,
-      text,
-      time: nowLabel()
-    }));
-    writeStore(storage.messages, allMessages);
-  }
-  return allMessages[key];
+  const localMessages = allMessages[key] || [];
+  const cloudThread = cloudMessages
+    .filter((message) => message.threadKey === key)
+    .map(cloudMessageToBubble);
+  const seen = new Set();
+  return [...localMessages, ...cloudThread]
+    .filter((message) => {
+      const signature = message.id || `${message.senderEmail || message.direction}-${message.text}-${message.clientCreatedAt || message.time}`;
+      if (seen.has(signature)) return false;
+      seen.add(signature);
+      return true;
+    })
+    .sort((a, b) => (a.clientCreatedAt || 0) - (b.clientCreatedAt || 0));
 }
 
 function saveMessage(message) {
   const allMessages = readStore(storage.messages, {});
   const key = threadKey();
   const messages = allMessages[key] || [];
-  messages.push(message);
+  const recipientEmail = currentRecipientEmail();
+  const enrichedMessage = {
+    id: message.id || createId("message"),
+    ...message,
+    senderEmail: currentAccount.email,
+    recipientEmail,
+    clientCreatedAt: Date.now()
+  };
+  messages.push(enrichedMessage);
   allMessages[key] = messages;
   writeStore(storage.messages, allMessages);
-  saveMessageToCloud(key, message).catch(() => {});
+  saveMessageToCloud(key, enrichedMessage).catch(() => {});
+  queueEmail(recipientEmail, "New tutrSTEM message", `${currentAccount.name} sent you a message on tutrSTEM. Log in to read and reply.`, {
+    key: `message-${enrichedMessage.id}`,
+    threadKey: key,
+    type: "message"
+  });
+  updateMessageBadge();
 }
 
 async function saveMessageToCloud(key, message) {
   if (!isCloudReady() || !currentAccount) return;
+  const recipientEmail = normalizeEmail(message.recipientEmail || currentRecipientEmail());
   const participantEmails = currentAccount.role === "tutor"
-    ? [currentAccount.email, selectedStudentAccount?.email].filter(Boolean)
-    : [currentAccount.email, tutorEmail(selectedThreadTutor)].filter(Boolean);
+    ? [currentAccount.email, recipientEmail].filter(Boolean)
+    : [currentAccount.email, recipientEmail].filter(Boolean);
   await db.collection("messages").add({
     threadKey: key,
-    participantEmails,
+    participantEmails: participantEmails.map(normalizeEmail),
     senderEmail: currentAccount.email,
+    recipientEmail,
     senderRole: currentAccount.role,
     body: message.text,
     direction: message.direction,
     timeLabel: message.time,
+    readBy: [currentAccount.email],
+    clientCreatedAt: message.clientCreatedAt,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
+}
+
+function markCurrentThreadRead() {
+  if (!currentAccount?.email) return;
+  const key = threadKey();
+  const ownEmail = normalizeEmail(currentAccount.email);
+  const unread = cloudMessages.filter((message) => (
+    message.threadKey === key
+    && normalizeEmail(message.recipientEmail) === ownEmail
+    && !(message.readBy || []).map(normalizeEmail).includes(ownEmail)
+  ));
+  if (!unread.length) {
+    updateMessageBadge();
+    return;
+  }
+  cloudMessages = cloudMessages.map((message) => unread.some((item) => item.id === message.id)
+    ? { ...message, readBy: [...new Set([...(message.readBy || []), currentAccount.email])] }
+    : message);
+  updateMessageBadge();
+  if (isCloudReady()) {
+    unread.forEach((message) => {
+      db.collection("messages").doc(message.id).set({
+        readBy: firebase.firestore.FieldValue.arrayUnion(currentAccount.email)
+      }, { merge: true }).catch(() => {});
+    });
+  }
 }
 
 function renderChat(role) {
@@ -1129,12 +1247,14 @@ function renderChat(role) {
   document.querySelector("#chatTitle").textContent = role === "tutor" ? "Student and parent chat" : "Tutor chat";
   document.querySelector("#chatWith").textContent = chatPartner;
   chatInput.placeholder = `Message ${chatPartner}...`;
-  chatMessages.innerHTML = getMessages().map((message) => `
+  const messages = getMessages();
+  markCurrentThreadRead();
+  chatMessages.innerHTML = messages.length ? messages.map((message) => `
     <p class="bubble ${message.direction}">
       ${escapeHtml(message.text)}
       <time>${escapeHtml(message.time)}</time>
     </p>
-  `).join("");
+  `).join("") : `<p class="empty-copy">No messages yet.</p>`;
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -1211,12 +1331,14 @@ function renderMessagesPage() {
   }
 
   messagePageInput.placeholder = `Message ${messagePageWith.textContent}...`;
-  messagePageMessages.innerHTML = getMessages().map((message) => `
+  const messages = getMessages();
+  markCurrentThreadRead();
+  messagePageMessages.innerHTML = messages.length ? messages.map((message) => `
     <p class="bubble ${message.direction}">
       ${escapeHtml(message.text)}
       <time>${escapeHtml(message.time)}</time>
     </p>
-  `).join("");
+  `).join("") : `<p class="empty-copy">No messages yet.</p>`;
   messagePageMessages.scrollTop = messagePageMessages.scrollHeight;
 }
 
@@ -1290,16 +1412,7 @@ function saveRating() {
 
 function getReviewsFor(tutor) {
   const ratings = readStore(storage.ratings, {});
-  const saved = ratings[tutor.name] || [];
-  const fallback = [
-    {
-      score: Math.round(tutor.rating),
-      note: `${tutor.name} explains difficult ideas clearly and keeps lessons calm.`,
-      by: "tutrSTEM parent",
-      time: "Recent"
-    }
-  ];
-  return saved.length ? saved : fallback;
+  return ratings[tutor.name] || [];
 }
 
 function renderPublicProfile() {
@@ -1411,13 +1524,13 @@ function renderReviewsPage() {
   const reviews = getReviewsFor(selectedTutor);
   reviewsTitle.textContent = `${selectedTutor.name} reviews`;
   reviewsSummary.textContent = `${getTutorRating(selectedTutor).toFixed(2)} average from ${reviews.length} review${reviews.length === 1 ? "" : "s"}.`;
-  reviewList.innerHTML = reviews.map((review) => `
+  reviewList.innerHTML = reviews.length ? reviews.map((review) => `
     <article class="review-card">
       <strong>${"★".repeat(review.score)}${"☆".repeat(5 - review.score)}</strong>
-      <p>${escapeHtml(review.note || "Helpful, clear, and supportive.")}</p>
+      <p>${escapeHtml(review.note || "No written comment.")}</p>
       <span>${escapeHtml(review.by)} · ${escapeHtml(review.time)}</span>
     </article>
-  `).join("");
+  `).join("") : `<p class="empty-copy">No reviews yet.</p>`;
 }
 
 function getBookings() {
@@ -1499,6 +1612,68 @@ function validateBookingDateTime(value) {
     return "Lesson times must start on a 10-minute slot, for example 19:30, 19:40, or 19:50.";
   }
   return "";
+}
+
+function addDays(date, days) {
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function addMonthsSameDate(date, months) {
+  const next = new Date(date.getTime());
+  const targetDate = date.getDate();
+  next.setMonth(date.getMonth() + months, targetDate);
+  return next;
+}
+
+function recurringOffsetsFor(type) {
+  if (type === "Weekly lesson") return [0, 7, 14, 21, 28];
+  if (type === "Twice weekly lesson") return [0, 3, 7, 10, 14];
+  if (type === "Fortnightly lesson") return [0, 14, 28, 42, 56];
+  return [0];
+}
+
+function buildBookingSeries(baseBooking) {
+  const start = new Date(baseBooking.dateTime);
+  const isMonthly = baseBooking.type === "Monthly lesson";
+  const offsets = recurringOffsetsFor(baseBooking.type);
+  const total = isMonthly ? 5 : offsets.length;
+  const recurring = total > 1;
+  const groupId = recurring ? createId("series") : "";
+  return Array.from({ length: total }, (_, index) => {
+    const nextDate = isMonthly ? addMonthsSameDate(start, index) : addDays(start, offsets[index]);
+    return {
+      ...baseBooking,
+      id: createId("booking"),
+      dateTime: localDateTimeInputValue(nextDate),
+      recurringGroup: groupId,
+      recurringType: recurring ? baseBooking.type : "",
+      occurrenceNumber: index + 1,
+      occurrenceTotal: total
+    };
+  });
+}
+
+function renderBookingTutorOptions() {
+  if (!bookingTutor) return;
+  const availableTutors = getAllTutors();
+  const query = normalizeEmail(bookingTutorSearch?.value || "");
+  const filteredTutors = availableTutors.filter((tutor) => {
+    if (!query) return true;
+    return `${tutor.name} ${tutor.subject} ${tutor.email || ""}`.toLowerCase().includes(query);
+  });
+  const options = filteredTutors.length ? filteredTutors : availableTutors;
+  if (filteredTutors.length === 0 && query) {
+    bookingTutor.innerHTML = `<option value="">No matching tutor</option>`;
+    return;
+  }
+  if (!options.some((tutor) => tutorId(tutor) === tutorId(selectedTutor))) {
+    selectedTutor = options[0] || selectedTutor;
+  }
+  bookingTutor.innerHTML = options.map((tutor) => `
+    <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutor.subject)}</option>
+  `).join("");
 }
 
 function updateBookingEverywhere(id, updates) {
@@ -1610,18 +1785,16 @@ function renderBookingsPage() {
     bookingPersonLabel.textContent = "Student";
     bookingSubmitButton.textContent = "Manage requests";
     bookingTutor.innerHTML = "";
+    if (bookingTutorSearch) bookingTutorSearch.value = "";
     bookingPageForm.hidden = true;
     bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
       control.disabled = true;
     });
   } else {
     updateBookingDateConstraints();
-    const availableTutors = getAllTutors();
     bookingPersonLabel.textContent = "Tutor";
     bookingSubmitButton.textContent = "Book lesson";
-    bookingTutor.innerHTML = availableTutors.map((tutor) => `
-      <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutor.subject)}</option>
-    `).join("");
+    renderBookingTutorOptions();
     bookingPageForm.hidden = false;
     bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
       control.disabled = false;
@@ -1766,6 +1939,7 @@ function updateAccess() {
     userDropdown.hidden = true;
     userMenuButton?.setAttribute("aria-expanded", "false");
   }
+  updateMessageBadge();
   quickBook.innerHTML = role === "tutor"
     ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Manage requests`
     : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Book lessons`;
@@ -2071,7 +2245,7 @@ reviewPageForm.addEventListener("submit", (event) => {
   const tutorRatings = ratings[selectedTutor.name] || [];
   const review = {
     score: Number(reviewScore.value),
-    note: reviewText.value.trim() || "Helpful, clear, and supportive.",
+    note: reviewText.value.trim(),
     by: currentAccount.name,
     byEmail: currentAccount.email,
     tutor: selectedTutor.name,

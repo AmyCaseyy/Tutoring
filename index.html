@@ -38,7 +38,7 @@
         <a href="#about" data-route="about" data-public-only>About us</a>
         <a href="#" id="becomeTutorLink" data-public-only>Become a tutor</a>
         <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
-        <a href="#messages" data-route="messages" data-auth-only>Messages</a>
+        <a href="#messages" data-route="messages" data-auth-only>Messages <span class="message-badge" id="messageBadge" hidden>0</span></a>
         <a href="#bookings" data-route="bookings" data-auth-only>Bookings</a>
         <a href="#dashboard" data-route="dashboard" data-auth-only>Dashboard</a>
       </nav>
@@ -493,14 +493,18 @@
             <form class="booking-builder" id="bookingPageForm">
               <label class="field">
                 <span id="bookingPersonLabel">Tutor</span>
+                <input id="bookingTutorSearch" type="search" placeholder="Search tutor name" autocomplete="off" />
                 <select id="bookingTutor"></select>
               </label>
               <label class="field">
                 <span>Lesson type</span>
                 <select id="bookingLessonType">
                   <option value="Free trial">Free 30-minute trial</option>
-                  <option value="Weekly lesson">Weekly lesson</option>
                   <option value="One-off lesson">One-off lesson</option>
+                  <option value="Weekly lesson">Weekly lesson</option>
+                  <option value="Twice weekly lesson">2 times a week</option>
+                  <option value="Fortnightly lesson">Every 2 weeks</option>
+                  <option value="Monthly lesson">Monthly lesson</option>
                 </select>
               </label>
               <label class="field">
@@ -911,6 +915,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260916-booking-rules-2"></script>
+    <script src="app.js?v=20260916-booking-chat-recurring"></script>
   </body>
 </html>
