@@ -8,7 +8,7 @@ const tutors = [
     lessons: 420,
     price: 45,
     style: "Exam technique, synoptic essays, calm weekly structure",
-    badges: ["AQA", "Medicine offer", "Free trial"],
+    badges: ["AQA", "Medicine offer"],
     initials: "PS",
     score: 98
   },
@@ -21,7 +21,7 @@ const tutors = [
     lessons: 315,
     price: 38,
     style: "Pure maths, mechanics, confidence after mocks",
-    badges: ["Edexcel", "STEP prep", "Free trial"],
+    badges: ["Edexcel", "STEP prep"],
     initials: "LG",
     score: 95
   },
@@ -34,7 +34,7 @@ const tutors = [
     lessons: 510,
     price: 55,
     style: "Organic mechanisms, practical papers, top-band answers",
-    badges: ["OCR A", "Oxbridge", "Free trial"],
+    badges: ["OCR A", "Oxbridge"],
     initials: "AO",
     score: 99
   },
@@ -47,7 +47,7 @@ const tutors = [
     lessons: 260,
     price: 32,
     style: "Research methods, biopsychology, evaluation technique",
-    badges: ["AQA", "Essay structure", "Free trial"],
+    badges: ["AQA", "Essay structure"],
     initials: "NP",
     score: 88
   },
@@ -60,7 +60,7 @@ const tutors = [
     lessons: 198,
     price: 35,
     style: "Topic repair, formula fluency, practical questions",
-    badges: ["OCR", "Engineering", "Free trial"],
+    badges: ["OCR", "Engineering"],
     initials: "TM",
     score: 90
   },
@@ -73,7 +73,7 @@ const tutors = [
     lessons: 144,
     price: 28,
     style: "Diagrams, evaluation, timed essays, real examples",
-    badges: ["Edexcel", "Essay drills", "Free trial"],
+    badges: ["Edexcel", "Essay drills"],
     initials: "SB",
     score: 84
   },
@@ -86,7 +86,7 @@ const tutors = [
     lessons: 286,
     price: 42,
     style: "Further pure, decision maths, STEP-style problem solving",
-    badges: ["Edexcel", "STEP prep", "Free trial"],
+    badges: ["Edexcel", "STEP prep"],
     initials: "MB",
     score: 94
   },
@@ -99,7 +99,7 @@ const tutors = [
     lessons: 176,
     price: 30,
     style: "Case studies, fieldwork write-ups, high-mark evaluation",
-    badges: ["AQA", "NEA support", "Free trial"],
+    badges: ["AQA", "NEA support"],
     initials: "HC",
     score: 87
   },
@@ -112,7 +112,7 @@ const tutors = [
     lessons: 232,
     price: 36,
     style: "Python, algorithms, pseudocode, and exam paper technique",
-    badges: ["OCR", "Programming", "Free trial"],
+    badges: ["OCR", "Programming"],
     initials: "IK",
     score: 92
   },
@@ -125,7 +125,7 @@ const tutors = [
     lessons: 154,
     price: 29,
     style: "Cell biology, genetics, practical skills, and recall systems",
-    badges: ["SQA", "Exam recall", "Free trial"],
+    badges: ["SQA", "Exam recall"],
     initials: "EF",
     score: 83
   },
@@ -138,7 +138,7 @@ const tutors = [
     lessons: 201,
     price: 34,
     style: "Calculations, mechanisms, practical papers, and confidence",
-    badges: ["AQA", "OCR A", "Free trial"],
+    badges: ["AQA", "OCR A"],
     initials: "SA",
     score: 89
   },
@@ -151,7 +151,7 @@ const tutors = [
     lessons: 132,
     price: 28,
     style: "Electricity, mechanics, waves, and equation fluency",
-    badges: ["AQA", "Engineering", "Free trial"],
+    badges: ["AQA", "Engineering"],
     initials: "DR",
     score: 80
   },
@@ -164,7 +164,7 @@ const tutors = [
     lessons: 348,
     price: 40,
     style: "Pure maths, stats, mechanics, and exam speed",
-    badges: ["Edexcel", "AQA", "Free trial"],
+    badges: ["Edexcel", "AQA"],
     initials: "IM",
     score: 96
   },
@@ -177,7 +177,7 @@ const tutors = [
     lessons: 187,
     price: 27,
     style: "Memory, attachment, psychopathology, and evaluation points",
-    badges: ["AQA", "Essay plans", "Free trial"],
+    badges: ["AQA", "Essay plans"],
     initials: "AR",
     score: 86
   },
@@ -190,7 +190,7 @@ const tutors = [
     lessons: 119,
     price: 26,
     style: "Micro, macro, diagrams, chains of analysis, and evaluation",
-    badges: ["Edexcel", "AQA", "Free trial"],
+    badges: ["Edexcel", "AQA"],
     initials: "TE",
     score: 79
   },
@@ -203,7 +203,7 @@ const tutors = [
     lessons: 141,
     price: 28,
     style: "Human geography, hazards, data response, and case study recall",
-    badges: ["OCR", "AQA", "Free trial"],
+    badges: ["OCR", "AQA"],
     initials: "CM",
     score: 82
   }
@@ -239,7 +239,7 @@ const roleDashboards = {
     ],
     lessons: [
       ["Mon 18:00", "GCSE and A-Level Biology", "Recurring weekly with Priya Shah"],
-      ["Wed 19:30", "Mathematics trial", "Free 30-minute session with Leo Grant"]
+      ["Wed 19:30", "Mathematics", "Recurring lesson with Leo Grant"]
     ],
     chatTitle: "Tutor chat",
     chatWith: "Priya Shah",
@@ -274,17 +274,17 @@ const roleDashboards = {
   tutor: {
     tools: [
       ["Profile", "Update subjects, grades, teaching style, and session notes."],
-      ["Availability", "Approve trials, block busy times, and manage recurring lessons."],
+      ["Availability", "Approve requests, block busy times, and manage recurring lessons."],
       ["Bookings", "Review student requests and keep lesson admin organised."]
     ],
     lessons: [
-      ["Today 16:30", "Trial request", "Maya wants GCSE Biology support"],
+      ["Today 16:30", "Lesson request", "Maya wants GCSE Biology support"],
       ["Fri 19:00", "Recurring lesson", "Essay planning with Hannah"]
     ],
     chatTitle: "Student and parent chat",
     chatWith: "Maya and parent",
     messages: [
-      ["incoming", "Could we do a free trial next week?"],
+      ["incoming", "Could we book a lesson next week?"],
       ["outgoing", "Yes, I have Tuesday at 16:30 or Thursday at 18:00."]
     ],
     ratingTitle: "Tutor ratings",
@@ -306,6 +306,13 @@ const bookingTitle = document.querySelector("#bookingTitle");
 const lessonType = document.querySelector("#lessonType");
 const signupForm = document.querySelector("#signupForm");
 const loginPanel = document.querySelector("#loginPanel");
+const accountLoginView = document.querySelector("#accountLoginView");
+const showSignupFlow = document.querySelector("#showSignupFlow");
+const showLoginFlow = document.querySelector("#showLoginFlow");
+const signupSubject = document.querySelector("#signupSubject");
+const signupProgressBar = document.querySelector("#signupProgressBar");
+const signupContext = document.querySelector("#signupContext");
+const marketingOptIn = document.querySelector("#marketingOptIn");
 const signupRole = document.querySelector("#signupRole");
 const signupName = document.querySelector("#signupName");
 const signupEmail = document.querySelector("#signupEmail");
@@ -406,6 +413,13 @@ let cloudTutorProfiles = [];
 let cloudBookings = [];
 let cloudMessages = [];
 let pendingProfilePhoto = "";
+const signupWizard = {
+  stepIndex: 0,
+  steps: ["subject", "level", "role", "name", "dob", "email", "password"],
+  subject: "",
+  level: "",
+  role: "student"
+};
 
 const firebaseBackend = window.tutrStemFirebase || null;
 const auth = firebaseBackend?.auth || null;
@@ -427,7 +441,7 @@ const storage = {
 
 function showPage(pageName, options = {}) {
   const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy"];
-  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "trial-space", "help", "support"];
+  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "help", "support"];
   const fallback = currentAccount ? "dashboard" : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
 
@@ -484,6 +498,63 @@ function showConfirmation(message) {
   pendingConfirmation = message;
   loginConfirmation.hidden = false;
   loginConfirmation.textContent = message;
+}
+
+function showLoginAccountView() {
+  accountLoginView.hidden = false;
+  signupForm.hidden = true;
+}
+
+function showSignupAccountView() {
+  accountLoginView.hidden = true;
+  signupForm.hidden = false;
+  renderSignupStep("subject");
+}
+
+function renderSignupStep(stepName = signupWizard.steps[signupWizard.stepIndex]) {
+  signupWizard.stepIndex = Math.max(0, signupWizard.steps.indexOf(stepName));
+  document.querySelectorAll("[data-signup-step]").forEach((step) => {
+    step.classList.toggle("active", step.dataset.signupStep === stepName);
+  });
+  const progress = ((signupWizard.stepIndex + 1) / signupWizard.steps.length) * 100;
+  if (signupProgressBar) signupProgressBar.style.width = `${progress}%`;
+  if (signupContext) {
+    signupContext.innerHTML = `Subject: <strong>${escapeHtml(signupWizard.subject || "Not chosen")}</strong> | Level: <strong>${escapeHtml(signupWizard.level || "Not chosen")}</strong>`;
+  }
+  const firstInput = document.querySelector(`[data-signup-step="${stepName}"] input, [data-signup-step="${stepName}"] select`);
+  firstInput?.focus();
+}
+
+function nextSignupStep() {
+  const next = signupWizard.steps[Math.min(signupWizard.stepIndex + 1, signupWizard.steps.length - 1)];
+  renderSignupStep(next);
+}
+
+function setSignupSubject(value) {
+  signupWizard.subject = value;
+  if (signupSubject) signupSubject.value = value;
+  document.querySelectorAll("[data-subject-choice]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.subjectChoice === value);
+  });
+  nextSignupStep();
+}
+
+function setSignupLevel(value) {
+  signupWizard.level = value;
+  document.querySelectorAll("[data-level-choice]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.levelChoice === value);
+  });
+  nextSignupStep();
+}
+
+function setSignupRoleChoice(value) {
+  signupWizard.role = value;
+  signupRole.value = value;
+  document.querySelectorAll("[data-role-choice]").forEach((button) => {
+    button.classList.toggle("selected", button.dataset.roleChoice === value);
+  });
+  updateSignupMode();
+  nextSignupStep();
 }
 
 function escapeHtml(value) {
@@ -1116,8 +1187,7 @@ function getFilteredTutors() {
     const subjectMatch = subject === "All" || tutor.subject === subject;
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
     const gradeMatch = minGrade === "Any" || gradeRank(tutor.grade) >= gradeRank(minGrade);
-    const badges = Array.isArray(tutor.badges) ? tutor.badges : [];
-    const trialMatch = !trialOnly.checked || badges.includes("Free trial");
+    const trialMatch = true;
     return nameMatch && subjectMatch && uniMatch && gradeMatch && trialMatch;
   });
 
@@ -1155,10 +1225,7 @@ function renderTutors() {
         ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
       </div>
       <div class="card-footer">
-        ${(Array.isArray(tutor.badges) && tutor.badges.includes("Free trial")) ? `<div class="lesson-note">
-          <strong>Free trial available</strong>
-          <span>30-minute fit check</span>
-        </div>` : "<span></span>"}
+        <span></span>
         <div class="card-actions">
           <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
@@ -2078,7 +2145,12 @@ function setAccount(account, options = {}) {
   }
 
   if (options.redirect) {
-    showPage("dashboard");
+    if (account.role === "tutor") {
+      showPage("dashboard");
+    } else {
+      applyLearningFilters(account);
+      showPage("tutors");
+    }
   }
 }
 
@@ -2107,13 +2179,30 @@ function canBook() {
 
 function ageFromDob(value) {
   if (!value) return null;
-  const dob = new Date(value);
+  const dob = new Date(normalizeDobInput(value));
   if (Number.isNaN(dob.getTime())) return null;
   const today = new Date();
   let age = today.getFullYear() - dob.getFullYear();
   const beforeBirthday = today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate());
   if (beforeBirthday) age -= 1;
   return age;
+}
+
+function normalizeDobInput(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return text;
+  const [, day, month, year] = match;
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function applyLearningFilters(account) {
+  if (!account || account.role === "tutor") return;
+  if (account.learningSubject) {
+    const option = [...subjectFilter.options].find((item) => item.text.toLowerCase() === String(account.learningSubject).toLowerCase());
+    subjectFilter.value = option ? option.value : "All";
+  }
+  renderTutors();
 }
 
 function requestRating() {
@@ -2137,8 +2226,8 @@ function updateSignupMode() {
   const role = signupRole.value;
   const heading = signupForm.querySelector("h3");
   const button = signupForm.querySelector("button[type='submit']");
-  heading.textContent = role === "parent" ? "Parent sign up" : role === "tutor" ? "Approved tutor sign up" : "Student sign up";
-  button.textContent = role === "parent" ? "Create parent account" : role === "tutor" ? "Create tutor account" : "Create student account";
+  if (heading) heading.textContent = role === "parent" ? "Parent sign up" : role === "tutor" ? "Approved tutor sign up" : "Student sign up";
+  if (button) button.textContent = role === "parent" ? "Create parent account" : role === "tutor" ? "Create tutor account" : "Create student account";
   document.querySelectorAll(".parent-field").forEach((field) => {
     field.hidden = role !== "student";
   });
@@ -2182,7 +2271,7 @@ window.addEventListener("hashchange", () => {
   showPage(getRouteFromHash(), { keepScroll: true });
 });
 
-[nameFilter, subjectFilter, uniFilter, gradeFilter, sortFilter, trialOnly].forEach((control) => {
+[nameFilter, subjectFilter, uniFilter, gradeFilter, sortFilter, trialOnly].filter(Boolean).forEach((control) => {
   control.addEventListener("input", renderTutors);
   control.addEventListener("change", renderTutors);
 });
@@ -2210,7 +2299,7 @@ document.querySelector("#resetFilters").addEventListener("click", () => {
   uniFilter.value = "";
   gradeFilter.value = "Any";
   sortFilter.value = "recommended";
-  trialOnly.checked = true;
+  if (trialOnly) trialOnly.checked = false;
   renderTutors();
 });
 
@@ -2408,6 +2497,49 @@ signupRole.addEventListener("change", () => {
   }
 });
 
+showSignupFlow?.addEventListener("click", showSignupAccountView);
+showLoginFlow?.addEventListener("click", showLoginAccountView);
+document.querySelectorAll("[data-login-role]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const role = button.dataset.loginRole;
+    loginPanel.hidden = false;
+    document.querySelector("#loginPanelTitle").textContent = `${button.textContent.trim()}`;
+    signupRole.value = role;
+    updateSignupMode();
+    loginEmail.focus();
+  });
+});
+document.querySelectorAll("[data-subject-choice]").forEach((button) => {
+  button.addEventListener("click", () => setSignupSubject(button.dataset.subjectChoice));
+});
+signupSubject?.addEventListener("change", () => {
+  if (signupSubject.value) setSignupSubject(signupSubject.value);
+});
+document.querySelectorAll("[data-level-choice]").forEach((button) => {
+  button.addEventListener("click", () => setSignupLevel(button.dataset.levelChoice));
+});
+document.querySelectorAll("[data-role-choice]").forEach((button) => {
+  button.addEventListener("click", () => setSignupRoleChoice(button.dataset.roleChoice));
+});
+document.querySelectorAll("[data-next-signup]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const step = signupWizard.steps[signupWizard.stepIndex];
+    if (step === "name" && !signupName.value.trim()) {
+      signupName.focus();
+      return;
+    }
+    if (step === "dob" && !normalizeDobInput(signupDob.value)) {
+      signupDob.focus();
+      return;
+    }
+    if (step === "email" && !signupEmail.value.trim()) {
+      signupEmail.focus();
+      return;
+    }
+    nextSignupStep();
+  });
+});
+
 signupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = normalizeEmail(signupEmail.value);
@@ -2415,14 +2547,7 @@ signupForm.addEventListener("submit", async (event) => {
   const confirmPassword = signupConfirmPassword.value;
   const accounts = getAccounts();
   const role = signupRole.value;
-  const age = ageFromDob(signupDob.value);
-
-  if (role === "student" && age !== null && age < 18 && (!signupParentName.value.trim() || !signupParentEmail.value.trim())) {
-    signupStatus.textContent = "Parent or guardian details are required for students under 18.";
-    signupStatus.classList.remove("success");
-    signupParentName.focus();
-    return;
-  }
+  const dobValue = normalizeDobInput(signupDob.value);
 
   if (password !== confirmPassword) {
     signupStatus.textContent = "Passwords do not match. Retype the same password to create the account.";
@@ -2443,7 +2568,10 @@ signupForm.addEventListener("submit", async (event) => {
     role,
     name: signupName.value.trim(),
     email,
-    dob: signupDob.value,
+    dob: dobValue,
+    learningSubject: signupWizard.subject || signupSubject?.value || "",
+    learningLevel: signupWizard.level || "",
+    marketingOptIn: marketingOptIn?.checked || false,
     parentName: role === "student" ? signupParentName.value.trim() : "",
     parentEmail: role === "student" ? normalizeEmail(signupParentEmail.value) : "",
     password
@@ -2451,7 +2579,7 @@ signupForm.addEventListener("submit", async (event) => {
 
   if (isCloudReady()) {
     try {
-      signupForm.querySelector("button").disabled = true;
+      signupForm.querySelector("button[type='submit']").disabled = true;
       let approvedRecord = null;
       if (role === "tutor") {
         signupStatus.textContent = "Checking tutor approval...";
@@ -2459,7 +2587,7 @@ signupForm.addEventListener("submit", async (event) => {
         if (!approvedRecord || approvedRecord.status !== "approved") {
           signupStatus.textContent = "This tutor email has not been approved yet. Please apply first or ask the tutrSTEM team to approve the exact email.";
           signupStatus.classList.remove("success");
-          signupForm.querySelector("button").disabled = false;
+          signupForm.querySelector("button[type='submit']").disabled = false;
           return;
         }
       }
@@ -2481,10 +2609,10 @@ signupForm.addEventListener("submit", async (event) => {
       signupPassword.value = "";
       signupConfirmPassword.value = "";
       setAccount(account, { confirm: true, redirect: true });
-      signupForm.querySelector("button").disabled = false;
+      signupForm.querySelector("button[type='submit']").disabled = false;
       return;
     } catch (error) {
-      signupForm.querySelector("button").disabled = false;
+      signupForm.querySelector("button[type='submit']").disabled = false;
       signupStatus.textContent = error.code === "auth/email-already-in-use"
         ? "An account already exists with that email. Use the login form instead."
         : "Firebase could not create the account yet. Check Authentication is enabled.";
@@ -2754,7 +2882,7 @@ lessonType.addEventListener("change", updateDueToday);
 
 dialog.addEventListener("close", () => {
   if (!currentAccount || dialog.returnValue !== "confirm") return;
-  addActivity(`Requested ${lessonType.value === "trial" ? "a free trial" : "a lesson"} with ${selectedTutor.name}`, "Booking");
+  addActivity(`Requested a lesson with ${selectedTutor.name}`, "Booking");
   renderDashboard(currentAccount.role);
 });
 
