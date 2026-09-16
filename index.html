@@ -394,6 +394,7 @@
                 <label class="field tutor-profile-field">
                   <span>Tutoring level</span>
                   <select id="profileLevel">
+                    <option value="">Choose a level</option>
                     <option value="GCSE and A-Level">GCSE and A-Level</option>
                     <option value="GCSE">GCSE</option>
                     <option value="A-Level">A-Level</option>
@@ -512,14 +513,15 @@
                 <div class="booking-time-grid">
                   <input id="bookingDate" type="date" aria-label="Lesson date" />
                   <select id="bookingHour" aria-label="Lesson hour"></select>
-                  <select id="bookingMinute" aria-label="Lesson minute">
-                    <option value="00">00</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="40">40</option>
-                    <option value="50">50</option>
-                  </select>
+                  <div class="minute-options" id="bookingMinuteOptions" aria-label="Lesson minute">
+                    <button type="button" data-minute="00">00</button>
+                    <button type="button" data-minute="10">10</button>
+                    <button type="button" data-minute="20">20</button>
+                    <button type="button" data-minute="30">30</button>
+                    <button type="button" data-minute="40">40</button>
+                    <button type="button" data-minute="50">50</button>
+                  </div>
+                  <input id="bookingMinute" type="hidden" value="00" />
                 </div>
                 <input id="bookingDateTime" type="hidden" />
               </label>

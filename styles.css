@@ -1064,6 +1064,14 @@ img.avatar {
   gap: 18px;
 }
 
+body[data-role="tutor"] #bookingPageForm {
+  display: none !important;
+}
+
+body[data-role="tutor"] .bookings-layout {
+  grid-template-columns: 1fr;
+}
+
 .profile-hero-card {
   display: grid;
   grid-template-columns: 180px 1fr 260px;
@@ -1231,8 +1239,31 @@ img.profile-photo {
 
 .booking-time-grid {
   display: grid;
-  grid-template-columns: 1fr 88px 88px;
+  grid-template-columns: 1fr 88px;
   gap: 8px;
+}
+
+.minute-options {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.minute-options button {
+  min-height: 44px;
+  padding: 0;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(25, 24, 21, 0.16);
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.minute-options button.active {
+  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
 }
 
 .booking-lists {

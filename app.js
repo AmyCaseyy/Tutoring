@@ -378,6 +378,7 @@ const bookingPersonLabel = document.querySelector("#bookingPersonLabel");
 const bookingLessonType = document.querySelector("#bookingLessonType");
 const bookingDate = document.querySelector("#bookingDate");
 const bookingHour = document.querySelector("#bookingHour");
+const bookingMinuteOptions = document.querySelector("#bookingMinuteOptions");
 const bookingMinute = document.querySelector("#bookingMinute");
 const bookingDateTime = document.querySelector("#bookingDateTime");
 const bookingSubmitButton = document.querySelector("#bookingSubmitButton");
@@ -532,6 +533,27 @@ function pad2(value) {
   return String(value).padStart(2, "0");
 }
 
+function cleanAutoText(value) {
+  const text = String(value || "").trim();
+  const blocked = new Set([
+    "Subject to be added",
+    "University to be added",
+    "GCSE and A-Level",
+    "A*",
+    "Supportive online lessons, exam practice, and confidence building",
+    "Tutor-created profile"
+  ]);
+  if (blocked.has(text)) return "";
+  if (/^Hi, I'm .*(confidence|exam preparation|GCSE and A-Level|feel calmer|teach)/i.test(text)) return "";
+  if (/^My sessions are structured around/i.test(text)) return "";
+  return text;
+}
+
+function cleanAutoBadges(badges = []) {
+  const blocked = new Set(["New tutor", "Free trial", "Verified"]);
+  return (Array.isArray(badges) ? badges : []).filter((badge) => !blocked.has(badge));
+}
+
 async function saveAccountToCloud(account, uid = auth?.currentUser?.uid) {
   if (!isCloudReady() || !uid) return;
   await db.collection("users").doc(uid).set({
@@ -595,20 +617,20 @@ async function createHiddenTutorProfile(account, approvedRecord = {}) {
     uid: account.uid,
     email: account.email,
     name: account.name,
-    subject: "Subject to be added",
-    university: "University to be added",
-    grade: "A*",
-    rating: 5,
+    subject: "",
+    university: "",
+    grade: "",
+    rating: 0,
     lessons: 0,
-    level: "GCSE and A-Level",
-    price: 35,
-    style: "Supportive online lessons, exam practice, and confidence building",
+    level: "",
+    price: 0,
+    style: "",
     about: "",
     sessions: "",
     photo: "",
-    badges: ["New tutor", "Free trial", "Verified"],
-    initials: initialsFromName(account.name),
-    score: 87,
+    badges: [],
+    initials: "",
+    score: 0,
     visible: approvedRecord.visible === true,
     approvedTutorId: approvedRecord.id || account.email,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -742,7 +764,7 @@ function isApprovedTutorAccount(account) {
 }
 
 function tutorLevelLabel(tutor) {
-  return tutor.level || tutor.qualificationLevel || "A-Level";
+  return tutor.level || tutor.qualificationLevel || "";
 }
 
 function tutorPhotoMarkup(tutor, className = "profile-photo") {
@@ -750,7 +772,7 @@ function tutorPhotoMarkup(tutor, className = "profile-photo") {
   if (photo) {
     return `<img class="${className}" src="${escapeHtml(photo)}" alt="${escapeHtml(tutor.name)} profile picture" />`;
   }
-  return `<div class="${className}" aria-hidden="true">${escapeHtml(tutor.initials)}</div>`;
+  return "";
 }
 
 function updateProfilePhotoPreview(value, fallbackName = "") {
@@ -763,7 +785,7 @@ function updateProfilePhotoPreview(value, fallbackName = "") {
     profilePhotoPreview.append(image);
     return;
   }
-  profilePhotoPreview.textContent = initialsFromName(fallbackName || profileName.value || currentAccount?.name || "TS");
+  profilePhotoPreview.textContent = "";
 }
 
 function resizeProfileImage(file) {
@@ -845,6 +867,22 @@ function cloudMessageToBubble(message) {
   };
 }
 
+function messageFingerprint(message) {
+  return [
+    normalizeEmail(message.senderEmail),
+    normalizeEmail(message.recipientEmail),
+    String(message.text || message.body || "").trim(),
+    message.clientCreatedAt || message.time || message.timeLabel || ""
+  ].join("|");
+}
+
+function looseMessageFingerprint(message) {
+  return [
+    String(message.text || message.body || "").trim(),
+    message.time || message.timeLabel || message.clientCreatedAt || ""
+  ].join("|");
+}
+
 function nowLabel() {
   return new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -912,21 +950,21 @@ function saveProfile(profile) {
     saveTutorProfileToCloud({
       name: profile.name || currentAccount.name,
       email: currentAccount.email,
-      subject: profile.subject || "Subject to be added",
-      university: profile.university || "University to be added",
-      grade: profile.grade || "A*",
-      rating: 5,
+      subject: profile.subject || "",
+      university: profile.university || "",
+      grade: profile.grade || "",
+      rating: Number(profile.rating || 0),
       lessons: Number(profile.lessons || 0),
-      price: Number(profile.price || 35),
-      level: profile.level || "GCSE and A-Level",
+      price: Number(profile.price || 0),
+      level: profile.level || "",
       detail: profile.detail || "",
-      style: profile.detail || "Supportive online lessons, exam practice, and confidence building",
+      style: profile.detail || "",
       about: profile.about || "",
       sessions: profile.sessions || "",
       photo: profile.photo || "",
-      badges: ["New tutor", "Free trial", "Verified"],
-      initials: initialsFromName(profile.name || currentAccount.name),
-      score: 87
+      badges: Array.isArray(profile.badges) ? profile.badges : [],
+      initials: "",
+      score: Number(profile.score || 0)
     }, currentAccount.uid).catch(() => {});
   }
 }
@@ -955,7 +993,7 @@ function getStudentsForTutor() {
         role: "student",
         name: booking.student || email,
         email,
-        subject: booking.subject || "Lesson support"
+        subject: booking.subject || ""
       });
     }
   });
@@ -965,7 +1003,7 @@ function getStudentsForTutor() {
         role: "student",
         name: email,
         email,
-        subject: "Message thread"
+        subject: ""
       });
     }
   });
@@ -978,13 +1016,13 @@ function getStudentsForTutor() {
 function studentSummary(account) {
   const profile = getProfileForAccount(account);
   return {
-    name: profile.name || account?.name || "Student",
-    subject: profile.subject || "GCSE or A-Level support",
-    detail: profile.detail || "Learning goals and lesson notes will appear here once saved.",
-    about: profile.about || "This student has not added extra profile notes yet.",
+    name: profile.name || account?.name || "",
+    subject: profile.subject || "",
+    detail: profile.detail || "",
+    about: profile.about || "",
     role: account?.role || "student",
     email: account?.email || "",
-    initials: initialsFromName(profile.name || account?.name || "Student")
+    initials: initialsFromName(profile.name || account?.name || "")
   };
 }
 
@@ -999,47 +1037,47 @@ function getTutorProfiles() {
     .filter((account) => !isCloudReady() || account.email === currentAccount?.email)
     .map((account) => {
       const profile = profiles[account.email] || {};
-      const subject = profile.subject || "Biology";
+      const subject = cleanAutoText(profile.subject);
       return {
         name: profile.name || account.name,
         subject,
-        university: profile.university || "tutrSTEM verified tutor",
-        grade: profile.grade || "A*",
-        rating: 5,
+        university: cleanAutoText(profile.university),
+        grade: cleanAutoText(profile.grade),
+        rating: Number(profile.rating || 0),
         lessons: profile.lessons || 0,
-        price: Number(profile.price || 35),
-        level: profile.level || "GCSE and A-Level",
-        style: profile.detail || "Supportive online lessons, exam practice, and confidence building",
-        badges: ["New tutor", "Free trial", "Verified"],
-        initials: initialsFromName(profile.name || account.name),
-        score: 87,
+        price: Number(profile.price || 0),
+        level: cleanAutoText(profile.level),
+        style: cleanAutoText(profile.detail || profile.style),
+        badges: cleanAutoBadges(profile.badges),
+        initials: "",
+        score: Number(profile.score || 0),
         email: account.email,
         visible: !isCloudReady() || account.email === currentAccount?.email,
         photo: profile.photo || "",
-        about: profile.about || `Hi, I'm ${profile.name || account.name}. I help students feel calmer, clearer, and more prepared for exams.`,
-        sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
+        about: cleanAutoText(profile.about),
+        sessions: cleanAutoText(profile.sessions)
       };
     });
   const cloudProfiles = cloudTutorProfiles
     .filter((profile) => profile.visible === true || profile.email === currentAccount?.email)
     .map((profile) => ({
-    name: profile.name || "Tutor",
-    subject: profile.subject || "Subject to be added",
-    university: profile.university || "University to be added",
-    grade: profile.grade || "A*",
-    rating: Number(profile.rating || 5),
+    name: profile.name || "",
+    subject: cleanAutoText(profile.subject),
+    university: cleanAutoText(profile.university),
+    grade: cleanAutoText(profile.grade),
+    rating: Number(profile.rating || 0),
     lessons: Number(profile.lessons || 0),
-    price: Number(profile.price || 35),
-    level: profile.level || "GCSE and A-Level",
-    style: profile.detail || profile.style || "Supportive online lessons, exam practice, and confidence building",
-    badges: profile.badges || ["New tutor", "Free trial", "Verified"],
-    initials: profile.initials || initialsFromName(profile.name || "Tutor"),
-    score: Number(profile.score || 87),
+    price: Number(profile.price || 0),
+    level: cleanAutoText(profile.level),
+    style: cleanAutoText(profile.detail || profile.style),
+    badges: cleanAutoBadges(profile.badges),
+    initials: profile.initials || "",
+    score: Number(profile.score || 0),
     email: profile.email,
     visible: profile.visible === true,
     photo: profile.photo || profile.photoUrl || profile.profilePhoto || "",
-    about: profile.about || `Hi, I'm ${profile.name || "a tutor"}. I help students feel calmer, clearer, and more prepared for exams.`,
-    sessions: profile.sessions || "Lessons are adapted to each student, with a mix of topic repair, guided practice, and exam-style questions."
+    about: cleanAutoText(profile.about),
+    sessions: cleanAutoText(profile.sessions)
   }));
   const seen = new Set();
   return [...accountProfiles, ...cloudProfiles].filter((profile) => {
@@ -1078,7 +1116,8 @@ function getFilteredTutors() {
     const subjectMatch = subject === "All" || tutor.subject === subject;
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
     const gradeMatch = minGrade === "Any" || gradeRank(tutor.grade) >= gradeRank(minGrade);
-    const trialMatch = !trialOnly.checked || tutor.badges.includes("Free trial");
+    const badges = Array.isArray(tutor.badges) ? tutor.badges : [];
+    const trialMatch = !trialOnly.checked || badges.includes("Free trial");
     return nameMatch && subjectMatch && uniMatch && gradeMatch && trialMatch;
   });
 
@@ -1106,20 +1145,20 @@ function renderTutors() {
           <h3>${escapeHtml(tutor.name)}</h3>
           <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
         </div>
-        <span class="rating">${getTutorRating(tutor).toFixed(2)}</span>
+        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span class="rating">${getTutorRating(tutor).toFixed(2)}</span>` : ""}
       </div>
-      <p>${escapeHtml(tutor.style)}</p>
+      ${tutor.style ? `<p>${escapeHtml(tutor.style)}</p>` : ""}
       <div class="chips">
-        <span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>
-        <span class="chip">Top exam grade: ${tutor.grade}</span>
-        <span class="chip">${tutor.lessons} lessons</span>
-        ${tutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
+        ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
+        ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
+        ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
+        ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
       </div>
       <div class="card-footer">
-        <div class="lesson-note">
+        ${(Array.isArray(tutor.badges) && tutor.badges.includes("Free trial")) ? `<div class="lesson-note">
           <strong>Free trial available</strong>
           <span>30-minute fit check</span>
-        </div>
+        </div>` : "<span></span>"}
         <div class="card-actions">
           <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
@@ -1167,13 +1206,27 @@ function getMessages() {
   const allMessages = readStore(storage.messages, {});
   const key = threadKey();
   const localMessages = allMessages[key] || [];
-  const cloudThread = cloudMessages
+  const rawCloudThread = cloudMessages
     .filter((message) => message.threadKey === key)
     .map(cloudMessageToBubble);
+  const cloudByLooseKey = new Map();
+  rawCloudThread.forEach((message) => {
+    const looseKey = looseMessageFingerprint(message);
+    const existing = cloudByLooseKey.get(looseKey);
+    if (!existing || (existing.direction !== "outgoing" && message.direction === "outgoing")) {
+      cloudByLooseKey.set(looseKey, message);
+    }
+  });
+  const cloudThread = [...cloudByLooseKey.values()];
+  const cloudIds = new Set(cloudThread.map((message) => message.id).filter(Boolean));
+  const cloudFingerprints = new Set(cloudThread.map(messageFingerprint));
+  const unsyncedLocal = localMessages.filter((message) => (
+    !cloudIds.has(message.id) && !cloudFingerprints.has(messageFingerprint(message))
+  ));
   const seen = new Set();
-  return [...localMessages, ...cloudThread]
+  return [...cloudThread, ...unsyncedLocal]
     .filter((message) => {
-      const signature = message.id || `${message.senderEmail || message.direction}-${message.text}-${message.clientCreatedAt || message.time}`;
+      const signature = message.id || messageFingerprint(message);
       if (seen.has(signature)) return false;
       seen.add(signature);
       return true;
@@ -1203,6 +1256,9 @@ async function saveMessage(message) {
         ...cloudMessages.filter((item) => item.id !== cloudMessage.id),
         cloudMessage
       ].sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
+      allMessages[key] = (allMessages[key] || []).filter((item) => item.id !== enrichedMessage.id);
+      writeStore(storage.messages, allMessages);
+      await loadCloudData();
     }
   } catch {
     showConfirmation("Message saved on this device, but Firebase did not save it yet. Check Firestore rules and try again.");
@@ -1368,14 +1424,14 @@ function renderProfile(role) {
 
   const profile = getProfile();
   profileName.value = profile.name || currentAccount.name;
-  profileSubject.value = profile.subject || (role === "tutor" ? "Biology" : "GCSE or A-Level Biology");
-  profileDetail.value = profile.detail || (role === "tutor" ? "Exam technique and calm weekly structure" : "Mocks, confidence, and exam technique");
-  profileUniversity.value = profile.university || "";
-  if (profileLevel) profileLevel.value = profile.level || "GCSE and A-Level";
+  profileSubject.value = cleanAutoText(profile.subject);
+  profileDetail.value = cleanAutoText(profile.detail);
+  profileUniversity.value = cleanAutoText(profile.university);
+  if (profileLevel) profileLevel.value = cleanAutoText(profile.level);
   pendingProfilePhoto = profile.photo || "";
   updateProfilePhotoPreview(pendingProfilePhoto, profile.name || currentAccount.name);
-  profileAbout.value = profile.about || "";
-  profileSessions.value = profile.sessions || "";
+  profileAbout.value = cleanAutoText(profile.about);
+  profileSessions.value = cleanAutoText(profile.sessions);
   profileBadge.textContent = profile.updated ? "Saved" : "Draft";
   profileSubjectLabel.textContent = role === "tutor" ? "Subjects you teach" : "Subjects you want help with";
   profileDetailLabel.textContent = role === "tutor" ? "Teaching style" : "Learning goal";
@@ -1439,21 +1495,23 @@ function getReviewsFor(tutor) {
 function renderPublicProfile() {
   const reviews = getReviewsFor(selectedTutor);
   const isOwnTutorProfile = currentAccount?.role === "tutor" && selectedTutor.email === currentAccount.email;
+  const profileMeta = [selectedTutor.subject, selectedTutor.university].filter(Boolean).join(" · ");
+  const profileChips = [
+    tutorLevelLabel(selectedTutor) ? `${tutorLevelLabel(selectedTutor)} tutoring` : "",
+    ...(Array.isArray(selectedTutor.badges) ? selectedTutor.badges : [])
+  ].filter(Boolean);
   publicProfile.innerHTML = `
     <div class="profile-hero-card">
       ${tutorPhotoMarkup(selectedTutor, "profile-photo")}
       <div>
         <p class="eyebrow">Tutor profile</p>
         <h2>${escapeHtml(selectedTutor.name)}</h2>
-        <p class="profile-rate">${escapeHtml(selectedTutor.subject)} support</p>
-        <p>${escapeHtml(selectedTutor.subject)} · ${escapeHtml(selectedTutor.university)}</p>
-        <div class="chips">
-          <span class="chip">${escapeHtml(tutorLevelLabel(selectedTutor))} tutoring</span>
-          ${selectedTutor.badges.map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
-        </div>
+        ${selectedTutor.subject ? `<p class="profile-rate">${escapeHtml(selectedTutor.subject)}</p>` : ""}
+        ${profileMeta ? `<p>${escapeHtml(profileMeta)}</p>` : ""}
+        ${profileChips.length ? `<div class="chips">${profileChips.map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
       </div>
       <aside class="profile-actions">
-        <strong>${getTutorRating(selectedTutor).toFixed(2)} / 5</strong>
+        <strong>${reviews.length ? `${getTutorRating(selectedTutor).toFixed(2)} / 5` : "No reviews yet"}</strong>
         <span>${reviews.length} review${reviews.length === 1 ? "" : "s"}</span>
         ${isOwnTutorProfile
           ? `<button class="primary-btn wide" type="button" id="profileEdit">Edit profile</button>`
@@ -1462,16 +1520,10 @@ function renderPublicProfile() {
         <button class="secondary-btn wide" type="button" id="profileReviews">Read reviews</button>
       </aside>
     </div>
-    <div class="profile-copy-grid">
-      <section>
-        <h3>About me</h3>
-        <p>${escapeHtml(selectedTutor.about || `Hi, I'm ${selectedTutor.name}. I support students with ${selectedTutor.subject}, confidence, exam preparation, and clearer study routines.`)}</p>
-      </section>
-      <section>
-        <h3>About my sessions</h3>
-        <p>${escapeHtml(selectedTutor.sessions || selectedTutor.style)}</p>
-      </section>
-    </div>
+    ${(selectedTutor.about || selectedTutor.sessions || selectedTutor.style) ? `<div class="profile-copy-grid">
+      ${selectedTutor.about ? `<section><h3>About me</h3><p>${escapeHtml(selectedTutor.about)}</p></section>` : ""}
+      ${(selectedTutor.sessions || selectedTutor.style) ? `<section><h3>About my sessions</h3><p>${escapeHtml(selectedTutor.sessions || selectedTutor.style)}</p></section>` : ""}
+    </div>` : ""}
   `;
 
   document.querySelector("#profileEdit")?.addEventListener("click", () => showPage("dashboard"));
@@ -1548,7 +1600,7 @@ function renderReviewsPage() {
   reviewList.innerHTML = reviews.length ? reviews.map((review) => `
     <article class="review-card">
       <strong>${"★".repeat(review.score)}${"☆".repeat(5 - review.score)}</strong>
-      <p>${escapeHtml(review.note || "No written comment.")}</p>
+      ${review.note ? `<p>${escapeHtml(review.note)}</p>` : ""}
       <span>${escapeHtml(review.by)} · ${escapeHtml(review.time)}</span>
     </article>
   `).join("") : `<p class="empty-copy">No reviews yet.</p>`;
@@ -1636,7 +1688,14 @@ function updateBookingDateConstraints() {
     bookingMinute.value = pad2(nextSlot.getMinutes());
     bookingMinute.dataset.ready = "true";
   }
+  updateMinuteButtons();
   syncBookingDateTime();
+}
+
+function updateMinuteButtons() {
+  bookingMinuteOptions?.querySelectorAll("[data-minute]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.minute === bookingMinute?.value);
+  });
 }
 
 function syncBookingDateTime() {
@@ -1645,6 +1704,7 @@ function syncBookingDateTime() {
   const hour = bookingHour?.value || "";
   const minute = bookingMinute?.value || "";
   bookingDateTime.value = date && hour && minute ? `${date}T${hour}:${minute}` : "";
+  updateMinuteButtons();
   return bookingDateTime.value;
 }
 
@@ -1832,6 +1892,7 @@ function renderBookingsPage() {
     bookingTutor.innerHTML = "";
     if (bookingTutorSearch) bookingTutorSearch.value = "";
     bookingPageForm.hidden = true;
+    bookingPageForm.style.display = "none";
     bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
       control.disabled = true;
     });
@@ -1841,6 +1902,7 @@ function renderBookingsPage() {
     bookingSubmitButton.textContent = "Book lesson";
     renderBookingTutorOptions();
     bookingPageForm.hidden = false;
+    bookingPageForm.style.display = "";
     bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
       control.disabled = false;
     });
@@ -2130,9 +2192,16 @@ bookingTutor?.addEventListener("change", () => {
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value);
   if (tutor) selectedTutor = tutor;
 });
-[bookingDate, bookingHour, bookingMinute].forEach((control) => {
+[bookingDate, bookingHour].forEach((control) => {
   control?.addEventListener("change", syncBookingDateTime);
   control?.addEventListener("input", syncBookingDateTime);
+});
+bookingMinuteOptions?.querySelectorAll("[data-minute]").forEach((button) => {
+  button.addEventListener("click", () => {
+    bookingMinute.value = button.dataset.minute;
+    bookingMinute.dataset.ready = "true";
+    syncBookingDateTime();
+  });
 });
 
 document.querySelector("#resetFilters").addEventListener("click", () => {
@@ -2156,16 +2225,12 @@ profileForm.addEventListener("submit", (event) => {
     name: profileName.value.trim() || currentAccount.name,
     subject: profileSubject.value.trim(),
     detail: profileDetail.value.trim(),
-    university: currentAccount.role === "tutor" ? profileUniversity.value.trim() || "Tutor-created profile" : profileUniversity.value.trim(),
+    university: profileUniversity.value.trim(),
     level: currentAccount.role === "tutor" ? profileLevel.value : "",
     photo: currentAccount.role === "tutor" ? pendingProfilePhoto : "",
-    grade: currentAccount.role === "tutor" ? "A*" : "",
-    about: currentAccount.role === "tutor"
-      ? profileAbout.value.trim() || `Hi, I'm ${profileName.value.trim() || currentAccount.name}. I teach ${profileSubject.value.trim() || "GCSE and A-Level subjects"} and help students build confidence.`
-      : profileAbout.value.trim(),
-    sessions: currentAccount.role === "tutor"
-      ? profileSessions.value.trim() || profileDetail.value.trim() || "My sessions are structured around the student's goals, confidence, and exam practice."
-      : profileSessions.value.trim(),
+    grade: "",
+    about: profileAbout.value.trim(),
+    sessions: profileSessions.value.trim(),
     updated: true
   };
 
