@@ -1687,7 +1687,7 @@ function setRole(role) {
   document.querySelector("#accountTitle").textContent = currentAccount ? roleContent[role].title : "Welcome back";
   document.querySelector("#accountText").textContent = currentAccount
     ? roleContent[role].text
-    : "Log in as a student or approved tutor. Students can create an account here when they are ready to book.";
+    : "Log in or create an account. Approved tutors can use the tutor option after their email is approved.";
   document.querySelector("#dashRole").textContent = currentAccount ? roleContent[role].dash : `${roleContent[role].dash} preview`;
   renderDashboard(role);
 }
@@ -1821,10 +1821,10 @@ function updateSignupMode() {
   const role = signupRole.value;
   const heading = signupForm.querySelector("h3");
   const button = signupForm.querySelector("button[type='submit']");
-  heading.textContent = role === "parent" ? "Parent sign up" : "Student sign up";
-  button.textContent = role === "parent" ? "Create parent account" : "Create student account";
+  heading.textContent = role === "parent" ? "Parent sign up" : role === "tutor" ? "Approved tutor sign up" : "Student sign up";
+  button.textContent = role === "parent" ? "Create parent account" : role === "tutor" ? "Create tutor account" : "Create student account";
   document.querySelectorAll(".parent-field").forEach((field) => {
-    field.hidden = role === "parent";
+    field.hidden = role !== "student";
   });
   signupDob.required = true;
 }

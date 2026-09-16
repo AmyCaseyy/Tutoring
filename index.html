@@ -236,11 +236,11 @@
         <div class="account-copy">
           <p class="eyebrow">Log in</p>
           <h2 id="accountTitle">Welcome back</h2>
-          <p id="accountText">Tutors log in only after their account has been approved. Students can create an account here when they are ready to book.</p>
+          <p id="accountText">Students, parents, and approved tutors can create or access the right account area here.</p>
           <div class="auth-grid">
             <form class="auth-panel" id="loginPanel">
               <h3>Log in</h3>
-              <p class="form-note">Want to become a tutor? Use the Become a tutor page first. Tutor logins only work after the tutrSTEM team has approved the tutor record.</p>
+              <p class="form-note">Want to become a tutor? Apply first using Become a Tutor. Tutor access only works after the tutrSTEM team approves the exact email.</p>
               <label class="field">
                 <span>Email address</span>
                 <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
@@ -257,9 +257,10 @@
               <label class="field">
                 <span>Account type</span>
                 <select id="signupRole">
-                  <option value="student">Student</option>
-                  <option value="parent">Parent or guardian</option>
-                </select>
+	                  <option value="student">Student</option>
+	                  <option value="parent">Parent or guardian</option>
+	                  <option value="tutor">Approved tutor</option>
+	                </select>
               </label>
               <label class="field">
                 <span>Full name</span>
@@ -292,11 +293,11 @@
               <button class="secondary-btn wide" type="submit">Create account</button>
             </form>
           </div>
-          <p class="signup-status" id="signupStatus">Students and parents can sign up here. Tutors should apply using Become a tutor, then log in only after approval.</p>
+          <p class="signup-status" id="signupStatus">Students and parents can sign up here. Approved tutors can create a tutor account after their email is added to approvedTutors.</p>
         </div>
         <aside class="account-side">
-          <strong>Student and parent sign-up</strong>
-          <p>Tutors do not self-register here. Tutor logins are limited to approved tutor records in Firebase.</p>
+          <strong>Account access</strong>
+          <p>Students and parents can register straight away. Tutors must apply first, then use the approved email to create a tutor account and access the tutor dashboard.</p>
         </aside>
       </section>
 
@@ -910,6 +911,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260914-legal-pages"></script>
+    <script src="app.js?v=20260916-tutor-signup"></script>
   </body>
 </html>
