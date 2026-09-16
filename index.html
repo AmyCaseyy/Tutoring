@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260916-profile-cards" />
+    <link rel="stylesheet" href="styles.css?v=20260916-auth-tutor-card" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -226,12 +226,29 @@
       </section>
 
       <section class="account-zone app-page" id="accounts" data-page="accounts">
-        <div class="account-copy" id="accountLoginView">
-          <p class="eyebrow">Log in</p>
-          <h2 id="accountTitle">Welcome back</h2>
-          <p id="accountText">Students, parents, and approved tutors can create or access the right account area here.</p>
-          <div class="auth-grid">
-            <form class="auth-panel" id="loginPanel">
+        <div class="account-auth-card">
+          <a class="account-brand" href="#home" data-route="home">tutrSTEM.</a>
+
+          <div class="account-login-view" id="accountLoginView">
+            <button class="account-close" type="button" data-route="home" aria-label="Close">×</button>
+            <h2 id="accountTitle">Log in</h2>
+            <p id="accountText" hidden>Choose the account you want to access.</p>
+            <div class="login-choice-list">
+              <button class="login-choice-card" type="button" data-login-role="parent">
+                <span class="login-choice-icon" aria-hidden="true">⌁</span>
+                <strong>Parent log in</strong>
+              </button>
+              <button class="login-choice-card" type="button" data-login-role="student">
+                <span class="login-choice-icon" aria-hidden="true">≡</span>
+                <strong>Student log in</strong>
+              </button>
+              <button class="login-choice-card tutor-login-card" type="button" data-login-role="tutor">
+                <span class="login-choice-icon" aria-hidden="true">▣</span>
+                <strong>Tutor log in</strong>
+              </button>
+            </div>
+            <button class="text-link account-switch" type="button" id="showSignupFlow">New to tutrSTEM.? Create an account</button>
+            <form class="auth-panel login-form-panel" id="loginPanel" hidden>
               <h3 id="loginPanelTitle">Log in</h3>
               <p class="form-note">Want to become a tutor? Apply first using Become a Tutor. Tutor access only works after the tutrSTEM team approves the exact email.</p>
               <label class="field">
@@ -244,20 +261,24 @@
               </label>
               <button class="primary-btn wide" type="submit">Log in</button>
             </form>
+          </div>
 
+          <div class="account-signup-view" id="accountSignupView" hidden>
             <form class="auth-panel" id="signupForm">
-              <h3>Create account</h3>
+              <p class="eyebrow">Create account</p>
+              <h3>Sign up for tutrSTEM.</h3>
+              <p class="form-note">Tell us a bit about you to get started.</p>
               <label class="field">
-                <span>Account type</span>
+                <span>Full name</span>
+                <input id="signupName" type="text" placeholder="e.g. Amara Okafor" autocomplete="name" required />
+              </label>
+              <label class="field">
+                <span>I'm signing up as a</span>
                 <select id="signupRole">
                   <option value="student">Student</option>
                   <option value="parent">Parent or guardian</option>
                   <option value="tutor">Approved tutor</option>
                 </select>
-              </label>
-              <label class="field">
-                <span>Full name</span>
-                <input id="signupName" type="text" placeholder="Enter your name" autocomplete="name" required />
               </label>
               <label class="field">
                 <span>Date of birth</span>
@@ -283,15 +304,13 @@
                 <span>Retype password</span>
                 <input id="signupConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
               </label>
-              <button class="secondary-btn wide" type="submit">Create account</button>
+              <button class="primary-btn wide" type="submit">Create account</button>
+              <button class="text-link account-switch" type="button" id="showLoginFlow">Already have an account? Log in</button>
             </form>
           </div>
+
           <p class="signup-status" id="signupStatus">Students and parents can sign up here. Approved tutors can create a tutor account after their email is added to approvedTutors.</p>
         </div>
-        <aside class="account-side">
-          <strong>Account access</strong>
-          <p>Students and parents can register straight away. Tutors must apply first, then use the approved email to create a tutor account and manage their profile.</p>
-        </aside>
       </section>
 
       <section class="account-details-page app-page" id="account-details" data-page="account-details">
@@ -916,6 +935,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260916-profile-cards"></script>
+    <script src="app.js?v=20260916-auth-tutor-card"></script>
   </body>
 </html>

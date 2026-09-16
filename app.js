@@ -307,6 +307,7 @@ const lessonType = document.querySelector("#lessonType");
 const signupForm = document.querySelector("#signupForm");
 const loginPanel = document.querySelector("#loginPanel");
 const accountLoginView = document.querySelector("#accountLoginView");
+const accountSignupView = document.querySelector("#accountSignupView");
 const showSignupFlow = document.querySelector("#showSignupFlow");
 const showLoginFlow = document.querySelector("#showLoginFlow");
 const signupSubject = document.querySelector("#signupSubject");
@@ -504,11 +505,13 @@ function showConfirmation(message) {
 
 function showLoginAccountView() {
   accountLoginView.hidden = false;
-  signupForm.hidden = true;
+  if (accountSignupView) accountSignupView.hidden = true;
+  signupForm.hidden = false;
 }
 
 function showSignupAccountView() {
   accountLoginView.hidden = true;
+  if (accountSignupView) accountSignupView.hidden = false;
   signupForm.hidden = false;
   updateSignupMode();
 }
@@ -1224,26 +1227,30 @@ function renderTutors() {
 
   tutorGrid.innerHTML = visibleTutors.map((tutor, index) => `
     <article class="tutor-card">
-      <div class="tutor-card-main">
-        ${tutorPhotoMarkup(tutor, "avatar")}
-        <div class="tutor-card-copy">
+      <div class="tutor-card-top">
+        ${tutorPhotoMarkup(tutor, "avatar tutor-card-photo")}
+        <div class="tutor-card-title">
           <h3>${escapeHtml(tutor.name)}</h3>
-          <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
-          ${tutor.style ? `<p>${escapeHtml(tutor.style)}</p>` : ""}
-          <div class="chips">
-            ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
-            ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
-            ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
-            ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
-          </div>
+          ${(Array.isArray(tutor.badges) && tutor.badges[0]) ? `<span class="tutor-badge">${escapeHtml(tutor.badges[0])}</span>` : tutorLevelLabel(tutor) ? `<span class="tutor-badge">${escapeHtml(tutorLevelLabel(tutor))} tutor</span>` : ""}
         </div>
-        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span class="rating tutor-card-rating">${getTutorRating(tutor).toFixed(2)} / 5</span>` : ""}
+        <div class="tutor-card-subject">${escapeHtml(tutor.subject || "STEM tutor")}</div>
+      </div>
+      <div class="tutor-card-meta">
+        ${tutor.university ? `<span><strong>⌂</strong>${escapeHtml(tutor.university)}</span>` : ""}
+        ${(getReviewsFor(tutor).length || Number(tutor.rating)) ? `<span><strong class="stars">★★★★★</strong>${getTutorRating(tutor).toFixed(1)} / 5 ${getReviewsFor(tutor).length ? `(${getReviewsFor(tutor).length})` : ""}</span>` : ""}
+        ${Number(tutor.lessons) ? `<span><strong>▱</strong>${Number(tutor.lessons)} lessons</span>` : ""}
+      </div>
+      ${tutor.style ? `<p class="tutor-card-bio">${escapeHtml(tutor.style)}</p>` : ""}
+      <div class="chips">
+        ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
+        ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
+        ${(Array.isArray(tutor.badges) ? tutor.badges.slice(1) : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
       </div>
       <div class="card-footer">
+        <button class="primary-btn tutor-profile-cta" type="button" data-profile="${index}">View ${escapeHtml(tutor.name.split(" ")[0] || "tutor")}'s profile</button>
         <div class="card-actions">
-          <button class="secondary-btn" type="button" data-profile="${index}">View profile</button>
           <button class="secondary-btn" type="button" data-message="${index}">Message</button>
-          <button class="primary-btn" type="button" data-book="${index}">
+          <button class="secondary-btn" type="button" data-book="${index}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
             Book
           </button>
