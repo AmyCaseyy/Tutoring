@@ -502,6 +502,8 @@ const bookingDateTime = document.querySelector("#bookingDateTime");
 const bookingSubmitButton = document.querySelector("#bookingSubmitButton");
 const bookingsPageTitle = document.querySelector("#bookingsPageTitle");
 const bookingsPageCopy = document.querySelector("#bookingsPageCopy");
+const bookingViewFilter = document.querySelector("#bookingViewFilter");
+const bookingViewFilterLabel = document.querySelector("#bookingViewFilterLabel");
 const upcomingBookings = document.querySelector("#upcomingBookings");
 const previousBookings = document.querySelector("#previousBookings");
 const upcomingCount = document.querySelector("#upcomingCount");
@@ -2605,6 +2607,42 @@ function renderBookingTutorOptions() {
   `).join("");
 }
 
+function bookingPersonKey(booking) {
+  return currentAccount?.role === "tutor"
+    ? normalizeEmail(booking.studentEmail)
+    : normalizeEmail(booking.tutorEmail);
+}
+
+function bookingPersonName(booking) {
+  return currentAccount?.role === "tutor"
+    ? (booking.student || booking.studentEmail || "Student")
+    : (booking.tutor || booking.tutorEmail || "Tutor");
+}
+
+function populateBookingViewFilter(bookings) {
+  if (!bookingViewFilter) return "all";
+  const previousValue = bookingViewFilter.value || "all";
+  const people = new Map();
+  bookings.forEach((booking) => {
+    const key = bookingPersonKey(booking);
+    if (!key || people.has(key)) return;
+    people.set(key, bookingPersonName(booking));
+  });
+  const noun = currentAccount?.role === "tutor" ? "student" : "tutor";
+  if (bookingViewFilterLabel) bookingViewFilterLabel.textContent = `Show ${noun} bookings`;
+  bookingViewFilter.innerHTML = `<option value="all">Overall bookings</option>${[...people.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`)
+    .join("")}`;
+  bookingViewFilter.value = people.has(previousValue) ? previousValue : "all";
+  return bookingViewFilter.value;
+}
+
+function applyBookingPersonFilter(bookings, selectedKey) {
+  if (!selectedKey || selectedKey === "all") return bookings;
+  return bookings.filter((booking) => bookingPersonKey(booking) === selectedKey);
+}
+
 function updateBookingEverywhere(id, updates) {
   const allBookings = readStore(storage.bookings, {});
   Object.keys(allBookings).forEach((key) => {
@@ -2847,7 +2885,7 @@ function renderBookingList(container, items, emptyText) {
   }
 
   container.innerHTML = sortedItems.map((booking) => {
-    const participant = currentAccount?.role === "tutor" && booking.student ? booking.student : booking.tutor;
+    const participant = bookingPersonName(booking);
     return `
       <article class="booking-row">
         <div class="avatar small-avatar">${escapeHtml(booking.initials)}</div>
@@ -3066,9 +3104,11 @@ function renderBookingsPage() {
 
   markBookingsSeen();
   const bookings = getDisplayBookings();
+  const selectedPerson = populateBookingViewFilter(bookings);
+  const visibleBookings = applyBookingPersonFilter(bookings, selectedPerson);
   const now = Date.now();
-  const upcoming = sortBookingsSoonestFirst(bookings.filter((booking) => !booking.dateTime || bookingTimeValue(booking) >= now));
-  const previous = sortBookingsSoonestFirst(bookings.filter((booking) => booking.dateTime && bookingTimeValue(booking) < now));
+  const upcoming = sortBookingsSoonestFirst(visibleBookings.filter((booking) => !booking.dateTime || bookingTimeValue(booking) >= now));
+  const previous = sortBookingsSoonestFirst(visibleBookings.filter((booking) => booking.dateTime && bookingTimeValue(booking) < now));
   upcomingCount.textContent = upcoming.length;
   previousCount.textContent = previous.length;
   renderBookingList(upcomingBookings, upcoming, "No upcoming lessons yet.");
@@ -3388,6 +3428,7 @@ bookingTutor?.addEventListener("change", () => {
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value);
   if (tutor) selectedTutor = tutor;
 });
+bookingViewFilter?.addEventListener("change", renderBookingsPage);
 [bookingDate, bookingHour].forEach((control) => {
   control?.addEventListener("change", syncBookingDateTime);
   control?.addEventListener("input", syncBookingDateTime);

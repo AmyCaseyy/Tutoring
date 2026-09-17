@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260917-reschedule-picker" />
+    <link rel="stylesheet" href="styles.css?v=20260917-booking-person-filter" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -562,6 +562,12 @@
               <button class="primary-btn wide" id="bookingSubmitButton" type="submit">Book lesson</button>
             </form>
             <div class="booking-lists">
+              <label class="field booking-view-filter">
+                <span id="bookingViewFilterLabel">Show bookings</span>
+                <select id="bookingViewFilter">
+                  <option value="all">Overall bookings</option>
+                </select>
+              </label>
               <section>
                 <div class="section-title">
                   <h3>Upcoming</h3>
@@ -963,6 +969,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260917-reschedule-picker"></script>
+    <script src="app.js?v=20260917-booking-person-filter"></script>
   </body>
 </html>

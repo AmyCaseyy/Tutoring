@@ -1726,6 +1726,10 @@ img.profile-photo {
   border: 0;
 }
 
+.booking-view-filter {
+  max-width: 360px;
+}
+
 .schedule-list {
   display: grid;
   gap: 10px;
