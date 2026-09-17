@@ -604,8 +604,9 @@ function showPage(pageName, options = {}) {
     link.classList.toggle("active", link.dataset.route === nextPage);
   });
 
-  if (window.location.hash !== `#${nextPage}`) {
-    history.replaceState(null, "", `#${nextPage}`);
+  if (!options.skipHistory && window.location.hash !== `#${nextPage}`) {
+    const historyMethod = options.replaceHistory ? "replaceState" : "pushState";
+    history[historyMethod]({ page: nextPage }, "", `#${nextPage}`);
   }
 
   if (!options.keepScroll) {
@@ -3448,7 +3449,11 @@ document.querySelectorAll(".text-link[data-route]").forEach((button) => {
 });
 
 window.addEventListener("hashchange", () => {
-  showPage(getRouteFromHash(), { keepScroll: true });
+  showPage(getRouteFromHash(), { keepScroll: true, skipHistory: true });
+});
+
+window.addEventListener("popstate", () => {
+  showPage(getRouteFromHash(), { keepScroll: true, skipHistory: true });
 });
 
 [nameFilter, subjectFilter, admissionsFilter, admissionsModuleFilter, uniFilter, gradeFilter, sortFilter, trialOnly].filter(Boolean).forEach((control) => {
@@ -4187,7 +4192,7 @@ async function initializeSite() {
       setRole(currentAccount?.role || signupRole.value);
       updateAccess();
       renderTutors();
-      showPage(getRouteFromHash() || "home", { instant: true });
+      showPage(getRouteFromHash() || "home", { instant: true, replaceHistory: true });
       checkLessonReminders();
     });
   } else {
@@ -4197,7 +4202,7 @@ async function initializeSite() {
     setRole(currentAccount?.role || signupRole.value);
     updateAccess();
     renderTutors();
-    showPage(getRouteFromHash() || "home", { instant: true });
+    showPage(getRouteFromHash() || "home", { instant: true, replaceHistory: true });
     checkLessonReminders();
   }
   window.setInterval(checkLessonReminders, 60000);
