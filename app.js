@@ -1586,8 +1586,8 @@ function getTutorRating(tutor) {
   const ratings = readStore(storage.ratings, {});
   const tutorRatings = ratings[tutor.name] || [];
   if (!tutorRatings.length) return tutor.rating;
-  const average = tutorRatings.reduce((total, item) => total + item.score, 0) / tutorRatings.length;
-  return Number(((average + tutor.rating) / 2).toFixed(2));
+  const average = tutorRatings.reduce((total, item) => total + Number(item.score || 0), 0) / tutorRatings.length;
+  return Number(average.toFixed(2));
 }
 
 function addActivity(text, type = "Update") {
