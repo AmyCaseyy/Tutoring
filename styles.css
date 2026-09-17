@@ -146,6 +146,14 @@ body {
   margin-left: 0;
 }
 
+.profile-message-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  margin-left: 0;
+  transform: translate(35%, -35%);
+}
+
 @keyframes loadingPulse {
   0%,
   100% {
@@ -332,6 +340,7 @@ button {
 }
 
 .user-trigger {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;

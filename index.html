@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260917-admissions-tests" />
+    <link rel="stylesheet" href="styles.css?v=20260917-profile-message-badge" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -52,6 +52,7 @@
           <button class="user-trigger" id="userMenuButton" type="button" aria-haspopup="true" aria-expanded="false">
             <span id="userMenuName">Account</span>
             <span class="avatar mini-avatar" id="userMenuInitials">TS</span>
+            <span class="message-badge profile-message-badge" id="profileMessageBadge" hidden>0</span>
           </button>
           <div class="user-dropdown" id="userDropdown" hidden>
             <button type="button" data-route="account-details">
@@ -961,6 +962,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260917-admissions-tests"></script>
+    <script src="app.js?v=20260917-profile-message-badge"></script>
   </body>
 </html>

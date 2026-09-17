@@ -444,6 +444,7 @@ const quickBook = document.querySelector("#quickBook");
 const messagesButton = document.querySelector("#messagesButton");
 const messageBadge = document.querySelector("#messageBadge");
 const topMessageBadge = document.querySelector("#topMessageBadge");
+const profileMessageBadge = document.querySelector("#profileMessageBadge");
 const bookingBadge = document.querySelector("#bookingBadge");
 const topMessagesButton = document.querySelector("#topMessagesButton");
 const roleTools = document.querySelector("#roleTools");
@@ -1496,7 +1497,7 @@ function messageTimestamp(message) {
 }
 
 function updateMessageBadge() {
-  const badges = [messageBadge, topMessageBadge].filter(Boolean);
+  const badges = [messageBadge, topMessageBadge, profileMessageBadge].filter(Boolean);
   if (!badges.length || !currentAccount?.email) {
     badges.forEach((badge) => {
       badge.hidden = true;
