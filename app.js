@@ -2524,6 +2524,26 @@ function bookingIsCancelled(booking) {
   return Boolean(booking?.cancelled) || status === "cancelled by student" || status === "cancelled by tutor";
 }
 
+function bookingDisplayKey(booking) {
+  return [
+    normalizeEmail(booking?.tutorEmail),
+    normalizeEmail(booking?.studentEmail),
+    String(booking?.type || "").trim().toLowerCase(),
+    String(booking?.subject || "").trim().toLowerCase(),
+    String(booking?.dateTime || "").trim()
+  ].join("|");
+}
+
+function dedupeBookingsByLesson(items) {
+  const seen = new Set();
+  return items.filter((booking) => {
+    const key = bookingDisplayKey(booking);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function occurrenceDateFor(series, index) {
   const start = new Date(series.seriesStartDateTime || series.dateTime);
   if (series.recurrenceRule?.frequency === "monthly") return addMonthsSameDate(start, index);
@@ -2562,10 +2582,10 @@ function expandRecurringBooking(series, limit = 5, includePrevious = false) {
 }
 
 function getDisplayBookings() {
-  return sortBookingsSoonestFirst(getBookings()
+  return dedupeBookingsByLesson(sortBookingsSoonestFirst(getBookings()
     .filter((booking) => !bookingIsCancelled(booking))
     .flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking])
-    .filter((booking) => !bookingIsCancelled(booking)));
+    .filter((booking) => !bookingIsCancelled(booking))));
 }
 
 function hasUsedFreeTrialWithTutor(tutorAddress) {
@@ -2803,6 +2823,17 @@ function rescheduleDecisionButtons(booking, action, singleLabel, futureLabel) {
   `;
 }
 
+function recurringAcceptButtons(booking) {
+  const id = escapeHtml(booking.id);
+  if (!booking.isGeneratedOccurrence) {
+    return `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>`;
+  }
+  return `
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}" data-booking-scope="single">Accept this</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}" data-booking-scope="future">Accept future</button>
+  `;
+}
+
 function bookingActions(booking) {
   const id = escapeHtml(booking.id);
   const status = booking.status || "Pending tutor approval";
@@ -2817,7 +2848,7 @@ function bookingActions(booking) {
   if (currentAccount?.role === "tutor") {
     return `
       ${proposed}
-      ${needsTutorDecision && !hasReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
+      ${needsTutorDecision && !hasReschedule ? `${recurringAcceptButtons(booking)}
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>` : ""}
       ${canRespondToReschedule ? `${rescheduleDecisionButtons(booking, "Accept reschedule", "Accept time", "Accept future")}
       <button class="secondary-btn compact-btn" type="button" data-open-reschedule="${id}" data-reschedule-action="Counter reschedule">Counter</button>
