@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260917-subject-taxonomy" />
+    <link rel="stylesheet" href="styles.css?v=20260917-subject-grades" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -39,7 +39,7 @@
         <a href="#" id="becomeTutorLink" data-public-only>Become a tutor</a>
         <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
         <a href="#messages" data-route="messages" data-auth-only>Messages <span class="message-badge" id="messageBadge" hidden>0</span></a>
-        <a href="#bookings" data-route="bookings" data-auth-only>Bookings</a>
+        <a href="#bookings" data-route="bookings" data-auth-only>Bookings <span class="message-badge" id="bookingBadge" hidden>0</span></a>
       </nav>
       <div class="top-actions">
         <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages" data-auth-only>
@@ -184,11 +184,9 @@
           </label>
 
           <label class="field">
-            <span>Minimum tutor grade</span>
+            <span>Minimum subject grade</span>
             <select id="gradeFilter">
               <option value="Any">Any grade</option>
-              <option value="A*">A*</option>
-              <option value="A">A or above</option>
             </select>
           </label>
 
@@ -941,6 +939,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260917-subject-taxonomy"></script>
+    <script src="app.js?v=20260917-subject-grades"></script>
   </body>
 </html>

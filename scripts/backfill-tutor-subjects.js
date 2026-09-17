@@ -10,10 +10,22 @@
     - Seeds Firestore collections: subjects, subjectModules
     - Reads tutorProfiles
     - Converts exact canonical/alias matches from profile.subject into subjectIds
+    - Converts exact old profile.grade values into subjectGrades for confidently matched subjects
     - Flags unclear text on the profile for manual review
 */
 
 const admin = require("firebase-admin");
+
+const grades = [
+  { id: "a-star", label: "A*", sort_order: 1 },
+  { id: "a", label: "A", sort_order: 2 },
+  { id: "b", label: "B", sort_order: 3 },
+  { id: "c", label: "C", sort_order: 4 },
+  { id: "d", label: "D", sort_order: 5 },
+  { id: "e", label: "E", sort_order: 6 },
+  { id: "u", label: "U", sort_order: 7 },
+  { id: "not-disclosed", label: "Not disclosed / not applicable", sort_order: null }
+];
 
 const subjects = [
   { id: "mathematics", canonical_name: "Mathematics", category: "Mathematics", aliases: ["Maths", "Math", "A Level Maths", "A-Level Maths", "AS Maths", "Core Maths (distinct qualification, do not merge)"] },
@@ -48,6 +60,23 @@ function normalize(value) {
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeGrade(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/\*/g, "-star")
+    .replace(/[^a-z0-9-]+/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function gradeIdFromValue(value) {
+  const normalized = normalizeGrade(value);
+  if (!normalized) return "";
+  return grades.find((grade) => grade.id === normalized || normalizeGrade(grade.label) === normalized)?.id || "";
 }
 
 function buildSubjectIndex() {
@@ -100,14 +129,32 @@ async function main() {
     }, { merge: true });
   });
 
+  grades.forEach((grade) => {
+    batch.set(db.collection("grades").doc(grade.id), {
+      id: grade.id,
+      label: grade.label,
+      sortOrder: grade.sort_order,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  });
+
   const snapshot = await db.collection("tutorProfiles").get();
   snapshot.docs.forEach((doc) => {
     const profile = doc.data();
     const existingIds = Array.isArray(profile.subjectIds) ? profile.subjectIds : [];
     const { matched, needsReview } = matchSubjectParts(profile.subject, subjectIndex);
     const subjectIds = [...new Set([...existingIds, ...matched])].filter((id) => subjects.some((subject) => subject.id === id));
+    const existingSubjectGrades = profile.subjectGrades && typeof profile.subjectGrades === "object" ? profile.subjectGrades : {};
+    const gradeId = gradeIdFromValue(profile.grade);
+    const subjectGrades = { ...existingSubjectGrades };
+    if (gradeId && gradeId !== "not-disclosed") {
+      subjectIds.forEach((subjectId) => {
+        if (!subjectGrades[subjectId]) subjectGrades[subjectId] = gradeId;
+      });
+    }
     const update = {
       subjectIds,
+      subjectGrades,
       subjectMigrationReviewedAt: admin.firestore.FieldValue.serverTimestamp()
     };
     if (needsReview.length) {
@@ -121,7 +168,7 @@ async function main() {
   });
 
   await batch.commit();
-  console.log(`Seeded ${subjects.length} subjects, ${modules.length} modules, and checked ${snapshot.size} tutor profiles.`);
+  console.log(`Seeded ${subjects.length} subjects, ${modules.length} modules, ${grades.length} grades, and checked ${snapshot.size} tutor profiles.`);
 }
 
 main().catch((error) => {

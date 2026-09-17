@@ -859,11 +859,6 @@ function syncProfileSubjectInput() {
   profileSubject.value = JSON.stringify(selectedProfileSubjectIds);
 }
 
-function normalizeSubjectGrades(subjectGrades = {}) {
-  return Object.fromEntries(Object.entries(subjectGrades)
-    .filter(([subjectId, gradeId]) => selectedProfileSubjectIds.includes(subjectId) && gradeById.has(gradeId) && gradeId !== "not-disclosed"));
-}
-
 function saveOtherSubjectRequest(value) {
   const requestedName = String(value || "").trim();
   if (!requestedName || !currentAccount) return;
@@ -889,20 +884,21 @@ function saveOtherSubjectRequest(value) {
 
 function renderProfileSubjectPicker() {
   if (!profileSubjectPicker || !profileSubjectChips || !profileSubjectSuggestions) return;
+  const showGradeSelectors = currentAccount?.role === "tutor";
   const showModules = selectedProfileSubjectIds.includes("further-mathematics");
   const subjectChips = selectedProfileSubjectIds.map((id) => `
-    <div class="subject-grade-row">
+    <div class="${showGradeSelectors ? "subject-grade-row" : "subject-selected-row"}">
       <strong>${escapeHtml(subjectLabel(id))}</strong>
-      <select data-subject-grade="${escapeHtml(id)}" aria-label="${escapeHtml(subjectLabel(id))} grade achieved">
+      ${showGradeSelectors ? `<select data-subject-grade="${escapeHtml(id)}" aria-label="${escapeHtml(subjectLabel(id))} grade achieved">
         <option value="">Grade not disclosed</option>
         ${GRADES.filter((grade) => Number.isFinite(grade.sortOrder)).map((grade) => `
           <option value="${escapeHtml(grade.id)}" ${selectedProfileSubjectGrades[id] === grade.id ? "selected" : ""}>${escapeHtml(grade.label)}</option>
         `).join("")}
-      </select>
+      </select>` : ""}
       <button class="subject-remove" type="button" data-remove-subject="${escapeHtml(id)}" aria-label="Remove ${escapeHtml(subjectLabel(id))}">x</button>
     </div>
   `).join("");
-  const moduleChips = showModules ? SUBJECT_MODULES.map((module) => `
+  const moduleChips = showModules && showGradeSelectors ? SUBJECT_MODULES.map((module) => `
     <button class="subject-chip ${selectedProfileModuleIds.includes(module.id) ? "selected" : ""}" type="button" data-toggle-module="${escapeHtml(module.id)}">
       ${escapeHtml(module.canonicalName)}
     </button>
@@ -1883,6 +1879,7 @@ function renderProfile(role) {
   profileName.value = profile.name || currentAccount.name;
   selectedProfileSubjectIds = uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject));
   selectedProfileModuleIds = Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [];
+  selectedProfileSubjectGrades = tutorSubjectGrades(profile);
   if (profileSubjectSearch) profileSubjectSearch.value = "";
   if (profileSubjectOther) {
     profileSubjectOther.value = "";
@@ -1963,6 +1960,7 @@ function renderPublicProfile() {
   const profileMeta = [selectedSubjectLabel, selectedTutor.university].filter(Boolean).join(" · ");
   const profileChips = [
     tutorLevelLabel(selectedTutor) ? `${tutorLevelLabel(selectedTutor)} tutoring` : "",
+    ...tutorSubjectGradeChips(selectedTutor),
     ...tutorModuleLabels(selectedTutor).map((module) => `Further Maths: ${module}`),
     ...(Array.isArray(selectedTutor.badges) ? selectedTutor.badges : [])
   ].filter(Boolean);
@@ -2731,10 +2729,10 @@ profileForm.addEventListener("submit", (event) => {
     return;
   }
 
-  const subjectIds = currentAccount.role === "tutor"
-    ? uniqueSubjectIds(selectedProfileSubjectIds)
-    : subjectIdsFromValue(profileSubject.value);
+  const subjectIds = uniqueSubjectIds(selectedProfileSubjectIds);
   const subject = subjectIds.length ? subjectIds.map(subjectLabel).join(", ") : cleanAutoText(profileSubject.value);
+  const subjectGrades = Object.fromEntries(Object.entries(selectedProfileSubjectGrades)
+    .filter(([subjectId, gradeId]) => subjectIds.includes(subjectId) && gradeById.has(gradeId)));
   if (currentAccount.role === "tutor" && profileSubjectOther && !profileSubjectOther.hidden && profileSubjectOther.value.trim()) {
     saveOtherSubjectRequest(profileSubjectOther.value);
     profileSubjectOther.value = "";
@@ -2745,6 +2743,7 @@ profileForm.addEventListener("submit", (event) => {
     name: profileName.value.trim() || currentAccount.name,
     subject,
     subjectIds,
+    subjectGrades: currentAccount.role === "tutor" ? subjectGrades : {},
     furtherMathsModuleIds: currentAccount.role === "tutor" ? selectedProfileModuleIds : [],
     detail: profileDetail.value.trim(),
     university: profileUniversity.value.trim(),
@@ -3321,6 +3320,7 @@ dialog.addEventListener("close", () => {
 
 async function initializeSite() {
   populateSubjectFilter();
+  populateGradeFilter();
   if (isCloudReady()) {
     auth.onAuthStateChanged(async (user) => {
       try {

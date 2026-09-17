@@ -903,6 +903,55 @@ img.avatar {
   align-items: center;
 }
 
+.subject-chip-row {
+  display: grid;
+}
+
+.subject-grade-row,
+.subject-selected-row {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 9px;
+  background: rgba(232, 223, 202, 0.44);
+  border: 1px solid rgba(201, 188, 158, 0.72);
+  border-radius: 8px;
+}
+
+.subject-grade-row {
+  grid-template-columns: minmax(120px, 1fr) minmax(150px, 220px) 38px;
+}
+
+.subject-selected-row {
+  grid-template-columns: minmax(120px, 1fr) 38px;
+}
+
+.subject-grade-row strong,
+.subject-selected-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.subject-grade-row select {
+  min-height: 38px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+.subject-remove {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.86);
+  border: 1px solid rgba(201, 188, 158, 0.82);
+  border-radius: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .subject-module-row {
   width: 100%;
   padding-top: 2px;
@@ -2444,6 +2493,15 @@ body.site-ready .hero-media {
 
   .profile-photo {
     width: min(180px, 100%);
+  }
+
+  .subject-grade-row,
+  .subject-selected-row {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-remove {
+    width: 100%;
   }
 
   .dashboard-intro {
