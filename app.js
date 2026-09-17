@@ -2519,6 +2519,11 @@ function sortBookingsSoonestFirst(items) {
   return [...items].sort((a, b) => bookingTimeValue(a) - bookingTimeValue(b));
 }
 
+function bookingIsCancelled(booking) {
+  const status = String(booking?.status || "").toLowerCase();
+  return Boolean(booking?.cancelled) || status === "cancelled by student" || status === "cancelled by tutor";
+}
+
 function occurrenceDateFor(series, index) {
   const start = new Date(series.seriesStartDateTime || series.dateTime);
   if (series.recurrenceRule?.frequency === "monthly") return addMonthsSameDate(start, index);
@@ -2538,7 +2543,7 @@ function expandRecurringBooking(series, limit = 5, includePrevious = false) {
     const scheduled = occurrenceDateFor(series, index);
     const key = occurrenceKeyFromDate(scheduled);
     const override = overrides[key] || {};
-    if (override.cancelled) continue;
+    if (bookingIsCancelled(override)) continue;
     const dateTime = override.dateTime || key;
     if (!includePrevious && new Date(dateTime).getTime() < now) continue;
     results.push({
@@ -2558,7 +2563,9 @@ function expandRecurringBooking(series, limit = 5, includePrevious = false) {
 
 function getDisplayBookings() {
   return sortBookingsSoonestFirst(getBookings()
-    .flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking]));
+    .filter((booking) => !bookingIsCancelled(booking))
+    .flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking])
+    .filter((booking) => !bookingIsCancelled(booking)));
 }
 
 function hasUsedFreeTrialWithTutor(tutorAddress) {
@@ -2865,7 +2872,7 @@ function checkLessonReminders() {
   const allBookings = readStore(storage.bookings, {});
   const now = Date.now();
   Object.values(allBookings).flat().flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking]).forEach((booking) => {
-    if (!booking.dateTime || ["Rejected", "Cancelled by student", "Cancelled by tutor"].includes(booking.status)) return;
+    if (!booking.dateTime || bookingIsCancelled(booking) || booking.status === "Rejected") return;
     const start = new Date(booking.dateTime).getTime();
     const minsUntil = (start - now) / 60000;
     if (minsUntil > 0 && minsUntil <= 10) {
