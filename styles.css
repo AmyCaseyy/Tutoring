@@ -1745,6 +1745,13 @@ img.profile-photo {
   max-width: 420px;
 }
 
+.booking-proposed {
+  display: block;
+  width: 100%;
+  color: var(--accent);
+  font-weight: 800;
+}
+
 .compact-btn {
   min-height: 34px;
   padding: 0 11px;

@@ -389,6 +389,7 @@ const quickBook = document.querySelector("#quickBook");
 const messagesButton = document.querySelector("#messagesButton");
 const messageBadge = document.querySelector("#messageBadge");
 const topMessageBadge = document.querySelector("#topMessageBadge");
+const bookingBadge = document.querySelector("#bookingBadge");
 const topMessagesButton = document.querySelector("#topMessagesButton");
 const roleTools = document.querySelector("#roleTools");
 const lessonList = document.querySelector("#lessonList");
@@ -404,7 +405,6 @@ const profileSubjectPicker = document.querySelector("#profileSubjectPicker");
 const profileSubjectChips = document.querySelector("#profileSubjectChips");
 const profileSubjectSearch = document.querySelector("#profileSubjectSearch");
 const profileSubjectSuggestions = document.querySelector("#profileSubjectSuggestions");
-const profileSubjectOther = document.querySelector("#profileSubjectOther");
 const profileDetail = document.querySelector("#profileDetail");
 const profileUniversity = document.querySelector("#profileUniversity");
 const profileLevel = document.querySelector("#profileLevel");
@@ -934,6 +934,10 @@ function renderProfileSubjectPicker() {
   syncProfileSubjectInput();
 }
 
+function hideSubjectSuggestions() {
+  if (profileSubjectSuggestions) profileSubjectSuggestions.hidden = true;
+}
+
 function renderSubjectSuggestions() {
   if (!profileSubjectSearch || !profileSubjectSuggestions) return;
   const query = profileSubjectSearch.value;
@@ -947,9 +951,8 @@ function renderSubjectSuggestions() {
       <span>${escapeHtml(subject.category)}</span>
     </button>
   `).join("");
-  const other = query.trim()
-    ? `<button type="button" data-add-subject="${OTHER_SUBJECT_ID}"><strong>Other - request a subject</strong><span>${escapeHtml(query.trim())}</span></button>`
-    : `<button type="button" data-add-subject="${OTHER_SUBJECT_ID}"><strong>Other - request a subject</strong><span>Ask tutrSTEM to review it</span></button>`;
+  const otherLabel = query.trim() || "a new subject";
+  const other = `<button type="button" data-add-subject="${OTHER_SUBJECT_ID}"><strong>Other - email tutrSTEM.</strong><span>Request ${escapeHtml(otherLabel)}</span></button>`;
   profileSubjectSuggestions.innerHTML = `${suggestions}${other}`;
   profileSubjectSuggestions.hidden = false;
 
@@ -957,9 +960,12 @@ function renderSubjectSuggestions() {
     button.addEventListener("click", () => {
       const id = button.dataset.addSubject;
       if (id === OTHER_SUBJECT_ID) {
-        profileSubjectOther.hidden = false;
-        profileSubjectOther.value = profileSubjectSearch.value.trim();
-        profileSubjectOther.focus();
+        const requestedSubject = profileSubjectSearch.value.trim();
+        saveOtherSubjectRequest(requestedSubject || "New subject request");
+        const subjectLine = encodeURIComponent("Subject request for tutrSTEM");
+        const body = encodeURIComponent(`Hi tutrSTEM,\n\nPlease can you add this subject to the tutor profile list: ${requestedSubject || "[type subject here]"}\n\nThanks`);
+        window.location.href = `mailto:tutrstem@gmail.com?subject=${subjectLine}&body=${body}`;
+        hideSubjectSuggestions();
         return;
       }
       selectedProfileSubjectIds = uniqueSubjectIds([...selectedProfileSubjectIds, id]);
@@ -1075,6 +1081,7 @@ async function loadCloudData() {
     cloudBookings = [];
     cloudMessages = [];
     updateMessageBadge();
+    updateBookingBadge();
     return;
   }
 
@@ -1094,6 +1101,7 @@ async function loadCloudData() {
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
   updateMessageBadge();
+  updateBookingBadge();
 }
 
 async function saveTutorProfileToCloud(profile, uid = auth?.currentUser?.uid) {
@@ -1284,6 +1292,28 @@ function updateMessageBadge() {
     badge.textContent = String(unread);
     badge.hidden = unread === 0;
   });
+}
+
+function bookingVisibleToCurrentAccount(booking) {
+  if (!currentAccount?.email) return false;
+  const ownEmail = normalizeEmail(currentAccount.email);
+  return currentAccount.role === "tutor"
+    ? normalizeEmail(booking.tutorEmail) === ownEmail
+    : normalizeEmail(booking.studentEmail) === ownEmail;
+}
+
+function updateBookingBadge() {
+  if (!bookingBadge || !currentAccount?.email) {
+    if (bookingBadge) bookingBadge.hidden = true;
+    return;
+  }
+  const ownEmail = normalizeEmail(currentAccount.email);
+  const unseen = getBookings().filter((booking) => {
+    const seenBy = (booking.seenBy || []).map(normalizeEmail);
+    return bookingVisibleToCurrentAccount(booking) && !seenBy.includes(ownEmail);
+  }).length;
+  bookingBadge.textContent = String(unseen);
+  bookingBadge.hidden = unseen === 0;
 }
 
 function cloudMessageToBubble(message) {
@@ -1712,6 +1742,7 @@ async function saveMessage(message) {
     type: "message"
   });
   updateMessageBadge();
+  updateBookingBadge();
 }
 
 async function saveMessageToCloud(key, message) {
@@ -1881,10 +1912,7 @@ function renderProfile(role) {
   selectedProfileModuleIds = Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [];
   selectedProfileSubjectGrades = tutorSubjectGrades(profile);
   if (profileSubjectSearch) profileSubjectSearch.value = "";
-  if (profileSubjectOther) {
-    profileSubjectOther.value = "";
-    profileSubjectOther.hidden = true;
-  }
+  hideSubjectSuggestions();
   renderProfileSubjectPicker();
   profileDetail.value = cleanAutoText(profile.detail);
   profileUniversity.value = cleanAutoText(profile.university);
@@ -2203,25 +2231,87 @@ function recurringOffsetsFor(type) {
   return [0];
 }
 
-function buildBookingSeries(baseBooking) {
-  const start = new Date(baseBooking.dateTime);
-  const isMonthly = baseBooking.type === "Monthly lesson";
-  const offsets = recurringOffsetsFor(baseBooking.type);
-  const total = isMonthly ? 5 : offsets.length;
-  const recurring = total > 1;
-  const groupId = recurring ? createId("series") : "";
-  return Array.from({ length: total }, (_, index) => {
-    const nextDate = isMonthly ? addMonthsSameDate(start, index) : addDays(start, offsets[index]);
-    return {
-      ...baseBooking,
-      id: createId("booking"),
-      dateTime: localDateTimeInputValue(nextDate),
-      recurringGroup: groupId,
-      recurringType: recurring ? baseBooking.type : "",
-      occurrenceNumber: index + 1,
-      occurrenceTotal: total
-    };
-  });
+function isRecurringType(type) {
+  return ["Weekly lesson", "Twice weekly lesson", "Fortnightly lesson", "Monthly lesson"].includes(type);
+}
+
+function recurrenceRuleFor(type) {
+  if (type === "Twice weekly lesson") return { frequency: "weekly", interval: 1, daysBetween: [0, 3] };
+  if (type === "Fortnightly lesson") return { frequency: "weekly", interval: 2, daysBetween: [0] };
+  if (type === "Monthly lesson") return { frequency: "monthly", interval: 1 };
+  return { frequency: "weekly", interval: 1, daysBetween: [0] };
+}
+
+function occurrenceKeyFromDate(value) {
+  return localDateTimeInputValue(new Date(value));
+}
+
+function occurrenceDateFor(series, index) {
+  const start = new Date(series.seriesStartDateTime || series.dateTime);
+  if (series.recurrenceRule?.frequency === "monthly") return addMonthsSameDate(start, index);
+  const daysBetween = series.recurrenceRule?.daysBetween || [0];
+  const cycle = Math.floor(index / daysBetween.length);
+  const dayOffset = (cycle * 7 * (series.recurrenceRule?.interval || 1)) + daysBetween[index % daysBetween.length];
+  return addDays(start, dayOffset);
+}
+
+function expandRecurringBooking(series, limit = 5, includePrevious = false) {
+  if (!series.isRecurringSeries) return [series];
+  const results = [];
+  const now = Date.now();
+  const overrides = series.occurrenceOverrides || {};
+  const max = Number(series.lessonCount || 260);
+  for (let index = 0; index < max && results.length < limit; index += 1) {
+    const scheduled = occurrenceDateFor(series, index);
+    const key = occurrenceKeyFromDate(scheduled);
+    const override = overrides[key] || {};
+    if (override.cancelled) continue;
+    const dateTime = override.dateTime || key;
+    if (!includePrevious && new Date(dateTime).getTime() < now) continue;
+    results.push({
+      ...series,
+      ...override,
+      id: `${series.id}::${key}`,
+      parentBookingId: series.id,
+      occurrenceKey: key,
+      dateTime,
+      type: series.type,
+      status: override.status || series.status || "Accepted",
+      isGeneratedOccurrence: true
+    });
+  }
+  return results;
+}
+
+function getDisplayBookings() {
+  return getBookings()
+    .flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking])
+    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime());
+}
+
+function hasUsedFreeTrialWithTutor(tutorAddress) {
+  const tutorKey = normalizeEmail(tutorAddress);
+  return getDisplayBookings().some((booking) => normalizeEmail(booking.tutorEmail) === tutorKey && booking.isFreeTrial);
+}
+
+function buildBookingRecord(baseBooking) {
+  const recurring = isRecurringType(baseBooking.type);
+  if (!recurring) return {
+    ...baseBooking,
+    id: createId("booking"),
+    status: "Pending tutor approval",
+    isRecurringSeries: false
+  };
+  return {
+    ...baseBooking,
+    id: createId("series"),
+    status: "Accepted",
+    isRecurringSeries: true,
+    seriesStartDateTime: baseBooking.dateTime,
+    recurrenceRule: recurrenceRuleFor(baseBooking.type),
+    occurrenceOverrides: {},
+    lessonCount: null
+  };
 }
 
 function renderBookingTutorOptions() {
@@ -2257,6 +2347,109 @@ function updateBookingEverywhere(id, updates) {
   writeStore(storage.bookings, allBookings);
   cloudBookings = cloudBookings.map((booking) => booking.id === id ? { ...booking, ...updates, updated: nowLabel() } : booking);
   updateBookingInCloud(id, updates).catch(() => {});
+  updateBookingBadge();
+}
+
+function updateSeriesEverywhere(seriesId, updater) {
+  const allBookings = readStore(storage.bookings, {});
+  let updatedSeries = null;
+  Object.keys(allBookings).forEach((key) => {
+    allBookings[key] = allBookings[key].map((booking) => {
+      if (booking.id !== seriesId) return booking;
+      updatedSeries = updater({ ...booking });
+      return { ...updatedSeries, updated: nowLabel() };
+    });
+  });
+  writeStore(storage.bookings, allBookings);
+  if (updatedSeries) {
+    cloudBookings = cloudBookings.map((booking) => booking.id === seriesId ? { ...updatedSeries, updated: nowLabel() } : booking);
+    updateBookingInCloud(seriesId, updatedSeries).catch(() => {});
+  }
+  updateBookingBadge();
+}
+
+function scopeForSeriesAction(booking, actionLabel) {
+  if (!booking.isGeneratedOccurrence) return "single";
+  const choice = window.prompt(`${actionLabel}: type "1" for just this lesson, or "future" for this and all future lessons.`, "1");
+  return String(choice || "").toLowerCase().startsWith("future") ? "future" : "single";
+}
+
+function updateOccurrenceOrBooking(booking, updates, scope = "single") {
+  if (!booking.isGeneratedOccurrence) {
+    updateBookingEverywhere(booking.id, updates);
+    return;
+  }
+  updateSeriesEverywhere(booking.parentBookingId, (series) => {
+    const overrides = { ...(series.occurrenceOverrides || {}) };
+    if (scope === "future") {
+      const start = new Date(booking.occurrenceKey).getTime();
+      expandRecurringBooking(series, 260, true).forEach((occurrence) => {
+        if (new Date(occurrence.occurrenceKey).getTime() >= start) {
+          overrides[occurrence.occurrenceKey] = { ...(overrides[occurrence.occurrenceKey] || {}), ...updates };
+        }
+      });
+    } else {
+      overrides[booking.occurrenceKey] = { ...(overrides[booking.occurrenceKey] || {}), ...updates };
+    }
+    return { ...series, occurrenceOverrides: overrides };
+  });
+}
+
+function promptForLessonDateTime(label = "Choose a new lesson time") {
+  const value = window.prompt(`${label}\nUse YYYY-MM-DD HH:MM. Minutes must be 00, 10, 20, 30, 40, or 50.`);
+  if (!value) return "";
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})$/);
+  if (!match) {
+    signupStatus.textContent = "Use the format YYYY-MM-DD HH:MM.";
+    signupStatus.classList.remove("success");
+    return "";
+  }
+  const dateTime = `${match[1]}T${match[2]}:${match[3]}`;
+  const error = validateBookingDateTime(dateTime);
+  if (error) {
+    signupStatus.textContent = error;
+    signupStatus.classList.remove("success");
+    return "";
+  }
+  return dateTime;
+}
+
+function activeRescheduleThread(booking) {
+  return booking.rescheduleThread || { status: "open", history: [] };
+}
+
+function rescheduleUpdates(booking, proposedDateTime, proposedBy) {
+  const thread = activeRescheduleThread(booking);
+  const history = [...(thread.history || []), {
+    proposedDateTime,
+    proposedBy,
+    proposedByName: currentAccount.name,
+    proposedAt: nowLabel()
+  }];
+  return {
+    status: proposedBy === "tutor" ? "Reschedule requested by tutor" : "Reschedule requested by student",
+    proposedDateTime,
+    rescheduleThread: {
+      status: "open",
+      latestProposedDateTime: proposedDateTime,
+      latestProposedBy: proposedBy,
+      history
+    }
+  };
+}
+
+function bookingNotificationRecipient(booking) {
+  return currentAccount.role === "tutor" ? booking.studentEmail : booking.tutorEmail;
+}
+
+function withBookingSeenByCurrent(updates = {}, recipientEmail = "") {
+  const actor = normalizeEmail(currentAccount?.email);
+  const recipient = normalizeEmail(recipientEmail);
+  return {
+    ...updates,
+    seenBy: actor ? [actor] : [],
+    unseenFor: recipient ? [recipient] : []
+  };
 }
 
 function bookingActions(booking) {
@@ -2264,11 +2457,20 @@ function bookingActions(booking) {
   const status = booking.status || "Pending tutor approval";
   if (["Cancelled by student", "Cancelled by tutor"].includes(status)) return "";
   const needsTutorDecision = status === "Pending tutor approval" || status === "Reschedule requested by student";
+  const hasReschedule = status === "Reschedule requested by student" || status === "Reschedule requested by tutor";
+  const canRespondToReschedule = hasReschedule
+    && ((status === "Reschedule requested by student" && currentAccount?.role === "tutor")
+      || (status === "Reschedule requested by tutor" && currentAccount?.role !== "tutor"));
+  const proposed = booking.proposedDateTime ? `<small class="booking-proposed">Proposed: ${escapeHtml(formatBookingDate(booking.proposedDateTime))}</small>` : "";
 
   if (currentAccount?.role === "tutor") {
     return `
-      ${needsTutorDecision ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
+      ${proposed}
+      ${needsTutorDecision && !hasReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>` : ""}
+      ${canRespondToReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accept reschedule" data-booking-id="${id}">Accept time</button>
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Counter reschedule" data-booking-id="${id}">Counter</button>
+      <button class="secondary-btn compact-btn" type="button" data-booking-action="Decline reschedule" data-booking-id="${id}">Decline</button>` : ""}
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by tutor" data-booking-id="${id}">Suggest time</button>
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Cancelled by tutor" data-booking-id="${id}">Cancel</button>
       ${booking.studentEmail ? `<button class="secondary-btn compact-btn" type="button" data-view-student="${escapeHtml(booking.studentEmail)}">Student</button>` : ""}
@@ -2276,6 +2478,10 @@ function bookingActions(booking) {
   }
 
   return `
+    ${proposed}
+    ${canRespondToReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accept reschedule" data-booking-id="${id}">Accept time</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Counter reschedule" data-booking-id="${id}">Counter</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Decline reschedule" data-booking-id="${id}">Decline</button>` : ""}
     <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by student" data-booking-id="${id}">Reschedule</button>
     <button class="secondary-btn compact-btn" type="button" data-booking-action="Cancelled by student" data-booking-id="${id}">Cancel</button>
   `;
@@ -2284,7 +2490,7 @@ function bookingActions(booking) {
 function checkLessonReminders() {
   const allBookings = readStore(storage.bookings, {});
   const now = Date.now();
-  Object.values(allBookings).flat().forEach((booking) => {
+  Object.values(allBookings).flat().flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking]).forEach((booking) => {
     if (!booking.dateTime || ["Rejected", "Cancelled by student", "Cancelled by tutor"].includes(booking.status)) return;
     const start = new Date(booking.dateTime).getTime();
     const minsUntil = (start - now) / 60000;
@@ -2310,8 +2516,11 @@ function renderBookingList(container, items, emptyText) {
         <div class="avatar small-avatar">${escapeHtml(booking.initials)}</div>
         <div>
           <strong>${escapeHtml(formatBookingDate(booking.dateTime))}</strong>
-          <span>${escapeHtml(booking.type)} with ${escapeHtml(participant)} · ${escapeHtml(booking.subject)}</span>
+          <span>${booking.isFreeTrial ? "Free trial lesson" : escapeHtml(booking.type)} with ${escapeHtml(participant)} · ${escapeHtml(booking.subject)}</span>
           <small class="booking-status ${bookingStatusClass(booking.status)}">${escapeHtml(booking.status || "Pending tutor approval")}</small>
+          ${booking.isGeneratedOccurrence ? `<small class="booking-status">Recurring occurrence</small>` : ""}
+          ${booking.isFreeTrial ? `<small class="booking-status">Free trial</small>` : ""}
+          ${booking.rescheduleThread?.history?.length ? `<small class="booking-status">${booking.rescheduleThread.history.length} proposed time${booking.rescheduleThread.history.length === 1 ? "" : "s"}</small>` : ""}
         </div>
         <div class="booking-actions">${bookingActions(booking)}</div>
       </article>
@@ -2328,10 +2537,58 @@ function renderBookingList(container, items, emptyText) {
   container.querySelectorAll("[data-booking-action]").forEach((button) => {
     button.addEventListener("click", () => {
       const status = button.dataset.bookingAction;
-      const booking = getBookings().find((item) => item.id === button.dataset.bookingId);
-      updateBookingEverywhere(button.dataset.bookingId, { status });
+      const booking = getDisplayBookings().find((item) => item.id === button.dataset.bookingId);
+      if (!booking) return;
+      const recipient = bookingNotificationRecipient(booking);
+      const scope = ["Cancelled by tutor", "Cancelled by student", "Reschedule requested by tutor", "Reschedule requested by student"].includes(status)
+        ? scopeForSeriesAction(booking, status.includes("Cancel") ? "Cancel lesson" : "Reschedule lesson")
+        : "single";
+      let updates = { status };
+      if (status === "Cancelled by tutor" || status === "Cancelled by student") {
+        updates = { status, cancelled: true };
+      }
+      if (status === "Accepted") {
+        updates = { status: "Accepted" };
+      }
+      if (status === "Reschedule requested by tutor" || status === "Reschedule requested by student" || status === "Counter reschedule") {
+        const proposedDateTime = promptForLessonDateTime(status === "Counter reschedule" ? "Counter-propose a new time" : "Propose a new lesson time");
+        if (!proposedDateTime) return;
+        updates = rescheduleUpdates(booking, proposedDateTime, currentAccount.role === "tutor" ? "tutor" : "student");
+      }
+      if (status === "Accept reschedule") {
+        updates = {
+          status: "Accepted",
+          dateTime: booking.proposedDateTime || booking.rescheduleThread?.latestProposedDateTime || booking.dateTime,
+          proposedDateTime: "",
+          rescheduleThread: {
+            ...(booking.rescheduleThread || {}),
+            status: "accepted",
+            acceptedBy: currentAccount.role,
+            acceptedAt: nowLabel()
+          }
+        };
+      }
+      if (status === "Decline reschedule") {
+        const wantsCounter = window.confirm("Do you want to counter-propose another time instead?");
+        if (wantsCounter) {
+          const proposedDateTime = promptForLessonDateTime("Counter-propose a new time");
+          if (!proposedDateTime) return;
+          updates = rescheduleUpdates(booking, proposedDateTime, currentAccount.role === "tutor" ? "tutor" : "student");
+        } else {
+          updates = {
+            status: "Accepted",
+            proposedDateTime: "",
+            rescheduleThread: {
+              ...(booking.rescheduleThread || {}),
+              status: "declined",
+              declinedBy: currentAccount.role,
+              declinedAt: nowLabel()
+            }
+          };
+        }
+      }
+      updateOccurrenceOrBooking(booking, withBookingSeenByCurrent(updates, recipient), scope);
       if (booking) {
-        const recipient = currentAccount.role === "tutor" ? booking.studentEmail : booking.tutorEmail;
         queueEmail(recipient, `Booking ${status.toLowerCase()}`, `${currentAccount.name} marked ${booking.type} on ${formatBookingDate(booking.dateTime)} as: ${status}.`, {
           key: `booking-${button.dataset.bookingId}-${status}`,
           bookingId: button.dataset.bookingId
@@ -2342,6 +2599,21 @@ function renderBookingList(container, items, emptyText) {
       renderDashboard(currentAccount.role);
     });
   });
+}
+
+function markBookingsSeen() {
+  if (!currentAccount?.email) return;
+  const ownEmail = normalizeEmail(currentAccount.email);
+  const bookings = getBookings();
+  const nextItems = bookings.map((booking) => {
+    if (!bookingVisibleToCurrentAccount(booking)) return booking;
+    const seenBy = [...new Set([...(booking.seenBy || []).map(normalizeEmail), ownEmail])];
+    if (seenBy.length === (booking.seenBy || []).length && (booking.seenBy || []).map(normalizeEmail).includes(ownEmail)) return booking;
+    updateBookingInCloud(booking.id, { seenBy }).catch(() => {});
+    return { ...booking, seenBy };
+  });
+  saveBookings(nextItems);
+  updateBookingBadge();
 }
 
 function renderBookingsPage() {
@@ -2376,10 +2648,13 @@ function renderBookingsPage() {
     ? "Accept, reject, or request a new time for student and parent booking requests."
     : "Request a lesson time, then reschedule or cancel if plans change.";
 
-  const bookings = getBookings();
+  markBookingsSeen();
+  const bookings = getDisplayBookings();
   const now = Date.now();
-  const upcoming = bookings.filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= now);
-  const previous = bookings.filter((booking) => booking.dateTime && new Date(booking.dateTime).getTime() < now);
+  const upcoming = bookings.filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= now)
+    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime());
+  const previous = bookings.filter((booking) => booking.dateTime && new Date(booking.dateTime).getTime() < now)
+    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime());
   upcomingCount.textContent = upcoming.length;
   previousCount.textContent = previous.length;
   renderBookingList(upcomingBookings, upcoming, "No upcoming lessons yet.");
@@ -2388,9 +2663,10 @@ function renderBookingsPage() {
 
 function renderDashboard(role) {
   const dashboard = roleDashboards[role];
-  const bookings = currentAccount ? getBookings() : [];
+  const bookings = currentAccount ? getDisplayBookings() : [];
   const nextBookings = bookings
     .filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= Date.now())
+    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime())
     .slice(0, 3);
   const recentMessages = currentAccount ? getMessages().slice(-2).reverse() : [];
   ratingsPanel.classList.remove("highlight");
@@ -2630,11 +2906,14 @@ function updateSignupMode() {
   const role = signupRole.value;
   const heading = signupForm.querySelector("h3");
   const button = signupForm.querySelector("button[type='submit']");
-  if (heading) heading.textContent = role === "parent" ? "Parent sign up" : role === "tutor" ? "Approved tutor sign up" : "Student sign up";
-  if (button) button.textContent = role === "parent" ? "Create parent account" : role === "tutor" ? "Create tutor account" : "Create student account";
+  const under18 = ageFromDob(signupDob.value) !== null && ageFromDob(signupDob.value) < 18;
+  if (heading) heading.textContent = role === "tutor" ? "Approved tutor sign up" : "Student sign up";
+  if (button) button.textContent = role === "tutor" ? "Create tutor account" : "Create student account";
   document.querySelectorAll(".parent-field").forEach((field) => {
-    field.hidden = role !== "student";
+    field.hidden = !under18;
   });
+  signupParentName.required = under18;
+  signupParentEmail.required = under18;
   signupDob.required = true;
 }
 
@@ -2701,14 +2980,24 @@ bookingMinuteOptions?.querySelectorAll("[data-minute]").forEach((button) => {
 profileSubjectSearch?.addEventListener("input", renderSubjectSuggestions);
 profileSubjectSearch?.addEventListener("focus", renderSubjectSuggestions);
 profileSubjectSearch?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    hideSubjectSuggestions();
+    profileSubjectSearch.blur();
+    return;
+  }
   if (event.key !== "Enter") return;
   event.preventDefault();
   const firstSuggestion = profileSubjectSuggestions?.querySelector("[data-add-subject]");
   firstSuggestion?.click();
 });
-document.addEventListener("click", (event) => {
+profileSubjectPicker?.addEventListener("focusout", () => {
+  window.setTimeout(() => {
+    if (!profileSubjectPicker.contains(document.activeElement)) hideSubjectSuggestions();
+  }, 120);
+});
+document.addEventListener("pointerdown", (event) => {
   if (!profileSubjectPicker?.contains(event.target)) {
-    if (profileSubjectSuggestions) profileSubjectSuggestions.hidden = true;
+    hideSubjectSuggestions();
   }
 });
 
@@ -2733,11 +3022,6 @@ profileForm.addEventListener("submit", (event) => {
   const subject = subjectIds.length ? subjectIds.map(subjectLabel).join(", ") : cleanAutoText(profileSubject.value);
   const subjectGrades = Object.fromEntries(Object.entries(selectedProfileSubjectGrades)
     .filter(([subjectId, gradeId]) => subjectIds.includes(subjectId) && gradeById.has(gradeId)));
-  if (currentAccount.role === "tutor" && profileSubjectOther && !profileSubjectOther.hidden && profileSubjectOther.value.trim()) {
-    saveOtherSubjectRequest(profileSubjectOther.value);
-    profileSubjectOther.value = "";
-    profileSubjectOther.hidden = true;
-  }
 
   const profile = {
     name: profileName.value.trim() || currentAccount.name,
@@ -2837,50 +3121,57 @@ bookingPageForm.addEventListener("submit", async (event) => {
     bookingTutor.focus();
     return;
   }
+  if (bookingLessonType.value === "Free trial lesson" && hasUsedFreeTrialWithTutor(tutorEmail(tutor))) {
+    signupStatus.textContent = "You have already used your free trial with this tutor.";
+    signupStatus.classList.remove("success");
+    return;
+  }
   selectedTutor = tutor;
   const items = getBookings();
   const baseBooking = {
-    id: createId("booking"),
     tutor: tutor.name,
     tutorEmail: tutorEmail(tutor),
     initials: tutor.initials,
     subject: tutorSubjectLabel(tutor),
     type: bookingLessonType.value,
     dateTime: bookingDateTimeValue,
-    status: "Pending tutor approval",
+    status: isRecurringType(bookingLessonType.value) ? "Accepted" : "Pending tutor approval",
+    isFreeTrial: bookingLessonType.value === "Free trial lesson",
     student: currentAccount.name,
     studentEmail: currentAccount.email,
+    seenBy: [normalizeEmail(currentAccount.email)],
+    unseenFor: [normalizeEmail(tutorEmail(tutor))],
     created: nowLabel()
   };
-  let savedBookings = buildBookingSeries(baseBooking);
+  let savedBooking = buildBookingRecord(baseBooking);
   try {
-    savedBookings = await Promise.all(savedBookings.map((booking) => saveBookingToCloud(booking)));
+    savedBooking = await saveBookingToCloud(savedBooking);
   } catch {
     showConfirmation("Booking saved on this device, but Firebase did not accept it yet. Check Firestore is still in test mode.");
   }
-  items.push(...savedBookings);
+  items.push(savedBooking);
   saveBookings(items);
 
   if (tutor.email) {
     const allBookings = readStore(storage.bookings, {});
     const tutorItems = allBookings[tutor.email] || [];
-    tutorItems.push(...savedBookings.map((booking) => ({
-      ...booking,
+    tutorItems.push({
+      ...savedBooking,
       initials: initialsFromName(currentAccount.name)
-    })));
+    });
     allBookings[tutor.email] = tutorItems;
     writeStore(storage.bookings, allBookings);
   }
 
   bookingDate.value = "";
   bookingDateTime.value = "";
-  const firstBooking = savedBookings[0];
-  queueEmail(firstBooking.tutorEmail, "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${savedBookings.length > 1 ? ` (${savedBookings.length} upcoming lessons created)` : ""}.`, {
+  const firstBooking = savedBooking;
+  queueEmail(firstBooking.tutorEmail, firstBooking.status === "Accepted" ? "New recurring lesson confirmed" : "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${firstBooking.isFreeTrial ? " as a free trial." : "."}`, {
     key: `new-booking-${firstBooking.id}`,
-    bookingId: firstBooking.id,
-    bookingIds: savedBookings.map((booking) => booking.id)
+    bookingId: firstBooking.id
   });
   addActivity(`Requested ${bookingLessonType.value} with ${tutor.name}`, "Booking");
+  updateBookingBadge();
   checkLessonReminders();
   renderBookingsPage();
 });
@@ -2928,6 +3219,9 @@ signupRole.addEventListener("change", () => {
     updateAccess();
   }
 });
+
+signupDob?.addEventListener("change", updateSignupMode);
+signupDob?.addEventListener("input", updateSignupMode);
 
 showSignupFlow?.addEventListener("click", showSignupAccountView);
 showLoginFlow?.addEventListener("click", showLoginAccountView);
@@ -2980,11 +3274,19 @@ signupForm.addEventListener("submit", async (event) => {
   const accounts = getAccounts();
   const role = signupRole.value;
   const dobValue = normalizeDobInput(signupDob.value);
+  const under18 = ageFromDob(dobValue) !== null && ageFromDob(dobValue) < 18;
 
   if (password !== confirmPassword) {
     signupStatus.textContent = "Passwords do not match. Retype the same password to create the account.";
     signupStatus.classList.remove("success");
     signupConfirmPassword.focus();
+    return;
+  }
+
+  if (under18 && (!signupParentName.value.trim() || !normalizeEmail(signupParentEmail.value))) {
+    signupStatus.textContent = "Parent or guardian name and email are required for under-18 accounts.";
+    signupStatus.classList.remove("success");
+    signupParentName.focus();
     return;
   }
 
@@ -3004,8 +3306,8 @@ signupForm.addEventListener("submit", async (event) => {
     learningSubject: signupWizard.subject || signupSubject?.value || "",
     learningLevel: signupWizard.level || "",
     marketingOptIn: marketingOptIn?.checked || false,
-    parentName: role === "student" ? signupParentName.value.trim() : "",
-    parentEmail: role === "student" ? normalizeEmail(signupParentEmail.value) : "",
+    parentName: under18 ? signupParentName.value.trim() : "",
+    parentEmail: under18 ? normalizeEmail(signupParentEmail.value) : "",
     password
   };
 

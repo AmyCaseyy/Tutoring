@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260917-subject-grades" />
+    <link rel="stylesheet" href="styles.css?v=20260917-subject-picker-close" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -270,7 +270,6 @@
                 <span>I'm signing up as a</span>
                 <select id="signupRole">
                   <option value="student">Student</option>
-                  <option value="parent">Parent or guardian</option>
                   <option value="tutor">Approved tutor</option>
                 </select>
               </label>
@@ -393,7 +392,6 @@
                     <input id="profileSubjectSearch" type="search" placeholder="Search subjects" autocomplete="off" />
                     <div class="subject-suggestions" id="profileSubjectSuggestions" hidden></div>
                   </div>
-                  <input id="profileSubjectOther" class="subject-other-input" type="text" placeholder="Request another subject" hidden />
                 </label>
                 <label class="field">
                   <span id="profileDetailLabel">Goal or teaching style</span>
@@ -513,6 +511,7 @@
                 <span>Lesson type</span>
                 <select id="bookingLessonType">
                   <option value="One-off lesson">One-off lesson</option>
+                  <option value="Free trial lesson">Free trial lesson</option>
                   <option value="Weekly lesson">Weekly lesson</option>
                   <option value="Twice weekly lesson">2 times a week</option>
                   <option value="Fortnightly lesson">Every 2 weeks</option>
@@ -939,6 +938,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260917-subject-grades"></script>
+    <script src="app.js?v=20260917-subject-picker-close"></script>
   </body>
 </html>
