@@ -1224,19 +1224,22 @@ async function getCloudAccount(user) {
   };
 }
 
+function tutorApprovalIsActive(record) {
+  return record?.status === "approved" || record?.approved === true || record?.isApproved === true;
+}
+
 async function isApprovedTutorEmail(email) {
   if (!isCloudReady() || !email) return false;
   const approvedEmail = normalizeEmail(email);
   const directSnapshot = await db.collection("approvedTutors").doc(approvedEmail).get();
-  if (directSnapshot.exists && directSnapshot.data()?.status === "approved") return true;
+  if (directSnapshot.exists && tutorApprovalIsActive(directSnapshot.data())) return true;
 
   try {
     const querySnapshot = await db.collection("approvedTutors")
       .where("email", "==", approvedEmail)
-      .where("status", "==", "approved")
       .limit(1)
       .get();
-    return !querySnapshot.empty;
+    return querySnapshot.docs.some((doc) => tutorApprovalIsActive(doc.data()));
   } catch {
     return false;
   }
@@ -1251,7 +1254,6 @@ async function getApprovedTutorRecord(email) {
   try {
     const querySnapshot = await db.collection("approvedTutors")
       .where("email", "==", approvedEmail)
-      .where("status", "==", "approved")
       .limit(1)
       .get();
     if (querySnapshot.empty) return null;
@@ -1287,7 +1289,7 @@ async function createHiddenTutorProfile(account, approvedRecord = {}) {
     badges: [],
     initials: "",
     score: 0,
-    visible: approvedRecord.visible === true,
+    visible: tutorApprovalIsActive(approvedRecord) && approvedRecord.visible !== false,
     approvedTutorId: approvedRecord.id || account.email,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1338,14 +1340,14 @@ async function loadCloudData() {
 async function saveTutorProfileToCloud(profile, uid = auth?.currentUser?.uid) {
   if (!isCloudReady() || !uid) return;
   const approvedRecord = await getApprovedTutorRecord(profile.email);
-  if (!approvedRecord || approvedRecord.status !== "approved") {
+  if (!approvedRecord || !tutorApprovalIsActive(approvedRecord)) {
     throw new Error("Tutor email is not approved.");
   }
   await db.collection("tutorProfiles").doc(uid).set({
     ...profile,
     uid,
     email: normalizeEmail(profile.email),
-    visible: approvedRecord.visible === true,
+    visible: approvedRecord.visible !== false,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
   await loadCloudData();
@@ -1640,7 +1642,7 @@ function saveProfile(profile) {
   profiles[accountKey()] = profile;
   writeStore(storage.profiles, profiles);
   if (currentAccount?.role === "tutor") {
-    saveTutorProfileToCloud({
+    return saveTutorProfileToCloud({
       name: profile.name || currentAccount.name,
       email: currentAccount.email,
       subject: profile.subject || "",
@@ -1664,8 +1666,9 @@ function saveProfile(profile) {
       badges: Array.isArray(profile.badges) ? profile.badges : [],
       initials: "",
       score: Number(profile.score || 0)
-    }, currentAccount.uid).catch(() => {});
+    }, currentAccount.uid);
   }
+  return Promise.resolve();
 }
 
 function getProfileForAccount(account) {
@@ -3542,7 +3545,7 @@ document.querySelector("#resetFilters").addEventListener("click", () => {
   renderTutors();
 });
 
-profileForm.addEventListener("submit", (event) => {
+profileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentAccount) {
     promptForAccount("Log in first, then you can save a profile.");
@@ -3579,15 +3582,25 @@ profileForm.addEventListener("submit", (event) => {
     updated: true
   };
 
-  saveProfile(profile);
-  currentAccount.name = profile.name;
-  localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(currentAccount));
-  const accounts = getAccounts().map((account) => account.email === currentAccount.email ? currentAccount : account);
-  saveAccounts(accounts);
-  profileBadge.textContent = "Saved";
-  dashboardSubtitle.textContent = `${currentAccount.name}, these are your ${currentAccount.role} account tools.`;
-  addActivity("Updated profile details", "Profile");
-  renderTutors();
+  try {
+    await saveProfile(profile);
+    currentAccount.name = profile.name;
+    localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(currentAccount));
+    const accounts = getAccounts().map((account) => account.email === currentAccount.email ? currentAccount : account);
+    saveAccounts(accounts);
+    profileBadge.textContent = "Saved";
+    dashboardSubtitle.textContent = `${currentAccount.name}, these are your ${currentAccount.role} account tools.`;
+    signupStatus.textContent = currentAccount.role === "tutor" ? "Profile saved to Firebase." : "Profile saved.";
+    signupStatus.classList.add("success");
+    addActivity("Updated profile details", "Profile");
+    renderTutors();
+  } catch (error) {
+    signupStatus.textContent = error.message === "Tutor email is not approved."
+      ? "Profile could not save to Firebase because this tutor email is not approved in approvedTutors."
+      : "Profile could not save to Firebase. Check Firestore rules and try again.";
+    signupStatus.classList.remove("success");
+    profileBadge.textContent = "Not saved";
+  }
 });
 
 chatForm.addEventListener("submit", async (event) => {
