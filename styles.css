@@ -889,6 +889,101 @@ img.avatar {
   min-width: 0;
 }
 
+.subject-picker {
+  position: relative;
+  display: grid;
+  gap: 10px;
+}
+
+.subject-chip-row,
+.subject-module-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.subject-module-row {
+  width: 100%;
+  padding-top: 2px;
+}
+
+.subject-module-row > span {
+  width: 100%;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.subject-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 11px;
+  color: var(--ink);
+  background: rgba(232, 223, 202, 0.68);
+  border: 1px solid rgba(201, 188, 158, 0.82);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.subject-chip.selected {
+  color: #fffdf8;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.subject-chip span {
+  opacity: 0.7;
+}
+
+.subject-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: 260px;
+  overflow: auto;
+  padding: 8px;
+  background: #fffdf8;
+  border: 1px solid rgba(201, 188, 158, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(56, 45, 48, 0.16);
+}
+
+.subject-suggestions button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.subject-suggestions button:hover,
+.subject-suggestions button:focus-visible {
+  background: rgba(232, 223, 202, 0.52);
+  outline: none;
+}
+
+.subject-suggestions span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.subject-other-input[hidden] {
+  display: none;
+}
+
 .chip {
   max-width: 100%;
   padding: 7px 9px;

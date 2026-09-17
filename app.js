@@ -209,6 +209,49 @@ const tutors = [
   }
 ];
 
+const SUBJECTS = [
+  { id: "mathematics", canonicalName: "Mathematics", category: "Mathematics", aliases: ["Maths", "Math", "A Level Maths", "A-Level Maths", "AS Maths", "Core Maths (distinct qualification, do not merge)"] },
+  { id: "further-mathematics", canonicalName: "Further Mathematics", category: "Mathematics", aliases: ["Further Maths", "FM", "F Maths", "A Level Further Maths", "AFM"] },
+  { id: "statistics", canonicalName: "Statistics", category: "Mathematics", aliases: ["A Level Statistics", "Stats A Level"] },
+  { id: "biology", canonicalName: "Biology", category: "Sciences", aliases: ["Bio", "A Level Biology"] },
+  { id: "chemistry", canonicalName: "Chemistry", category: "Sciences", aliases: ["Chem", "A Level Chemistry"] },
+  { id: "physics", canonicalName: "Physics", category: "Sciences", aliases: ["Phys", "A Level Physics"] },
+  { id: "environmental-science", canonicalName: "Environmental Science", category: "Sciences", aliases: ["Env Sci", "Environmental Studies (verify not a different quals)"] },
+  { id: "geology", canonicalName: "Geology", category: "Sciences", aliases: ["Geological Science"] },
+  { id: "computer-science", canonicalName: "Computer Science", category: "Technology & Engineering", aliases: ["CompSci", "Comp Sci", "CS", "Computing"] },
+  { id: "electronics", canonicalName: "Electronics", category: "Technology & Engineering", aliases: ["Electronic Engineering"] },
+  { id: "engineering", canonicalName: "Engineering", category: "Technology & Engineering", aliases: ["A Level Engineering"] },
+  { id: "dt-product-design", canonicalName: "Design and Technology: Product Design", category: "Technology & Engineering", aliases: ["DT Product Design", "D&T Product Design", "Product Design", "Resistant Materials (legacy name)"] },
+  { id: "dt-engineering", canonicalName: "Design and Technology: Engineering", category: "Technology & Engineering", aliases: ["DT Engineering", "D&T Engineering"] },
+  { id: "economics", canonicalName: "Economics", category: "Economics", aliases: ["Econ", "A Level Economics"] },
+  { id: "psychology", canonicalName: "Psychology", category: "Psychology", aliases: ["Psych", "A Level Psychology"] }
+];
+
+const SUBJECT_MODULES = [
+  { id: "further-maths-mechanics", parentId: "further-mathematics", canonicalName: "Mechanics", aliases: ["Further Mechanics", "M1", "M2", "Mechanics 1", "Mechanics 2"] },
+  { id: "further-maths-statistics", parentId: "further-mathematics", canonicalName: "Statistics", aliases: ["Further Statistics", "S1", "S2", "Statistics 1", "Statistics 2"] },
+  { id: "further-maths-decision", parentId: "further-mathematics", canonicalName: "Decision Mathematics", aliases: ["Decision Maths", "Discrete Mathematics", "Discrete Maths", "D1", "D2"] },
+  { id: "further-maths-further-pure", parentId: "further-mathematics", canonicalName: "Further Pure Mathematics", aliases: ["Further Pure", "FP1", "FP2", "FP3", "Core Pure"] }
+];
+
+const GRADES = [
+  { id: "a-star", label: "A*", sortOrder: 1 },
+  { id: "a", label: "A", sortOrder: 2 },
+  { id: "b", label: "B", sortOrder: 3 },
+  { id: "c", label: "C", sortOrder: 4 },
+  { id: "d", label: "D", sortOrder: 5 },
+  { id: "e", label: "E", sortOrder: 6 },
+  { id: "u", label: "U", sortOrder: 7 },
+  { id: "not-disclosed", label: "Not disclosed / not applicable", sortOrder: null }
+];
+
+const OTHER_SUBJECT_ID = "other-request";
+const subjectById = new Map(SUBJECTS.map((subject) => [subject.id, subject]));
+const gradeById = new Map(GRADES.map((grade) => [grade.id, grade]));
+let selectedProfileSubjectIds = [];
+let selectedProfileModuleIds = [];
+let selectedProfileSubjectGrades = {};
+
 const roleContent = {
   student: {
     title: "Student account",
@@ -357,6 +400,11 @@ const dashboardSubtitle = document.querySelector("#dashboardSubtitle");
 const profileForm = document.querySelector("#profileForm");
 const profileName = document.querySelector("#profileName");
 const profileSubject = document.querySelector("#profileSubject");
+const profileSubjectPicker = document.querySelector("#profileSubjectPicker");
+const profileSubjectChips = document.querySelector("#profileSubjectChips");
+const profileSubjectSearch = document.querySelector("#profileSubjectSearch");
+const profileSubjectSuggestions = document.querySelector("#profileSubjectSuggestions");
+const profileSubjectOther = document.querySelector("#profileSubjectOther");
 const profileDetail = document.querySelector("#profileDetail");
 const profileUniversity = document.querySelector("#profileUniversity");
 const profileLevel = document.querySelector("#profileLevel");
@@ -438,7 +486,8 @@ const storage = {
   profiles: "girlstemTutoringProfiles",
   activity: "girlstemTutoringActivity",
   bookings: "girlstemTutoringBookings",
-  emails: "tutrstemEmailQueue"
+  emails: "tutrstemEmailQueue",
+  subjectRequests: "tutrstemSubjectRequests"
 };
 
 function showPage(pageName, options = {}) {
@@ -660,6 +709,271 @@ function cleanAutoBadges(badges = []) {
   return (Array.isArray(badges) ? badges : []).filter((badge) => !blocked.has(badge));
 }
 
+function normalizeSubjectText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeGradeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/\*/g, "-star")
+    .replace(/[^a-z0-9-]+/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function gradeIdFromValue(value) {
+  const normalized = normalizeGradeText(value);
+  if (!normalized) return "";
+  return GRADES.find((grade) => grade.id === normalized || normalizeGradeText(grade.label) === normalized)?.id || "";
+}
+
+function gradeLabel(id) {
+  return gradeById.get(id)?.label || "";
+}
+
+function gradeSortOrder(id) {
+  const order = gradeById.get(id)?.sortOrder;
+  return Number.isFinite(order) ? order : null;
+}
+
+function subjectSearchValues(subject) {
+  return [subject.canonicalName, subject.id, ...(subject.aliases || [])].map(normalizeSubjectText).filter(Boolean);
+}
+
+function findSubjectByText(value) {
+  const normalized = normalizeSubjectText(value);
+  if (!normalized) return null;
+  return SUBJECTS.find((subject) => subjectSearchValues(subject).includes(normalized)) || null;
+}
+
+function subjectIdsFromValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => subjectById.has(item) ? item : findSubjectByText(item)?.id).filter(Boolean);
+  }
+  return String(value || "")
+    .split(/[,;/]+/)
+    .map((part) => findSubjectByText(part)?.id)
+    .filter(Boolean);
+}
+
+function uniqueSubjectIds(ids = []) {
+  return [...new Set(ids.filter((id) => subjectById.has(id)))];
+}
+
+function tutorSubjectIds(tutor = {}) {
+  return uniqueSubjectIds([
+    ...(Array.isArray(tutor.subjectIds) ? tutor.subjectIds : []),
+    ...(Array.isArray(tutor.subjects) ? tutor.subjects : []),
+    ...subjectIdsFromValue(tutor.subject)
+  ]);
+}
+
+function tutorSubjectGrades(tutor = {}) {
+  const grades = tutor.subjectGrades && typeof tutor.subjectGrades === "object" ? { ...tutor.subjectGrades } : {};
+  const ids = tutorSubjectIds(tutor);
+  if (ids.length === 1 && tutor.grade && !grades[ids[0]]) {
+    const inferredGrade = gradeIdFromValue(tutor.grade);
+    if (inferredGrade) grades[ids[0]] = inferredGrade;
+  }
+  return Object.fromEntries(Object.entries(grades).filter(([subjectId, gradeId]) => subjectById.has(subjectId) && gradeById.has(gradeId)));
+}
+
+function tutorGradeForSubject(tutor = {}, subjectId) {
+  return tutorSubjectGrades(tutor)[subjectId] || "";
+}
+
+function tutorMeetsGradeFilter(tutor, subjectId, selectedGradeId) {
+  if (!selectedGradeId || selectedGradeId === "Any") return true;
+  const selectedOrder = gradeSortOrder(selectedGradeId);
+  if (!selectedOrder) return true;
+  const ids = subjectId && subjectId !== "All" ? [subjectId] : tutorSubjectIds(tutor);
+  return ids.some((id) => {
+    const tutorOrder = gradeSortOrder(tutorGradeForSubject(tutor, id));
+    return Number.isFinite(tutorOrder) && tutorOrder <= selectedOrder;
+  });
+}
+
+function subjectLabel(id) {
+  return subjectById.get(id)?.canonicalName || "";
+}
+
+function tutorSubjectLabel(tutor = {}) {
+  const labels = tutorSubjectIds(tutor).map(subjectLabel).filter(Boolean);
+  return labels.length ? labels.join(", ") : cleanAutoText(tutor.subject);
+}
+
+function tutorModuleLabels(tutor = {}) {
+  const moduleIds = Array.isArray(tutor.furtherMathsModuleIds) ? tutor.furtherMathsModuleIds : [];
+  return moduleIds
+    .map((id) => SUBJECT_MODULES.find((module) => module.id === id)?.canonicalName)
+    .filter(Boolean);
+}
+
+function tutorSubjectGradeChips(tutor = {}) {
+  const grades = tutorSubjectGrades(tutor);
+  return tutorSubjectIds(tutor)
+    .map((subjectId) => {
+      const grade = gradeLabel(grades[subjectId]);
+      return grade ? `${subjectLabel(subjectId)}: ${grade}` : "";
+    })
+    .filter(Boolean);
+}
+
+function subjectMatchesQuery(subject, query) {
+  const normalized = normalizeSubjectText(query);
+  if (!normalized) return true;
+  return subjectSearchValues(subject).some((value) => value.includes(normalized));
+}
+
+function populateSubjectFilter() {
+  if (!subjectFilter) return;
+  const categories = [...new Set(SUBJECTS.map((subject) => subject.category))];
+  subjectFilter.innerHTML = `<option value="All">All subjects</option>${categories.map((category) => {
+    const options = SUBJECTS
+      .filter((subject) => subject.category === category)
+      .map((subject) => `<option value="${escapeHtml(subject.id)}">${escapeHtml(subject.canonicalName)}</option>`)
+      .join("");
+    return `<optgroup label="${escapeHtml(category)}">${options}</optgroup>`;
+  }).join("")}`;
+}
+
+function populateGradeFilter() {
+  if (!gradeFilter) return;
+  gradeFilter.innerHTML = `<option value="Any">Any grade</option>${GRADES
+    .filter((grade) => Number.isFinite(grade.sortOrder))
+    .map((grade) => `<option value="${escapeHtml(grade.id)}">${escapeHtml(grade.label)} or above</option>`)
+    .join("")}`;
+}
+
+function syncProfileSubjectInput() {
+  if (!profileSubject) return;
+  profileSubject.value = JSON.stringify(selectedProfileSubjectIds);
+}
+
+function normalizeSubjectGrades(subjectGrades = {}) {
+  return Object.fromEntries(Object.entries(subjectGrades)
+    .filter(([subjectId, gradeId]) => selectedProfileSubjectIds.includes(subjectId) && gradeById.has(gradeId) && gradeId !== "not-disclosed"));
+}
+
+function saveOtherSubjectRequest(value) {
+  const requestedName = String(value || "").trim();
+  if (!requestedName || !currentAccount) return;
+  const requests = readStore(storage.subjectRequests, []);
+  const request = {
+    id: createId("subject"),
+    requestedName,
+    accountEmail: currentAccount.email,
+    accountName: currentAccount.name,
+    status: "pending-review",
+    created: nowLabel()
+  };
+  requests.push(request);
+  writeStore(storage.subjectRequests, requests);
+  if (isCloudReady()) {
+    db.collection("subjectRequests").add({
+      ...request,
+      accountEmail: normalizeEmail(currentAccount.email),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+  }
+}
+
+function renderProfileSubjectPicker() {
+  if (!profileSubjectPicker || !profileSubjectChips || !profileSubjectSuggestions) return;
+  const showModules = selectedProfileSubjectIds.includes("further-mathematics");
+  const subjectChips = selectedProfileSubjectIds.map((id) => `
+    <div class="subject-grade-row">
+      <strong>${escapeHtml(subjectLabel(id))}</strong>
+      <select data-subject-grade="${escapeHtml(id)}" aria-label="${escapeHtml(subjectLabel(id))} grade achieved">
+        <option value="">Grade not disclosed</option>
+        ${GRADES.filter((grade) => Number.isFinite(grade.sortOrder)).map((grade) => `
+          <option value="${escapeHtml(grade.id)}" ${selectedProfileSubjectGrades[id] === grade.id ? "selected" : ""}>${escapeHtml(grade.label)}</option>
+        `).join("")}
+      </select>
+      <button class="subject-remove" type="button" data-remove-subject="${escapeHtml(id)}" aria-label="Remove ${escapeHtml(subjectLabel(id))}">x</button>
+    </div>
+  `).join("");
+  const moduleChips = showModules ? SUBJECT_MODULES.map((module) => `
+    <button class="subject-chip ${selectedProfileModuleIds.includes(module.id) ? "selected" : ""}" type="button" data-toggle-module="${escapeHtml(module.id)}">
+      ${escapeHtml(module.canonicalName)}
+    </button>
+  `).join("") : "";
+  profileSubjectChips.innerHTML = `${subjectChips}${moduleChips ? `<div class="subject-module-row"><span>Further Maths options</span>${moduleChips}</div>` : ""}`;
+
+  profileSubjectChips.querySelectorAll("[data-subject-grade]").forEach((select) => {
+    select.addEventListener("change", () => {
+      const subjectId = select.dataset.subjectGrade;
+      if (select.value) selectedProfileSubjectGrades[subjectId] = select.value;
+      else delete selectedProfileSubjectGrades[subjectId];
+    });
+  });
+  profileSubjectChips.querySelectorAll("[data-remove-subject]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedProfileSubjectIds = selectedProfileSubjectIds.filter((id) => id !== button.dataset.removeSubject);
+      delete selectedProfileSubjectGrades[button.dataset.removeSubject];
+      if (!selectedProfileSubjectIds.includes("further-mathematics")) selectedProfileModuleIds = [];
+      syncProfileSubjectInput();
+      renderProfileSubjectPicker();
+      renderSubjectSuggestions();
+    });
+  });
+  profileSubjectChips.querySelectorAll("[data-toggle-module]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.toggleModule;
+      selectedProfileModuleIds = selectedProfileModuleIds.includes(id)
+        ? selectedProfileModuleIds.filter((item) => item !== id)
+        : [...selectedProfileModuleIds, id];
+      renderProfileSubjectPicker();
+    });
+  });
+  syncProfileSubjectInput();
+}
+
+function renderSubjectSuggestions() {
+  if (!profileSubjectSearch || !profileSubjectSuggestions) return;
+  const query = profileSubjectSearch.value;
+  const available = SUBJECTS
+    .filter((subject) => !selectedProfileSubjectIds.includes(subject.id))
+    .filter((subject) => subjectMatchesQuery(subject, query))
+    .slice(0, 8);
+  const suggestions = available.map((subject) => `
+    <button type="button" data-add-subject="${escapeHtml(subject.id)}">
+      <strong>${escapeHtml(subject.canonicalName)}</strong>
+      <span>${escapeHtml(subject.category)}</span>
+    </button>
+  `).join("");
+  const other = query.trim()
+    ? `<button type="button" data-add-subject="${OTHER_SUBJECT_ID}"><strong>Other - request a subject</strong><span>${escapeHtml(query.trim())}</span></button>`
+    : `<button type="button" data-add-subject="${OTHER_SUBJECT_ID}"><strong>Other - request a subject</strong><span>Ask tutrSTEM to review it</span></button>`;
+  profileSubjectSuggestions.innerHTML = `${suggestions}${other}`;
+  profileSubjectSuggestions.hidden = false;
+
+  profileSubjectSuggestions.querySelectorAll("[data-add-subject]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.addSubject;
+      if (id === OTHER_SUBJECT_ID) {
+        profileSubjectOther.hidden = false;
+        profileSubjectOther.value = profileSubjectSearch.value.trim();
+        profileSubjectOther.focus();
+        return;
+      }
+      selectedProfileSubjectIds = uniqueSubjectIds([...selectedProfileSubjectIds, id]);
+      profileSubjectSearch.value = "";
+      profileSubjectSuggestions.hidden = true;
+      renderProfileSubjectPicker();
+    });
+  });
+}
+
 async function saveAccountToCloud(account, uid = auth?.currentUser?.uid) {
   if (!isCloudReady() || !uid) return;
   await db.collection("users").doc(uid).set({
@@ -724,6 +1038,9 @@ async function createHiddenTutorProfile(account, approvedRecord = {}) {
     email: account.email,
     name: account.name,
     subject: "",
+    subjectIds: [],
+    furtherMathsModuleIds: [],
+    subjectGrades: {},
     university: "",
     grade: "",
     rating: 0,
@@ -1070,6 +1387,9 @@ function saveProfile(profile) {
       name: profile.name || currentAccount.name,
       email: currentAccount.email,
       subject: profile.subject || "",
+      subjectIds: uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject)),
+      furtherMathsModuleIds: Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [],
+      subjectGrades: profile.subjectGrades || {},
       university: profile.university || "",
       grade: profile.grade || "",
       rating: Number(profile.rating || 0),
@@ -1156,10 +1476,14 @@ function getTutorProfiles() {
     .filter((account) => !isCloudReady() || account.email === currentAccount?.email)
     .map((account) => {
       const profile = profiles[account.email] || {};
-      const subject = cleanAutoText(profile.subject);
+      const subjectIds = uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject));
+      const subject = subjectIds.length ? subjectIds.map(subjectLabel).join(", ") : cleanAutoText(profile.subject);
       return {
         name: profile.name || account.name,
         subject,
+        subjectIds,
+        furtherMathsModuleIds: Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [],
+        subjectGrades: tutorSubjectGrades(profile),
         university: cleanAutoText(profile.university),
         grade: cleanAutoText(profile.grade),
         rating: Number(profile.rating || 0),
@@ -1179,9 +1503,14 @@ function getTutorProfiles() {
     });
   const cloudProfiles = cloudTutorProfiles
     .filter((profile) => profile.visible === true || profile.email === currentAccount?.email)
-    .map((profile) => ({
+    .map((profile) => {
+    const subjectIds = uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject));
+    return ({
     name: profile.name || "",
-    subject: cleanAutoText(profile.subject),
+    subject: subjectIds.length ? subjectIds.map(subjectLabel).join(", ") : cleanAutoText(profile.subject),
+    subjectIds,
+    furtherMathsModuleIds: Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [],
+    subjectGrades: tutorSubjectGrades(profile),
     university: cleanAutoText(profile.university),
     grade: cleanAutoText(profile.grade),
     rating: Number(profile.rating || 0),
@@ -1197,7 +1526,8 @@ function getTutorProfiles() {
     photo: profile.photo || profile.photoUrl || profile.profilePhoto || "",
     about: cleanAutoText(profile.about),
     sessions: cleanAutoText(profile.sessions)
-  }));
+  });
+  });
   const seen = new Set();
   return [...accountProfiles, ...cloudProfiles].filter((profile) => {
     const key = profile.email || profile.name;
@@ -1221,7 +1551,9 @@ function tutorId(tutor) {
 }
 
 function gradeRank(grade) {
-  return grade === "A*" ? 2 : 1;
+  const gradeId = gradeIdFromValue(grade);
+  const order = gradeSortOrder(gradeId);
+  return order ? 8 - order : 0;
 }
 
 function getFilteredTutors() {
@@ -1232,9 +1564,9 @@ function getFilteredTutors() {
 
   const filtered = getAllTutors().filter((tutor) => {
     const nameMatch = !tutorName || tutor.name.toLowerCase().includes(tutorName);
-    const subjectMatch = subject === "All" || tutor.subject === subject;
+    const subjectMatch = subject === "All" || tutorSubjectIds(tutor).includes(subject);
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
-    const gradeMatch = minGrade === "Any" || gradeRank(tutor.grade) >= gradeRank(minGrade);
+    const gradeMatch = tutorMeetsGradeFilter(tutor, subject, minGrade);
     const trialMatch = true;
     return nameMatch && subjectMatch && uniMatch && gradeMatch && trialMatch;
   });
@@ -1261,11 +1593,12 @@ function renderTutors() {
         ${tutorPhotoMarkup(tutor, "avatar")}
         <div class="tutor-card-copy">
           <h3>${escapeHtml(tutor.name)}</h3>
-          <p>${escapeHtml(tutor.subject)} · ${escapeHtml(tutor.university)}</p>
+          <p>${escapeHtml(tutorSubjectLabel(tutor))} · ${escapeHtml(tutor.university)}</p>
           ${tutor.style ? `<p>${escapeHtml(tutor.style)}</p>` : ""}
           <div class="chips">
             ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
-            ${tutor.grade ? `<span class="chip">Top exam grade: ${escapeHtml(tutor.grade)}</span>` : ""}
+            ${tutorSubjectGradeChips(tutor).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}
+            ${tutorModuleLabels(tutor).map((module) => `<span class="chip">Further Maths: ${escapeHtml(module)}</span>`).join("")}
             ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
             ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
           </div>
@@ -1508,7 +1841,7 @@ function renderMessagesPage() {
       return `
         <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
           <span class="avatar small-avatar">${escapeHtml(tutor.initials || initialsFromName(tutor.name))}</span>
-          <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutor.subject)}</small></span>
+          <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutorSubjectLabel(tutor))}</small></span>
           ${unread ? `<span class="message-badge thread-unread">${unread}</span>` : ""}
         </button>
       `;
@@ -1548,7 +1881,14 @@ function renderProfile(role) {
 
   const profile = getProfile();
   profileName.value = profile.name || currentAccount.name;
-  profileSubject.value = cleanAutoText(profile.subject);
+  selectedProfileSubjectIds = uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject));
+  selectedProfileModuleIds = Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [];
+  if (profileSubjectSearch) profileSubjectSearch.value = "";
+  if (profileSubjectOther) {
+    profileSubjectOther.value = "";
+    profileSubjectOther.hidden = true;
+  }
+  renderProfileSubjectPicker();
   profileDetail.value = cleanAutoText(profile.detail);
   profileUniversity.value = cleanAutoText(profile.university);
   if (profileLevel) profileLevel.value = cleanAutoText(profile.level);
@@ -1619,9 +1959,11 @@ function getReviewsFor(tutor) {
 function renderPublicProfile() {
   const reviews = getReviewsFor(selectedTutor);
   const isOwnTutorProfile = currentAccount?.role === "tutor" && selectedTutor.email === currentAccount.email;
-  const profileMeta = [selectedTutor.subject, selectedTutor.university].filter(Boolean).join(" · ");
+  const selectedSubjectLabel = tutorSubjectLabel(selectedTutor);
+  const profileMeta = [selectedSubjectLabel, selectedTutor.university].filter(Boolean).join(" · ");
   const profileChips = [
     tutorLevelLabel(selectedTutor) ? `${tutorLevelLabel(selectedTutor)} tutoring` : "",
+    ...tutorModuleLabels(selectedTutor).map((module) => `Further Maths: ${module}`),
     ...(Array.isArray(selectedTutor.badges) ? selectedTutor.badges : [])
   ].filter(Boolean);
   publicProfile.innerHTML = `
@@ -1630,7 +1972,7 @@ function renderPublicProfile() {
       <div>
         <p class="eyebrow">Tutor profile</p>
         <h2>${escapeHtml(selectedTutor.name)}</h2>
-        ${selectedTutor.subject ? `<p class="profile-rate">${escapeHtml(selectedTutor.subject)}</p>` : ""}
+        ${selectedSubjectLabel ? `<p class="profile-rate">${escapeHtml(selectedSubjectLabel)}</p>` : ""}
         ${profileMeta ? `<p>${escapeHtml(profileMeta)}</p>` : ""}
         ${profileChips.length ? `<div class="chips">${profileChips.map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
       </div>
@@ -1890,7 +2232,7 @@ function renderBookingTutorOptions() {
   const query = normalizeEmail(bookingTutorSearch?.value || "");
   const filteredTutors = availableTutors.filter((tutor) => {
     if (!query) return true;
-    return `${tutor.name} ${tutor.subject} ${tutor.email || ""}`.toLowerCase().includes(query);
+    return `${tutor.name} ${tutorSubjectLabel(tutor)} ${tutor.email || ""}`.toLowerCase().includes(query);
   });
   const options = filteredTutors.length ? filteredTutors : availableTutors;
   if (filteredTutors.length === 0 && query) {
@@ -1901,7 +2243,7 @@ function renderBookingTutorOptions() {
     selectedTutor = options[0] || selectedTutor;
   }
   bookingTutor.innerHTML = options.map((tutor) => `
-    <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutor.subject)}</option>
+    <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutorSubjectLabel(tutor))}</option>
   `).join("");
 }
 
@@ -2262,8 +2604,8 @@ function normalizeDobInput(value) {
 function applyLearningFilters(account) {
   if (!account || account.role === "tutor") return;
   if (account.learningSubject) {
-    const option = [...subjectFilter.options].find((item) => item.text.toLowerCase() === String(account.learningSubject).toLowerCase());
-    subjectFilter.value = option ? option.value : "All";
+    const subject = findSubjectByText(account.learningSubject);
+    subjectFilter.value = subject ? subject.id : "All";
   }
   renderTutors();
 }
@@ -2311,8 +2653,8 @@ document.querySelector("[data-search-form]").addEventListener("submit", (event) 
   const subject = document.querySelector("#heroSubject").value.trim();
   const university = document.querySelector("#heroUniversity").value.trim();
   if (subject) {
-    const option = [...subjectFilter.options].find((item) => item.text.toLowerCase() === subject.toLowerCase());
-    subjectFilter.value = option ? option.value : "All";
+    const matchedSubject = findSubjectByText(subject);
+    subjectFilter.value = matchedSubject ? matchedSubject.id : "All";
   }
   uniFilter.value = university;
   renderTutors();
@@ -2358,6 +2700,20 @@ bookingMinuteOptions?.querySelectorAll("[data-minute]").forEach((button) => {
   });
 });
 
+profileSubjectSearch?.addEventListener("input", renderSubjectSuggestions);
+profileSubjectSearch?.addEventListener("focus", renderSubjectSuggestions);
+profileSubjectSearch?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  const firstSuggestion = profileSubjectSuggestions?.querySelector("[data-add-subject]");
+  firstSuggestion?.click();
+});
+document.addEventListener("click", (event) => {
+  if (!profileSubjectPicker?.contains(event.target)) {
+    if (profileSubjectSuggestions) profileSubjectSuggestions.hidden = true;
+  }
+});
+
 document.querySelector("#resetFilters").addEventListener("click", () => {
   nameFilter.value = "";
   subjectFilter.value = "All";
@@ -2375,9 +2731,21 @@ profileForm.addEventListener("submit", (event) => {
     return;
   }
 
+  const subjectIds = currentAccount.role === "tutor"
+    ? uniqueSubjectIds(selectedProfileSubjectIds)
+    : subjectIdsFromValue(profileSubject.value);
+  const subject = subjectIds.length ? subjectIds.map(subjectLabel).join(", ") : cleanAutoText(profileSubject.value);
+  if (currentAccount.role === "tutor" && profileSubjectOther && !profileSubjectOther.hidden && profileSubjectOther.value.trim()) {
+    saveOtherSubjectRequest(profileSubjectOther.value);
+    profileSubjectOther.value = "";
+    profileSubjectOther.hidden = true;
+  }
+
   const profile = {
     name: profileName.value.trim() || currentAccount.name,
-    subject: profileSubject.value.trim(),
+    subject,
+    subjectIds,
+    furtherMathsModuleIds: currentAccount.role === "tutor" ? selectedProfileModuleIds : [],
     detail: profileDetail.value.trim(),
     university: profileUniversity.value.trim(),
     level: currentAccount.role === "tutor" ? profileLevel.value : "",
@@ -2477,7 +2845,7 @@ bookingPageForm.addEventListener("submit", async (event) => {
     tutor: tutor.name,
     tutorEmail: tutorEmail(tutor),
     initials: tutor.initials,
-    subject: tutor.subject,
+    subject: tutorSubjectLabel(tutor),
     type: bookingLessonType.value,
     dateTime: bookingDateTimeValue,
     status: "Pending tutor approval",
@@ -2952,6 +3320,7 @@ dialog.addEventListener("close", () => {
 });
 
 async function initializeSite() {
+  populateSubjectFilter();
   if (isCloudReady()) {
     auth.onAuthStateChanged(async (user) => {
       try {

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260916-edit-chat-read" />
+    <link rel="stylesheet" href="styles.css?v=20260917-subject-taxonomy" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -389,7 +389,13 @@
                 </label>
                 <label class="field">
                   <span id="profileSubjectLabel">Focus subject</span>
-                  <input id="profileSubject" type="text" placeholder="Biology, Mathematics, Computer Science" />
+                  <input id="profileSubject" type="hidden" />
+                  <div class="subject-picker" id="profileSubjectPicker">
+                    <div class="subject-chip-row" id="profileSubjectChips" aria-live="polite"></div>
+                    <input id="profileSubjectSearch" type="search" placeholder="Search subjects" autocomplete="off" />
+                    <div class="subject-suggestions" id="profileSubjectSuggestions" hidden></div>
+                  </div>
+                  <input id="profileSubjectOther" class="subject-other-input" type="text" placeholder="Request another subject" hidden />
                 </label>
                 <label class="field">
                   <span id="profileDetailLabel">Goal or teaching style</span>
@@ -935,6 +941,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260916-edit-chat-read"></script>
+    <script src="app.js?v=20260917-subject-taxonomy"></script>
   </body>
 </html>
