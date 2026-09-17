@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260917-subject-picker-close" />
+    <link rel="stylesheet" href="styles.css?v=20260917-admissions-tests" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -175,6 +175,20 @@
               <option>Psychology</option>
               <option>Geography</option>
               <option>Computer Science</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Admissions test</span>
+            <select id="admissionsFilter">
+              <option value="All">All admissions tests</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Admissions module</span>
+            <select id="admissionsModuleFilter">
+              <option value="All">All modules</option>
             </select>
           </label>
 
@@ -391,6 +405,15 @@
                     <div class="subject-chip-row" id="profileSubjectChips" aria-live="polite"></div>
                     <input id="profileSubjectSearch" type="search" placeholder="Search subjects" autocomplete="off" />
                     <div class="subject-suggestions" id="profileSubjectSuggestions" hidden></div>
+                  </div>
+                </label>
+                <label class="field tutor-profile-field">
+                  <span>Admissions tests you teach</span>
+                  <input id="profileAdmissionsTests" type="hidden" />
+                  <div class="subject-picker" id="profileAdmissionsPicker">
+                    <div class="subject-chip-row" id="profileAdmissionsChips" aria-live="polite"></div>
+                    <input id="profileAdmissionsSearch" type="search" placeholder="Search admissions tests" autocomplete="off" />
+                    <div class="subject-suggestions" id="profileAdmissionsSuggestions" hidden></div>
                   </div>
                 </label>
                 <label class="field">
@@ -938,6 +961,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260917-subject-picker-close"></script>
+    <script src="app.js?v=20260917-admissions-tests"></script>
   </body>
 </html>

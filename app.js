@@ -245,12 +245,65 @@ const GRADES = [
   { id: "not-disclosed", label: "Not disclosed / not applicable", sortOrder: null }
 ];
 
+const ADMISSIONS_TESTS = [
+  {
+    id: "tmua",
+    canonicalName: "TMUA (Test of Mathematics for University Admission)",
+    shortName: "TMUA",
+    aliases: ["TMUA", "Test of Mathematics for University Admission"],
+    modules: [
+      { id: "tmua-paper1", canonicalName: "Paper 1" },
+      { id: "tmua-paper2", canonicalName: "Paper 2" }
+    ]
+  },
+  {
+    id: "esat",
+    canonicalName: "ESAT (Engineering and Science Admissions Test)",
+    shortName: "ESAT",
+    aliases: ["ESAT", "Engineering and Science Admissions Test"],
+    modules: [
+      { id: "esat-maths1", canonicalName: "Mathematics 1" },
+      { id: "esat-maths2", canonicalName: "Mathematics 2 (Advanced Maths)" },
+      { id: "esat-physics", canonicalName: "Physics" },
+      { id: "esat-chemistry", canonicalName: "Chemistry" },
+      { id: "esat-biology", canonicalName: "Biology" }
+    ]
+  },
+  {
+    id: "ucat",
+    canonicalName: "UCAT (University Clinical Aptitude Test)",
+    shortName: "UCAT",
+    aliases: ["UCAT", "University Clinical Aptitude Test", "UKCAT"],
+    modules: [
+      { id: "ucat-vr", canonicalName: "Verbal Reasoning" },
+      { id: "ucat-dm", canonicalName: "Decision Making" },
+      { id: "ucat-qr", canonicalName: "Quantitative Reasoning" },
+      { id: "ucat-sjt", canonicalName: "Situational Judgement Test" }
+    ]
+  },
+  {
+    id: "step",
+    canonicalName: "STEP (Sixth Term Examination Paper)",
+    shortName: "STEP",
+    aliases: ["STEP", "Sixth Term Examination Paper", "STEP Maths"],
+    modules: [
+      { id: "step-2", canonicalName: "STEP 2" },
+      { id: "step-3", canonicalName: "STEP 3" }
+    ]
+  }
+];
+
 const OTHER_SUBJECT_ID = "other-request";
 const subjectById = new Map(SUBJECTS.map((subject) => [subject.id, subject]));
 const gradeById = new Map(GRADES.map((grade) => [grade.id, grade]));
+const admissionsById = new Map(ADMISSIONS_TESTS.map((test) => [test.id, test]));
+const admissionModuleById = new Map(ADMISSIONS_TESTS.flatMap((test) => test.modules.map((module) => [module.id, { ...module, parentId: test.id }])));
 let selectedProfileSubjectIds = [];
 let selectedProfileModuleIds = [];
 let selectedProfileSubjectGrades = {};
+let selectedAdmissionsTestIds = [];
+let selectedAdmissionsModuleIds = [];
+let selectedAdmissionsScores = {};
 
 const roleContent = {
   student: {
@@ -339,6 +392,8 @@ const roleDashboards = {
 const tutorGrid = document.querySelector("#tutorGrid");
 const nameFilter = document.querySelector("#nameFilter");
 const subjectFilter = document.querySelector("#subjectFilter");
+const admissionsFilter = document.querySelector("#admissionsFilter");
+const admissionsModuleFilter = document.querySelector("#admissionsModuleFilter");
 const uniFilter = document.querySelector("#uniFilter");
 const gradeFilter = document.querySelector("#gradeFilter");
 const sortFilter = document.querySelector("#sortFilter");
@@ -405,6 +460,11 @@ const profileSubjectPicker = document.querySelector("#profileSubjectPicker");
 const profileSubjectChips = document.querySelector("#profileSubjectChips");
 const profileSubjectSearch = document.querySelector("#profileSubjectSearch");
 const profileSubjectSuggestions = document.querySelector("#profileSubjectSuggestions");
+const profileAdmissionsTests = document.querySelector("#profileAdmissionsTests");
+const profileAdmissionsPicker = document.querySelector("#profileAdmissionsPicker");
+const profileAdmissionsChips = document.querySelector("#profileAdmissionsChips");
+const profileAdmissionsSearch = document.querySelector("#profileAdmissionsSearch");
+const profileAdmissionsSuggestions = document.querySelector("#profileAdmissionsSuggestions");
 const profileDetail = document.querySelector("#profileDetail");
 const profileUniversity = document.querySelector("#profileUniversity");
 const profileLevel = document.querySelector("#profileLevel");
@@ -828,6 +888,56 @@ function tutorSubjectGradeChips(tutor = {}) {
     .filter(Boolean);
 }
 
+function admissionsSearchValues(test) {
+  return [test.canonicalName, test.shortName, test.id, ...(test.aliases || [])].map(normalizeSubjectText).filter(Boolean);
+}
+
+function admissionTestMatchesQuery(test, query) {
+  const normalized = normalizeSubjectText(query);
+  if (!normalized) return true;
+  return admissionsSearchValues(test).some((value) => value.includes(normalized));
+}
+
+function uniqueAdmissionTestIds(ids = []) {
+  return [...new Set(ids.filter((id) => admissionsById.has(id)))];
+}
+
+function uniqueAdmissionModuleIds(ids = []) {
+  return [...new Set(ids.filter((id) => admissionModuleById.has(id)))];
+}
+
+function tutorAdmissionTestIds(tutor = {}) {
+  return uniqueAdmissionTestIds(Array.isArray(tutor.admissionsTestIds) ? tutor.admissionsTestIds : []);
+}
+
+function tutorAdmissionModuleIds(tutor = {}) {
+  return uniqueAdmissionModuleIds(Array.isArray(tutor.admissionsModuleIds) ? tutor.admissionsModuleIds : []);
+}
+
+function admissionLabel(id) {
+  return admissionsById.get(id)?.shortName || admissionsById.get(id)?.canonicalName || "";
+}
+
+function admissionModuleLabel(id) {
+  return admissionModuleById.get(id)?.canonicalName || "";
+}
+
+function tutorAdmissionsLabel(tutor = {}) {
+  return tutorAdmissionTestIds(tutor).map(admissionLabel).filter(Boolean).join(", ");
+}
+
+function tutorAdmissionsChips(tutor = {}) {
+  const scores = tutor.admissionsScores && typeof tutor.admissionsScores === "object" ? tutor.admissionsScores : {};
+  const moduleIds = tutorAdmissionModuleIds(tutor);
+  return [
+    ...tutorAdmissionTestIds(tutor).map((id) => {
+      const score = String(scores[id] || "").trim();
+      return score ? `${admissionLabel(id)} score: ${score}` : admissionLabel(id);
+    }),
+    ...moduleIds.map((id) => `${admissionLabel(admissionModuleById.get(id)?.parentId)}: ${admissionModuleLabel(id)}`)
+  ].filter(Boolean);
+}
+
 function subjectMatchesQuery(subject, query) {
   const normalized = normalizeSubjectText(query);
   if (!normalized) return true;
@@ -854,9 +964,33 @@ function populateGradeFilter() {
     .join("")}`;
 }
 
+function populateAdmissionsFilter() {
+  if (!admissionsFilter) return;
+  admissionsFilter.innerHTML = `<option value="All">All admissions tests</option>${ADMISSIONS_TESTS
+    .map((test) => `<option value="${escapeHtml(test.id)}">${escapeHtml(test.shortName)}</option>`)
+    .join("")}`;
+  populateAdmissionsModuleFilter();
+}
+
+function populateAdmissionsModuleFilter() {
+  if (!admissionsModuleFilter) return;
+  const selectedTestId = admissionsFilter?.value || "All";
+  const modules = ADMISSIONS_TESTS
+    .filter((test) => selectedTestId === "All" || test.id === selectedTestId)
+    .flatMap((test) => test.modules.map((module) => ({ ...module, parentId: test.id })));
+  admissionsModuleFilter.innerHTML = `<option value="All">All modules</option>${modules
+    .map((module) => `<option value="${escapeHtml(module.id)}">${escapeHtml(admissionLabel(module.parentId))}: ${escapeHtml(module.canonicalName)}</option>`)
+    .join("")}`;
+}
+
 function syncProfileSubjectInput() {
   if (!profileSubject) return;
   profileSubject.value = JSON.stringify(selectedProfileSubjectIds);
+}
+
+function syncAdmissionsInput() {
+  if (!profileAdmissionsTests) return;
+  profileAdmissionsTests.value = JSON.stringify(selectedAdmissionsTestIds);
 }
 
 function saveOtherSubjectRequest(value) {
@@ -938,6 +1072,10 @@ function hideSubjectSuggestions() {
   if (profileSubjectSuggestions) profileSubjectSuggestions.hidden = true;
 }
 
+function hideAdmissionsSuggestions() {
+  if (profileAdmissionsSuggestions) profileAdmissionsSuggestions.hidden = true;
+}
+
 function renderSubjectSuggestions() {
   if (!profileSubjectSearch || !profileSubjectSuggestions) return;
   const query = profileSubjectSearch.value;
@@ -973,6 +1111,89 @@ function renderSubjectSuggestions() {
       profileSubjectSuggestions.hidden = true;
       renderProfileSubjectPicker();
     });
+  });
+}
+
+function renderAdmissionsPicker() {
+  if (!profileAdmissionsPicker || !profileAdmissionsChips || !profileAdmissionsSuggestions) return;
+  const rows = selectedAdmissionsTestIds.map((id) => {
+    const test = admissionsById.get(id);
+    if (!test) return "";
+    const moduleButtons = test.modules.map((module) => `
+      <button class="subject-chip ${selectedAdmissionsModuleIds.includes(module.id) ? "selected" : ""}" type="button" data-toggle-admission-module="${escapeHtml(module.id)}">
+        ${escapeHtml(module.canonicalName)}
+      </button>
+    `).join("");
+    return `
+      <div class="admissions-test-row">
+        <div class="admissions-test-top">
+          <strong>${escapeHtml(test.shortName)}</strong>
+          <input type="text" data-admission-score="${escapeHtml(id)}" value="${escapeHtml(selectedAdmissionsScores[id] || "")}" placeholder="Score (display only)" />
+          <button class="subject-remove" type="button" data-remove-admission="${escapeHtml(id)}" aria-label="Remove ${escapeHtml(test.shortName)}">x</button>
+        </div>
+        ${moduleButtons ? `<div class="subject-module-row"><span>${escapeHtml(test.shortName)} modules</span>${moduleButtons}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+  profileAdmissionsChips.innerHTML = rows;
+  profileAdmissionsChips.querySelectorAll("[data-admission-score]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const id = input.dataset.admissionScore;
+      const value = input.value.trim();
+      if (value) selectedAdmissionsScores[id] = value;
+      else delete selectedAdmissionsScores[id];
+    });
+  });
+  profileAdmissionsChips.querySelectorAll("[data-remove-admission]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.removeAdmission;
+      selectedAdmissionsTestIds = selectedAdmissionsTestIds.filter((item) => item !== id);
+      selectedAdmissionsModuleIds = selectedAdmissionsModuleIds.filter((moduleId) => admissionModuleById.get(moduleId)?.parentId !== id);
+      delete selectedAdmissionsScores[id];
+      syncAdmissionsInput();
+      renderAdmissionsPicker();
+      renderAdmissionsSuggestions();
+    });
+  });
+  profileAdmissionsChips.querySelectorAll("[data-toggle-admission-module]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.toggleAdmissionModule;
+      selectedAdmissionsModuleIds = selectedAdmissionsModuleIds.includes(id)
+        ? selectedAdmissionsModuleIds.filter((item) => item !== id)
+        : [...selectedAdmissionsModuleIds, id];
+      renderAdmissionsPicker();
+    });
+  });
+  syncAdmissionsInput();
+}
+
+function renderAdmissionsSuggestions() {
+  if (!profileAdmissionsSearch || !profileAdmissionsSuggestions) return;
+  const query = profileAdmissionsSearch.value;
+  const available = ADMISSIONS_TESTS
+    .filter((test) => !selectedAdmissionsTestIds.includes(test.id))
+    .filter((test) => admissionTestMatchesQuery(test, query));
+  profileAdmissionsSuggestions.innerHTML = available.length ? available.map((test) => `
+    <button type="button" data-add-admission="${escapeHtml(test.id)}">
+      <strong>${escapeHtml(test.shortName)}</strong>
+      <span>${escapeHtml(test.canonicalName)}</span>
+    </button>
+  `).join("") : `<button type="button" data-add-admission-email><strong>Other admissions test</strong><span>Email tutrSTEM to request it</span></button>`;
+  profileAdmissionsSuggestions.hidden = false;
+  profileAdmissionsSuggestions.querySelectorAll("[data-add-admission]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedAdmissionsTestIds = uniqueAdmissionTestIds([...selectedAdmissionsTestIds, button.dataset.addAdmission]);
+      profileAdmissionsSearch.value = "";
+      hideAdmissionsSuggestions();
+      renderAdmissionsPicker();
+    });
+  });
+  profileAdmissionsSuggestions.querySelector("[data-add-admission-email]")?.addEventListener("click", () => {
+    const requested = profileAdmissionsSearch.value.trim();
+    const subjectLine = encodeURIComponent("Admissions test request for tutrSTEM");
+    const body = encodeURIComponent(`Hi tutrSTEM,\n\nPlease can you add this admissions test: ${requested || "[type test here]"}\n\nThanks`);
+    window.location.href = `mailto:tutrstem@gmail.com?subject=${subjectLine}&body=${body}`;
+    hideAdmissionsSuggestions();
   });
 }
 
@@ -1043,6 +1264,9 @@ async function createHiddenTutorProfile(account, approvedRecord = {}) {
     subjectIds: [],
     furtherMathsModuleIds: [],
     subjectGrades: {},
+    admissionsTestIds: [],
+    admissionsModuleIds: [],
+    admissionsScores: {},
     university: "",
     grade: "",
     rating: 0,
@@ -1416,6 +1640,9 @@ function saveProfile(profile) {
       subjectIds: uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject)),
       furtherMathsModuleIds: Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [],
       subjectGrades: profile.subjectGrades || {},
+      admissionsTestIds: uniqueAdmissionTestIds(profile.admissionsTestIds || []),
+      admissionsModuleIds: uniqueAdmissionModuleIds(profile.admissionsModuleIds || []),
+      admissionsScores: profile.admissionsScores || {},
       university: profile.university || "",
       grade: profile.grade || "",
       rating: Number(profile.rating || 0),
@@ -1510,6 +1737,9 @@ function getTutorProfiles() {
         subjectIds,
         furtherMathsModuleIds: Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [],
         subjectGrades: tutorSubjectGrades(profile),
+        admissionsTestIds: uniqueAdmissionTestIds(profile.admissionsTestIds || []),
+        admissionsModuleIds: uniqueAdmissionModuleIds(profile.admissionsModuleIds || []),
+        admissionsScores: profile.admissionsScores || {},
         university: cleanAutoText(profile.university),
         grade: cleanAutoText(profile.grade),
         rating: Number(profile.rating || 0),
@@ -1537,6 +1767,9 @@ function getTutorProfiles() {
     subjectIds,
     furtherMathsModuleIds: Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [],
     subjectGrades: tutorSubjectGrades(profile),
+    admissionsTestIds: uniqueAdmissionTestIds(profile.admissionsTestIds || []),
+    admissionsModuleIds: uniqueAdmissionModuleIds(profile.admissionsModuleIds || []),
+    admissionsScores: profile.admissionsScores || {},
     university: cleanAutoText(profile.university),
     grade: cleanAutoText(profile.grade),
     rating: Number(profile.rating || 0),
@@ -1585,16 +1818,20 @@ function gradeRank(grade) {
 function getFilteredTutors() {
   const tutorName = nameFilter.value.trim().toLowerCase();
   const subject = subjectFilter.value;
+  const admissionTest = admissionsFilter?.value || "All";
+  const admissionModule = admissionsModuleFilter?.value || "All";
   const university = uniFilter.value.trim().toLowerCase();
   const minGrade = gradeFilter.value;
 
   const filtered = getAllTutors().filter((tutor) => {
     const nameMatch = !tutorName || tutor.name.toLowerCase().includes(tutorName);
     const subjectMatch = subject === "All" || tutorSubjectIds(tutor).includes(subject);
+    const admissionMatch = admissionTest === "All" || tutorAdmissionTestIds(tutor).includes(admissionTest);
+    const admissionModuleMatch = admissionModule === "All" || tutorAdmissionModuleIds(tutor).includes(admissionModule);
     const uniMatch = !university || tutor.university.toLowerCase().includes(university);
     const gradeMatch = tutorMeetsGradeFilter(tutor, subject, minGrade);
     const trialMatch = true;
-    return nameMatch && subjectMatch && uniMatch && gradeMatch && trialMatch;
+    return nameMatch && subjectMatch && admissionMatch && admissionModuleMatch && uniMatch && gradeMatch && trialMatch;
   });
 
   return filtered.sort((a, b) => {
@@ -1625,6 +1862,7 @@ function renderTutors() {
             ${tutorLevelLabel(tutor) ? `<span class="chip">${escapeHtml(tutorLevelLabel(tutor))} tutoring</span>` : ""}
             ${tutorSubjectGradeChips(tutor).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}
             ${tutorModuleLabels(tutor).map((module) => `<span class="chip">Further Maths: ${escapeHtml(module)}</span>`).join("")}
+            ${tutorAdmissionsChips(tutor).map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}
             ${Number(tutor.lessons) ? `<span class="chip">${Number(tutor.lessons)} lessons</span>` : ""}
             ${(Array.isArray(tutor.badges) ? tutor.badges : []).map((badge) => `<span class="chip">${escapeHtml(badge)}</span>`).join("")}
           </div>
@@ -1911,9 +2149,15 @@ function renderProfile(role) {
   selectedProfileSubjectIds = uniqueSubjectIds(profile.subjectIds || subjectIdsFromValue(profile.subject));
   selectedProfileModuleIds = Array.isArray(profile.furtherMathsModuleIds) ? profile.furtherMathsModuleIds : [];
   selectedProfileSubjectGrades = tutorSubjectGrades(profile);
+  selectedAdmissionsTestIds = uniqueAdmissionTestIds(profile.admissionsTestIds || []);
+  selectedAdmissionsModuleIds = uniqueAdmissionModuleIds(profile.admissionsModuleIds || []);
+  selectedAdmissionsScores = profile.admissionsScores && typeof profile.admissionsScores === "object" ? { ...profile.admissionsScores } : {};
   if (profileSubjectSearch) profileSubjectSearch.value = "";
+  if (profileAdmissionsSearch) profileAdmissionsSearch.value = "";
   hideSubjectSuggestions();
+  hideAdmissionsSuggestions();
   renderProfileSubjectPicker();
+  renderAdmissionsPicker();
   profileDetail.value = cleanAutoText(profile.detail);
   profileUniversity.value = cleanAutoText(profile.university);
   if (profileLevel) profileLevel.value = cleanAutoText(profile.level);
@@ -1990,6 +2234,7 @@ function renderPublicProfile() {
     tutorLevelLabel(selectedTutor) ? `${tutorLevelLabel(selectedTutor)} tutoring` : "",
     ...tutorSubjectGradeChips(selectedTutor),
     ...tutorModuleLabels(selectedTutor).map((module) => `Further Maths: ${module}`),
+    ...tutorAdmissionsChips(selectedTutor),
     ...(Array.isArray(selectedTutor.badges) ? selectedTutor.badges : [])
   ].filter(Boolean);
   publicProfile.innerHTML = `
@@ -2955,9 +3200,14 @@ window.addEventListener("hashchange", () => {
   showPage(getRouteFromHash(), { keepScroll: true });
 });
 
-[nameFilter, subjectFilter, uniFilter, gradeFilter, sortFilter, trialOnly].filter(Boolean).forEach((control) => {
+[nameFilter, subjectFilter, admissionsFilter, admissionsModuleFilter, uniFilter, gradeFilter, sortFilter, trialOnly].filter(Boolean).forEach((control) => {
   control.addEventListener("input", renderTutors);
   control.addEventListener("change", renderTutors);
+});
+
+admissionsFilter?.addEventListener("change", () => {
+  populateAdmissionsModuleFilter();
+  renderTutors();
 });
 
 bookingTutorSearch?.addEventListener("input", renderBookingTutorOptions);
@@ -2995,15 +3245,39 @@ profileSubjectPicker?.addEventListener("focusout", () => {
     if (!profileSubjectPicker.contains(document.activeElement)) hideSubjectSuggestions();
   }, 120);
 });
+profileAdmissionsSearch?.addEventListener("input", renderAdmissionsSuggestions);
+profileAdmissionsSearch?.addEventListener("focus", renderAdmissionsSuggestions);
+profileAdmissionsSearch?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    hideAdmissionsSuggestions();
+    profileAdmissionsSearch.blur();
+    return;
+  }
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  const firstSuggestion = profileAdmissionsSuggestions?.querySelector("[data-add-admission], [data-add-admission-email]");
+  firstSuggestion?.click();
+});
+profileAdmissionsPicker?.addEventListener("focusout", () => {
+  window.setTimeout(() => {
+    if (!profileAdmissionsPicker.contains(document.activeElement)) hideAdmissionsSuggestions();
+  }, 120);
+});
 document.addEventListener("pointerdown", (event) => {
   if (!profileSubjectPicker?.contains(event.target)) {
     hideSubjectSuggestions();
+  }
+  if (!profileAdmissionsPicker?.contains(event.target)) {
+    hideAdmissionsSuggestions();
   }
 });
 
 document.querySelector("#resetFilters").addEventListener("click", () => {
   nameFilter.value = "";
   subjectFilter.value = "All";
+  if (admissionsFilter) admissionsFilter.value = "All";
+  populateAdmissionsModuleFilter();
+  if (admissionsModuleFilter) admissionsModuleFilter.value = "All";
   uniFilter.value = "";
   gradeFilter.value = "Any";
   sortFilter.value = "recommended";
@@ -3022,6 +3296,12 @@ profileForm.addEventListener("submit", (event) => {
   const subject = subjectIds.length ? subjectIds.map(subjectLabel).join(", ") : cleanAutoText(profileSubject.value);
   const subjectGrades = Object.fromEntries(Object.entries(selectedProfileSubjectGrades)
     .filter(([subjectId, gradeId]) => subjectIds.includes(subjectId) && gradeById.has(gradeId)));
+  const admissionsTestIds = uniqueAdmissionTestIds(selectedAdmissionsTestIds);
+  const admissionsModuleIds = uniqueAdmissionModuleIds(selectedAdmissionsModuleIds)
+    .filter((moduleId) => admissionsTestIds.includes(admissionModuleById.get(moduleId)?.parentId));
+  const admissionsScores = Object.fromEntries(Object.entries(selectedAdmissionsScores)
+    .filter(([testId, score]) => admissionsTestIds.includes(testId) && String(score || "").trim())
+    .map(([testId, score]) => [testId, String(score).trim()]));
 
   const profile = {
     name: profileName.value.trim() || currentAccount.name,
@@ -3029,6 +3309,9 @@ profileForm.addEventListener("submit", (event) => {
     subjectIds,
     subjectGrades: currentAccount.role === "tutor" ? subjectGrades : {},
     furtherMathsModuleIds: currentAccount.role === "tutor" ? selectedProfileModuleIds : [],
+    admissionsTestIds: currentAccount.role === "tutor" ? admissionsTestIds : [],
+    admissionsModuleIds: currentAccount.role === "tutor" ? admissionsModuleIds : [],
+    admissionsScores: currentAccount.role === "tutor" ? admissionsScores : {},
     detail: profileDetail.value.trim(),
     university: profileUniversity.value.trim(),
     level: currentAccount.role === "tutor" ? profileLevel.value : "",
@@ -3623,6 +3906,7 @@ dialog.addEventListener("close", () => {
 async function initializeSite() {
   populateSubjectFilter();
   populateGradeFilter();
+  populateAdmissionsFilter();
   if (isCloudReady()) {
     auth.onAuthStateChanged(async (user) => {
       try {
