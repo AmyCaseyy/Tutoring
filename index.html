@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260917-profile-message-badge" />
+    <link rel="stylesheet" href="styles.css?v=20260917-booking-auth-fixes" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -46,8 +46,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
           <span class="message-badge icon-message-badge" id="topMessageBadge" hidden>0</span>
         </button>
-        <a class="secondary-btn" href="#accounts" data-route="accounts" data-guest-only>Log in</a>
-        <a class="primary-btn" href="#accounts" data-route="accounts" data-guest-only>Sign up</a>
+        <a class="secondary-btn" href="#accounts" data-route="accounts" data-account-mode="login" data-guest-only>Log in</a>
+        <a class="primary-btn" href="#accounts" data-route="accounts" data-account-mode="signup" data-guest-only>Sign up</a>
         <div class="user-menu" id="userMenu" hidden>
           <button class="user-trigger" id="userMenuButton" type="button" aria-haspopup="true" aria-expanded="false">
             <span id="userMenuName">Account</span>
@@ -285,7 +285,7 @@
                 <span>I'm signing up as a</span>
                 <select id="signupRole">
                   <option value="student">Student</option>
-                  <option value="tutor">Approved tutor</option>
+                  <option value="tutor">Tutor</option>
                 </select>
               </label>
               <label class="field">
@@ -904,6 +904,7 @@
           <label class="field">
             <span>Lesson type</span>
             <select id="lessonType">
+              <option value="trial">Free trial lesson</option>
               <option value="weekly">Recurring weekly</option>
               <option value="monthly">Recurring monthly</option>
               <option value="oneoff">One-off lesson</option>
@@ -962,6 +963,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260917-profile-message-badge"></script>
+    <script src="app.js?v=20260917-booking-auth-fixes"></script>
   </body>
 </html>

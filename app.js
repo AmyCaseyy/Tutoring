@@ -647,6 +647,8 @@ function showLoginAccountView() {
   accountLoginView.hidden = false;
   if (accountSignupView) accountSignupView.hidden = true;
   signupForm.hidden = false;
+  loginPanel.hidden = true;
+  document.querySelector("#accountTitle").textContent = "Welcome back";
 }
 
 function showSignupAccountView() {
@@ -2492,6 +2494,15 @@ function occurrenceKeyFromDate(value) {
   return localDateTimeInputValue(new Date(value));
 }
 
+function bookingTimeValue(booking) {
+  const time = new Date(booking?.dateTime || "").getTime();
+  return Number.isFinite(time) ? time : Number.MAX_SAFE_INTEGER;
+}
+
+function sortBookingsSoonestFirst(items) {
+  return [...items].sort((a, b) => bookingTimeValue(a) - bookingTimeValue(b));
+}
+
 function occurrenceDateFor(series, index) {
   const start = new Date(series.seriesStartDateTime || series.dateTime);
   if (series.recurrenceRule?.frequency === "monthly") return addMonthsSameDate(start, index);
@@ -2530,9 +2541,8 @@ function expandRecurringBooking(series, limit = 5, includePrevious = false) {
 }
 
 function getDisplayBookings() {
-  return getBookings()
-    .flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking])
-    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime());
+  return sortBookingsSoonestFirst(getBookings()
+    .flatMap((booking) => booking.isRecurringSeries ? expandRecurringBooking(booking, 5, false) : [booking]));
 }
 
 function hasUsedFreeTrialWithTutor(tutorAddress) {
@@ -2698,6 +2708,17 @@ function withBookingSeenByCurrent(updates = {}, recipientEmail = "") {
   };
 }
 
+function recurringCancelButtons(booking, status) {
+  const id = escapeHtml(booking.id);
+  if (!booking.isGeneratedOccurrence) {
+    return `<button class="secondary-btn compact-btn" type="button" data-booking-action="${escapeHtml(status)}" data-booking-id="${id}">Cancel</button>`;
+  }
+  return `
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="${escapeHtml(status)}" data-booking-id="${id}" data-booking-scope="single">Cancel this</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="${escapeHtml(status)}" data-booking-id="${id}" data-booking-scope="future">Cancel future</button>
+  `;
+}
+
 function bookingActions(booking) {
   const id = escapeHtml(booking.id);
   const status = booking.status || "Pending tutor approval";
@@ -2718,7 +2739,7 @@ function bookingActions(booking) {
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Counter reschedule" data-booking-id="${id}">Counter</button>
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Decline reschedule" data-booking-id="${id}">Decline</button>` : ""}
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by tutor" data-booking-id="${id}">Suggest time</button>
-      <button class="secondary-btn compact-btn" type="button" data-booking-action="Cancelled by tutor" data-booking-id="${id}">Cancel</button>
+      ${recurringCancelButtons(booking, "Cancelled by tutor")}
       ${booking.studentEmail ? `<button class="secondary-btn compact-btn" type="button" data-view-student="${escapeHtml(booking.studentEmail)}">Student</button>` : ""}
     `;
   }
@@ -2729,7 +2750,7 @@ function bookingActions(booking) {
     <button class="secondary-btn compact-btn" type="button" data-booking-action="Counter reschedule" data-booking-id="${id}">Counter</button>
     <button class="secondary-btn compact-btn" type="button" data-booking-action="Decline reschedule" data-booking-id="${id}">Decline</button>` : ""}
     <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by student" data-booking-id="${id}">Reschedule</button>
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Cancelled by student" data-booking-id="${id}">Cancel</button>
+    ${recurringCancelButtons(booking, "Cancelled by student")}
   `;
 }
 
@@ -2750,12 +2771,13 @@ function checkLessonReminders() {
 }
 
 function renderBookingList(container, items, emptyText) {
-  if (!items.length) {
+  const sortedItems = sortBookingsSoonestFirst(items);
+  if (!sortedItems.length) {
     container.innerHTML = `<p class="empty-copy">${emptyText}</p>`;
     return;
   }
 
-  container.innerHTML = items.map((booking) => {
+  container.innerHTML = sortedItems.map((booking) => {
     const participant = currentAccount?.role === "tutor" && booking.student ? booking.student : booking.tutor;
     return `
       <article class="booking-row">
@@ -2786,9 +2808,9 @@ function renderBookingList(container, items, emptyText) {
       const booking = getDisplayBookings().find((item) => item.id === button.dataset.bookingId);
       if (!booking) return;
       const recipient = bookingNotificationRecipient(booking);
-      const scope = ["Cancelled by tutor", "Cancelled by student", "Reschedule requested by tutor", "Reschedule requested by student"].includes(status)
+      const scope = button.dataset.bookingScope || (["Cancelled by tutor", "Cancelled by student", "Reschedule requested by tutor", "Reschedule requested by student"].includes(status)
         ? scopeForSeriesAction(booking, status.includes("Cancel") ? "Cancel lesson" : "Reschedule lesson")
-        : "single";
+        : "single");
       let updates = { status };
       if (status === "Cancelled by tutor" || status === "Cancelled by student") {
         updates = { status, cancelled: true };
@@ -2897,10 +2919,8 @@ function renderBookingsPage() {
   markBookingsSeen();
   const bookings = getDisplayBookings();
   const now = Date.now();
-  const upcoming = bookings.filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= now)
-    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime());
-  const previous = bookings.filter((booking) => booking.dateTime && new Date(booking.dateTime).getTime() < now)
-    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime());
+  const upcoming = sortBookingsSoonestFirst(bookings.filter((booking) => !booking.dateTime || bookingTimeValue(booking) >= now));
+  const previous = sortBookingsSoonestFirst(bookings.filter((booking) => booking.dateTime && bookingTimeValue(booking) < now));
   upcomingCount.textContent = upcoming.length;
   previousCount.textContent = previous.length;
   renderBookingList(upcomingBookings, upcoming, "No upcoming lessons yet.");
@@ -2911,8 +2931,8 @@ function renderDashboard(role) {
   const dashboard = roleDashboards[role];
   const bookings = currentAccount ? getDisplayBookings() : [];
   const nextBookings = bookings
-    .filter((booking) => !booking.dateTime || new Date(booking.dateTime).getTime() >= Date.now())
-    .sort((a, b) => new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime())
+    .filter((booking) => !booking.dateTime || bookingTimeValue(booking) >= Date.now())
+    .sort((a, b) => bookingTimeValue(a) - bookingTimeValue(b))
     .slice(0, 3);
   const recentMessages = currentAccount ? getMessages().slice(-2).reverse() : [];
   ratingsPanel.classList.remove("highlight");
@@ -3188,6 +3208,10 @@ routeLinks.forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
     showPage(link.dataset.route);
+    if (link.dataset.route === "accounts") {
+      if (link.dataset.accountMode === "signup") showSignupAccountView();
+      else showLoginAccountView();
+    }
   });
 });
 
