@@ -1781,6 +1781,25 @@ img.profile-photo {
   max-width: 420px;
 }
 
+.reschedule-picker {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 253, 248, 0.9);
+  border: 1px solid rgba(25, 24, 21, 0.12);
+  border-radius: 10px;
+}
+
+.reschedule-picker .booking-time-grid {
+  grid-template-columns: minmax(160px, 1fr) 88px;
+}
+
+.reschedule-actions {
+  justify-content: flex-start;
+  max-width: none;
+}
+
 .booking-proposed {
   display: block;
   width: 100%;

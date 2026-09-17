@@ -524,6 +524,7 @@ let cloudTutorProfiles = [];
 let cloudBookings = [];
 let cloudMessages = [];
 let pendingProfilePhoto = "";
+let activeReschedulePicker = null;
 const signupWizard = {
   stepIndex: 0,
   steps: ["subject", "level", "role", "name", "dob", "email", "password"],
@@ -2432,6 +2433,19 @@ function updateBookingDateConstraints() {
   syncBookingDateTime();
 }
 
+function bookingHourOptions(selectedHour = "") {
+  return Array.from({ length: 24 }, (_, hour) => {
+    const value = pad2(hour);
+    return `<option value="${value}" ${value === selectedHour ? "selected" : ""}>${value}</option>`;
+  }).join("");
+}
+
+function bookingMinuteButtons(selectedMinute = "00") {
+  return ["00", "10", "20", "30", "40", "50"].map((minute) => `
+    <button type="button" data-reschedule-minute="${minute}" class="${minute === selectedMinute ? "active" : ""}">${minute}</button>
+  `).join("");
+}
+
 function updateMinuteButtons() {
   bookingMinuteOptions?.querySelectorAll("[data-minute]").forEach((button) => {
     button.classList.toggle("active", button.dataset.minute === bookingMinute?.value);
@@ -2639,9 +2653,23 @@ function updateOccurrenceOrBooking(booking, updates, scope = "single") {
     const overrides = { ...(series.occurrenceOverrides || {}) };
     if (scope === "future") {
       const start = new Date(booking.occurrenceKey).getTime();
+      const rescheduleTarget = updates.proposedDateTime || updates.dateTime || "";
+      const rescheduleDelta = rescheduleTarget ? new Date(rescheduleTarget).getTime() - new Date(booking.dateTime || booking.occurrenceKey).getTime() : 0;
       expandRecurringBooking(series, 260, true).forEach((occurrence) => {
         if (new Date(occurrence.occurrenceKey).getTime() >= start) {
-          overrides[occurrence.occurrenceKey] = { ...(overrides[occurrence.occurrenceKey] || {}), ...updates };
+          const shiftedUpdates = { ...updates };
+          if (rescheduleTarget && Number.isFinite(rescheduleDelta)) {
+            const shifted = localDateTimeInputValue(new Date(new Date(occurrence.dateTime || occurrence.occurrenceKey).getTime() + rescheduleDelta));
+            if (updates.proposedDateTime) shiftedUpdates.proposedDateTime = shifted;
+            if (updates.dateTime) shiftedUpdates.dateTime = shifted;
+            if (updates.rescheduleThread?.latestProposedDateTime) {
+              shiftedUpdates.rescheduleThread = {
+                ...updates.rescheduleThread,
+                latestProposedDateTime: shifted
+              };
+            }
+          }
+          overrides[occurrence.occurrenceKey] = { ...(overrides[occurrence.occurrenceKey] || {}), ...shiftedUpdates };
         }
       });
     } else {
@@ -2719,6 +2747,17 @@ function recurringCancelButtons(booking, status) {
   `;
 }
 
+function rescheduleDecisionButtons(booking, action, singleLabel, futureLabel) {
+  const id = escapeHtml(booking.id);
+  if (!booking.isGeneratedOccurrence) {
+    return `<button class="secondary-btn compact-btn" type="button" data-booking-action="${escapeHtml(action)}" data-booking-id="${id}">${escapeHtml(singleLabel)}</button>`;
+  }
+  return `
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="${escapeHtml(action)}" data-booking-id="${id}" data-booking-scope="single">${escapeHtml(singleLabel)}</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="${escapeHtml(action)}" data-booking-id="${id}" data-booking-scope="future">${escapeHtml(futureLabel)}</button>
+  `;
+}
+
 function bookingActions(booking) {
   const id = escapeHtml(booking.id);
   const status = booking.status || "Pending tutor approval";
@@ -2735,10 +2774,10 @@ function bookingActions(booking) {
       ${proposed}
       ${needsTutorDecision && !hasReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>` : ""}
-      ${canRespondToReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accept reschedule" data-booking-id="${id}">Accept time</button>
-      <button class="secondary-btn compact-btn" type="button" data-booking-action="Counter reschedule" data-booking-id="${id}">Counter</button>
-      <button class="secondary-btn compact-btn" type="button" data-booking-action="Decline reschedule" data-booking-id="${id}">Decline</button>` : ""}
-      <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by tutor" data-booking-id="${id}">Suggest time</button>
+      ${canRespondToReschedule ? `${rescheduleDecisionButtons(booking, "Accept reschedule", "Accept time", "Accept future")}
+      <button class="secondary-btn compact-btn" type="button" data-open-reschedule="${id}" data-reschedule-action="Counter reschedule">Counter</button>
+      ${rescheduleDecisionButtons(booking, "Decline reschedule", "Decline", "Decline future")}` : ""}
+      <button class="secondary-btn compact-btn" type="button" data-open-reschedule="${id}" data-reschedule-action="Reschedule requested by tutor">Suggest time</button>
       ${recurringCancelButtons(booking, "Cancelled by tutor")}
       ${booking.studentEmail ? `<button class="secondary-btn compact-btn" type="button" data-view-student="${escapeHtml(booking.studentEmail)}">Student</button>` : ""}
     `;
@@ -2746,11 +2785,41 @@ function bookingActions(booking) {
 
   return `
     ${proposed}
-    ${canRespondToReschedule ? `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accept reschedule" data-booking-id="${id}">Accept time</button>
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Counter reschedule" data-booking-id="${id}">Counter</button>
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Decline reschedule" data-booking-id="${id}">Decline</button>` : ""}
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Reschedule requested by student" data-booking-id="${id}">Reschedule</button>
+    ${canRespondToReschedule ? `${rescheduleDecisionButtons(booking, "Accept reschedule", "Accept time", "Accept future")}
+    <button class="secondary-btn compact-btn" type="button" data-open-reschedule="${id}" data-reschedule-action="Counter reschedule">Counter</button>
+    ${rescheduleDecisionButtons(booking, "Decline reschedule", "Decline", "Decline future")}` : ""}
+    <button class="secondary-btn compact-btn" type="button" data-open-reschedule="${id}" data-reschedule-action="Reschedule requested by student">Reschedule</button>
     ${recurringCancelButtons(booking, "Cancelled by student")}
+  `;
+}
+
+function renderReschedulePicker(booking) {
+  if (activeReschedulePicker?.bookingId !== booking.id) return "";
+  const nextSlot = nextTenMinuteSlot(new Date(booking.dateTime || Date.now()));
+  const selectedDate = activeReschedulePicker.date || localDateInputValue(nextSlot);
+  const selectedHour = activeReschedulePicker.hour || pad2(nextSlot.getHours());
+  const selectedMinute = activeReschedulePicker.minute || pad2(nextSlot.getMinutes());
+  const action = escapeHtml(activeReschedulePicker.action || "Reschedule requested by student");
+  const id = escapeHtml(booking.id);
+  const recurringButtons = booking.isGeneratedOccurrence
+    ? `<button class="primary-btn compact-btn" type="button" data-submit-reschedule="${id}" data-reschedule-action="${action}" data-booking-scope="single">Send for this lesson</button>
+       <button class="primary-btn compact-btn" type="button" data-submit-reschedule="${id}" data-reschedule-action="${action}" data-booking-scope="future">Send for future lessons</button>`
+    : `<button class="primary-btn compact-btn" type="button" data-submit-reschedule="${id}" data-reschedule-action="${action}" data-booking-scope="single">Send new time</button>`;
+  return `
+    <div class="reschedule-picker" data-reschedule-picker="${id}">
+      <strong>${activeReschedulePicker.action === "Counter reschedule" ? "Counter-propose a time" : "Suggest a new time"}</strong>
+      <div class="booking-time-grid">
+        <input type="date" data-reschedule-date="${id}" value="${escapeHtml(selectedDate)}" min="${escapeHtml(localDateInputValue(nextTenMinuteSlot()))}" aria-label="Reschedule date" />
+        <select data-reschedule-hour="${id}" aria-label="Reschedule hour">${bookingHourOptions(selectedHour)}</select>
+        <div class="minute-options reschedule-minute-options" aria-label="Reschedule minute">
+          ${bookingMinuteButtons(selectedMinute)}
+        </div>
+      </div>
+      <div class="booking-actions reschedule-actions">
+        ${recurringButtons}
+        <button class="secondary-btn compact-btn" type="button" data-close-reschedule>Cancel</button>
+      </div>
+    </div>
   `;
 }
 
@@ -2789,6 +2858,7 @@ function renderBookingList(container, items, emptyText) {
           ${booking.isGeneratedOccurrence ? `<small class="booking-status">Recurring occurrence</small>` : ""}
           ${booking.isFreeTrial ? `<small class="booking-status">Free trial</small>` : ""}
           ${booking.rescheduleThread?.history?.length ? `<small class="booking-status">${booking.rescheduleThread.history.length} proposed time${booking.rescheduleThread.history.length === 1 ? "" : "s"}</small>` : ""}
+          ${renderReschedulePicker(booking)}
         </div>
         <div class="booking-actions">${bookingActions(booking)}</div>
       </article>
@@ -2839,9 +2909,16 @@ function renderBookingList(container, items, emptyText) {
       if (status === "Decline reschedule") {
         const wantsCounter = window.confirm("Do you want to counter-propose another time instead?");
         if (wantsCounter) {
-          const proposedDateTime = promptForLessonDateTime("Counter-propose a new time");
-          if (!proposedDateTime) return;
-          updates = rescheduleUpdates(booking, proposedDateTime, currentAccount.role === "tutor" ? "tutor" : "student");
+          const nextSlot = nextTenMinuteSlot(new Date(booking.dateTime || Date.now()));
+          activeReschedulePicker = {
+            bookingId: booking.id,
+            action: "Counter reschedule",
+            date: localDateInputValue(nextSlot),
+            hour: pad2(nextSlot.getHours()),
+            minute: pad2(nextSlot.getMinutes())
+          };
+          renderBookingsPage();
+          return;
         } else {
           updates = {
             status: "Accepted",
@@ -2863,6 +2940,77 @@ function renderBookingList(container, items, emptyText) {
         });
       }
       addActivity(`Booking marked: ${status}`, "Booking");
+      renderBookingsPage();
+      renderDashboard(currentAccount.role);
+    });
+  });
+
+  container.querySelectorAll("[data-open-reschedule]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const booking = getDisplayBookings().find((item) => item.id === button.dataset.openReschedule);
+      if (!booking) return;
+      const nextSlot = nextTenMinuteSlot(new Date(booking.dateTime || Date.now()));
+      activeReschedulePicker = {
+        bookingId: booking.id,
+        action: button.dataset.rescheduleAction,
+        date: localDateInputValue(nextSlot),
+        hour: pad2(nextSlot.getHours()),
+        minute: pad2(nextSlot.getMinutes())
+      };
+      renderBookingsPage();
+    });
+  });
+
+  container.querySelectorAll("[data-reschedule-date], [data-reschedule-hour]").forEach((control) => {
+    control.addEventListener("change", () => {
+      if (!activeReschedulePicker) return;
+      const dateInput = [...container.querySelectorAll("[data-reschedule-date]")].find((item) => item.dataset.rescheduleDate === activeReschedulePicker.bookingId);
+      const hourInput = [...container.querySelectorAll("[data-reschedule-hour]")].find((item) => item.dataset.rescheduleHour === activeReschedulePicker.bookingId);
+      activeReschedulePicker.date = dateInput?.value || activeReschedulePicker.date;
+      activeReschedulePicker.hour = hourInput?.value || activeReschedulePicker.hour;
+    });
+  });
+
+  container.querySelectorAll("[data-reschedule-minute]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!activeReschedulePicker) return;
+      activeReschedulePicker.minute = button.dataset.rescheduleMinute;
+      renderBookingsPage();
+    });
+  });
+
+  container.querySelectorAll("[data-close-reschedule]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeReschedulePicker = null;
+      renderBookingsPage();
+    });
+  });
+
+  container.querySelectorAll("[data-submit-reschedule]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const booking = getDisplayBookings().find((item) => item.id === button.dataset.submitReschedule);
+      if (!booking || !activeReschedulePicker) return;
+      const dateInput = [...container.querySelectorAll("[data-reschedule-date]")].find((item) => item.dataset.rescheduleDate === booking.id);
+      const hourInput = [...container.querySelectorAll("[data-reschedule-hour]")].find((item) => item.dataset.rescheduleHour === booking.id);
+      const date = dateInput?.value || activeReschedulePicker.date;
+      const hour = hourInput?.value || activeReschedulePicker.hour;
+      const minute = activeReschedulePicker.minute || "00";
+      const proposedDateTime = `${date}T${hour}:${minute}`;
+      const error = validateBookingDateTime(proposedDateTime);
+      if (error) {
+        signupStatus.textContent = error;
+        signupStatus.classList.remove("success");
+        return;
+      }
+      const recipient = bookingNotificationRecipient(booking);
+      const updates = rescheduleUpdates(booking, proposedDateTime, currentAccount.role === "tutor" ? "tutor" : "student");
+      updateOccurrenceOrBooking(booking, withBookingSeenByCurrent(updates, recipient), button.dataset.bookingScope || "single");
+      queueEmail(recipient, "New reschedule time proposed", `${currentAccount.name} proposed ${formatBookingDate(proposedDateTime)} for ${booking.type}.`, {
+        key: `reschedule-${booking.parentBookingId || booking.id}-${Date.now()}`,
+        bookingId: booking.parentBookingId || booking.id
+      });
+      activeReschedulePicker = null;
+      addActivity("Proposed a new lesson time", "Booking");
       renderBookingsPage();
       renderDashboard(currentAccount.role);
     });
