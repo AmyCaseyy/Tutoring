@@ -323,6 +323,18 @@ const roleContent = {
     text: "Manage your profile, subjects, availability, student messages, bookings, and ratings.",
     dash: "Tutor tools",
     mode: "Tutor workspace"
+  },
+  admin: {
+    title: "Safeguarding account",
+    text: "Review moderation reports and platform safety events.",
+    dash: "Moderation tools",
+    mode: "Safeguarding workspace"
+  },
+  safeguarding: {
+    title: "Safeguarding account",
+    text: "Review moderation reports and platform safety events.",
+    dash: "Moderation tools",
+    mode: "Safeguarding workspace"
   }
 };
 
@@ -386,6 +398,34 @@ const roleDashboards = {
     ratingTitle: "Tutor ratings",
     ratingText: "Your public profile shows an average rating after students and parents review lessons.",
     ratingButton: "View ratings"
+  },
+  admin: {
+    tools: [
+      ["Moderation", "Review reported and automatically flagged messages."],
+      ["Audit trail", "Keep internal records of review status and actions."],
+      ["Safeguarding", "Escalate high-priority concerns for follow-up."]
+    ],
+    lessons: [],
+    chatTitle: "Moderation",
+    chatWith: "Safeguarding queue",
+    messages: [],
+    ratingTitle: "Review queue",
+    ratingText: "Open moderation items appear in the review dashboard.",
+    ratingButton: "Open moderation"
+  },
+  safeguarding: {
+    tools: [
+      ["Moderation", "Review reported and automatically flagged messages."],
+      ["Audit trail", "Keep internal records of review status and actions."],
+      ["Safeguarding", "Escalate high-priority concerns for follow-up."]
+    ],
+    lessons: [],
+    chatTitle: "Moderation",
+    chatWith: "Safeguarding queue",
+    messages: [],
+    ratingTitle: "Review queue",
+    ratingText: "Open moderation items appear in the review dashboard.",
+    ratingButton: "Open moderation"
   }
 };
 
@@ -489,6 +529,9 @@ const messagePageMessages = document.querySelector("#messagePageMessages");
 const messagePageForm = document.querySelector("#messagePageForm");
 const messagePageInput = document.querySelector("#messagePageInput");
 const viewMessageProfile = document.querySelector("#viewMessageProfile");
+const moderationList = document.querySelector("#moderationList");
+const moderationStatusFilter = document.querySelector("#moderationStatusFilter");
+const moderationSeverityFilter = document.querySelector("#moderationSeverityFilter");
 const bookingPageForm = document.querySelector("#bookingPageForm");
 const bookingTutor = document.querySelector("#bookingTutor");
 const bookingTutorSearch = document.querySelector("#bookingTutorSearch");
@@ -525,6 +568,7 @@ let pendingConfirmation = "";
 let cloudTutorProfiles = [];
 let cloudBookings = [];
 let cloudMessages = [];
+let cloudSafetyEvents = [];
 let pendingProfilePhoto = "";
 let activeReschedulePicker = null;
 const signupWizard = {
@@ -551,13 +595,16 @@ const storage = {
   activity: "girlstemTutoringActivity",
   bookings: "girlstemTutoringBookings",
   emails: "tutrstemEmailQueue",
-  subjectRequests: "tutrstemSubjectRequests"
+  subjectRequests: "tutrstemSubjectRequests",
+  safetyEvents: "tutrstemSafetyEvents"
 };
 
 function showPage(pageName, options = {}) {
   const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy"];
-  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support"];
-  const fallback = currentAccount ? (currentAccount.role === "tutor" ? "profile" : "tutors") : "accounts";
+  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support", "moderation"];
+  const fallback = currentAccount
+    ? (isModerationUser() ? "moderation" : (currentAccount.role === "tutor" ? "profile" : "tutors"))
+    : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
 
   if (!currentAccount && !publicPages.includes(nextPage)) {
@@ -578,6 +625,11 @@ function showPage(pageName, options = {}) {
     showConfirmation("Tutor accounts use their profile, messages, and bookings.");
   }
 
+  if (nextPage === "moderation" && !isModerationUser()) {
+    nextPage = fallback;
+    showConfirmation("Only authorised safeguarding/admin accounts can open moderation.");
+  }
+
   if (nextPage === "profile" && currentAccount?.role === "tutor") {
     selectedTutor = getCurrentTutorProfile() || selectedTutor;
   }
@@ -588,6 +640,7 @@ function showPage(pageName, options = {}) {
   if (nextPage === "student-profile") renderStudentProfile();
   if (nextPage === "reviews") renderReviewsPage();
   if (nextPage === "account-details") populateAccountDetails();
+  if (nextPage === "moderation") renderModerationPage();
 
   const editingProfile = nextPage === "dashboard" && options.editProfile === true;
   document.body.classList.toggle("editing-profile", editingProfile);
@@ -1313,6 +1366,7 @@ async function loadCloudData() {
   if (!currentAccount?.email) {
     cloudBookings = [];
     cloudMessages = [];
+    cloudSafetyEvents = [];
     updateMessageBadge();
     updateBookingBadge();
     return;
@@ -1333,6 +1387,17 @@ async function loadCloudData() {
   cloudMessages = messageSnapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
+
+  if (isModerationUser()) {
+    const safetySnapshot = await db.collection("safetyEvents")
+      .limit(200)
+      .get();
+    cloudSafetyEvents = safetySnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => (Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0)));
+  } else {
+    cloudSafetyEvents = [];
+  }
   updateMessageBadge();
   updateBookingBadge();
 }
@@ -1417,6 +1482,189 @@ function queueEmail(to, subject, body, meta = {}) {
   });
   writeStore(storage.emails, queue.slice(0, 40));
   queueCloudEmail(to, subject, body, meta).catch(() => {});
+}
+
+function isModerationUser(account = currentAccount) {
+  return ["admin", "safeguarding"].includes(account?.role) || account?.isAdmin === true || account?.moderation === true;
+}
+
+function compactWhitespace(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function moderationNormalise(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[|()[\]{}<>]/g, " ")
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function analyseMessageSafety(text) {
+  const raw = String(text || "");
+  const normal = moderationNormalise(raw);
+  const joined = normal.replace(/\s+/g, "");
+  const reasons = [];
+  const flags = [];
+  const addReason = (category, label, severity = "MEDIUM") => reasons.push({ category, label, severity });
+  const addFlag = (category, label, severity = "MEDIUM") => flags.push({ category, label, severity });
+
+  const phoneLike = raw.match(/(?:\+?\d[\s().-]*){9,}/);
+  const wordPhone = /\b(zero|oh|o)\s+(seven|7)\b/i.test(raw)
+    && /\b(one|two|three|four|five|six|seven|eight|nine|zero|0|1|2|3|4|5|6|7|8|9)\b/i.test(raw);
+  if (phoneLike || wordPhone) addReason("contact_phone", "Possible phone number");
+
+  if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(raw)
+    || /\b[\w.+-]+\s+(?:at|\[at\]|\(at\))\s+[\w.-]+\s+(?:dot|\[dot\]|\(dot\))\s+[a-z]{2,}\b/i.test(raw)) {
+    addReason("contact_email", "Possible personal email address");
+  }
+
+  if (/\b(?:https?:\/\/|www\.)\S+/i.test(raw)) addReason("contact_url", "External URL");
+
+  if (/\b(?:whats\s*app|whatsapp|text me|call me|phone me|message me on|dm me|direct message me|outside (?:the )?platform|off platform)\b/i.test(raw)) {
+    addReason("off_platform_request", "Request to communicate off-platform", "HIGH");
+  }
+
+  if (/\b(?:snap\s*chat|snapchat|snap|insta\s*gram|instagram|telegram|discord|tiktok|tik tok)\b/i.test(raw)
+    || /\b(?:s\s*n\s*a\s*p|i\s*n\s*s\s*t\s*a|d\s*i\s*s\s*c\s*o\s*r\s*d)\b/i.test(raw)) {
+    addReason("social_handle", "Possible social media contact details");
+  }
+
+  if (/(?:^|\s)@[a-z0-9._]{3,}/i.test(raw) && /\b(?:insta|instagram|snap|snapchat|tiktok|telegram|discord|handle|username)\b/i.test(raw)) {
+    addReason("social_handle", "Possible social media handle");
+  }
+
+  if (/\b(?:postcode|post code|home address|my address|come to my house|meet at my house)\b/i.test(normal)) {
+    addReason("location_contact", "Possible personal address/location sharing", "HIGH");
+  }
+
+  if (/\b(?:kill yourself|i will kill|hurt you|threat|blackmail|send nudes|nude|sexual|sexy|onlyfans|meet alone|don't tell your parent|dont tell your parent|keep this secret)\b/i.test(normal)) {
+    addFlag("safeguarding", "Potential safeguarding or harmful content", "HIGH");
+  }
+
+  if (/\b(?:idiot|stupid|shut up|hate you|loser|bully|harass)\b/i.test(normal)) {
+    addFlag("behaviour", "Potential bullying or harassment", "MEDIUM");
+  }
+
+  if (joined.includes("gmaildotcom") || joined.includes("hotmaildotcom") || joined.includes("outlookdotcom")) {
+    addReason("contact_email_evasion", "Possible obfuscated email address");
+  }
+
+  if (!reasons.length && /\b(?:private|secret|don't tell|dont tell|meet in person|meet up)\b/i.test(normal)) {
+    addFlag("safeguarding", "Potentially concerning private communication", "MEDIUM");
+  }
+
+  const highestSeverity = [...reasons, ...flags].some((item) => item.severity === "HIGH")
+    ? "HIGH"
+    : [...reasons, ...flags].some((item) => item.severity === "MEDIUM") ? "MEDIUM" : "LOW";
+  if (reasons.length) return { action: "BLOCK", severity: highestSeverity, reasons };
+  if (flags.length) return { action: "FLAG", severity: highestSeverity, reasons: flags };
+  return { action: "ALLOW", severity: "LOW", reasons: [] };
+}
+
+function safetyEventContext(overrides = {}) {
+  const senderEmail = normalizeEmail(currentAccount?.email);
+  const recipientEmail = normalizeEmail(overrides.recipientEmail || currentRecipientEmail());
+  return {
+    senderEmail,
+    senderName: currentAccount?.name || senderEmail,
+    senderRole: currentAccount?.role || "",
+    recipientEmail,
+    threadKey: overrides.threadKey || threadKey(),
+    participantEmails: [senderEmail, recipientEmail].filter(Boolean),
+    createdLabel: nowLabel(),
+    createdAtMs: Date.now()
+  };
+}
+
+async function saveSafetyEvent(event) {
+  const id = event.id || createId("safety");
+  const payload = {
+    id,
+    status: event.status || "NEW",
+    severity: event.severity || "LOW",
+    source: event.source || "automatic",
+    type: event.type || "flag",
+    category: event.category || "",
+    reason: event.reason || "",
+    messageId: event.messageId || "",
+    messageBody: compactWhitespace(event.messageBody || "").slice(0, 2000),
+    reporterEmail: normalizeEmail(event.reporterEmail),
+    reporterRole: event.reporterRole || "",
+    notes: event.notes || "",
+    actionTaken: event.actionTaken || "",
+    ...safetyEventContext(event),
+    ...(event.context || {})
+  };
+  const events = readStore(storage.safetyEvents, []);
+  writeStore(storage.safetyEvents, [{ ...payload }, ...events.filter((item) => item.id !== id)].slice(0, 200));
+  cloudSafetyEvents = [{ ...payload }, ...cloudSafetyEvents.filter((item) => item.id !== id)];
+  if (isCloudReady()) {
+    await db.collection("safetyEvents").doc(id).set({
+      ...payload,
+      createdAt: payload.createdAt || firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+  return payload;
+}
+
+async function writeModerationAudit(eventId, action, notes = "") {
+  const payload = {
+    eventId,
+    action,
+    notes,
+    actorEmail: normalizeEmail(currentAccount?.email),
+    actorRole: currentAccount?.role || "",
+    timeLabel: nowLabel(),
+    createdAtMs: Date.now()
+  };
+  if (isCloudReady()) {
+    await db.collection("moderationAudit").add({
+      ...payload,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+}
+
+function recentBlockedAttemptsForCurrentSender() {
+  const ownEmail = normalizeEmail(currentAccount?.email);
+  const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+  return [...cloudSafetyEvents, ...readStore(storage.safetyEvents, [])].filter((event) => (
+    normalizeEmail(event.senderEmail) === ownEmail
+    && event.type === "blocked_message"
+    && Number(event.createdAtMs || 0) >= cutoff
+  )).length;
+}
+
+async function moderateOutgoingText(text) {
+  const result = analyseMessageSafety(text);
+  if (result.action === "ALLOW") return true;
+  const reason = result.reasons.map((item) => item.label).join(", ");
+  if (result.action === "BLOCK") {
+    const repeated = recentBlockedAttemptsForCurrentSender() >= 2;
+    await saveSafetyEvent({
+      type: repeated ? "repeated_blocked_attempt" : "blocked_message",
+      source: "automatic",
+      severity: repeated ? "HIGH" : result.severity,
+      category: result.reasons[0]?.category || "blocked_contact",
+      reason: repeated ? `Repeated blocked attempt: ${reason}` : reason,
+      messageBody: text
+    });
+    signupStatus.textContent = "For safety, please keep communication on the tutoring platform and don't share personal contact details.";
+    signupStatus.classList.remove("success");
+    return false;
+  }
+  await saveSafetyEvent({
+    type: "flagged_message",
+    source: "automatic",
+    severity: result.severity,
+    category: result.reasons[0]?.category || "safeguarding",
+    reason,
+    messageBody: text
+  });
+  return true;
 }
 
 function accountKey() {
@@ -1960,6 +2208,8 @@ async function saveMessage(message) {
   const key = threadKey();
   const messages = allMessages[key] || [];
   const recipientEmail = currentRecipientEmail();
+  const allowed = await moderateOutgoingText(message.text || message.body || "");
+  if (!allowed) return false;
   const enrichedMessage = {
     id: message.id || createId("message"),
     ...message,
@@ -1991,6 +2241,7 @@ async function saveMessage(message) {
   });
   updateMessageBadge();
   updateBookingBadge();
+  return true;
 }
 
 async function saveMessageToCloud(key, message) {
@@ -2044,6 +2295,49 @@ function markCurrentThreadRead() {
   }
 }
 
+function messageBubbleHtml(message) {
+  const id = escapeHtml(message.id || "");
+  return `
+    <p class="bubble ${escapeHtml(message.direction)}">
+      ${escapeHtml(message.text)}
+      <time>${escapeHtml(message.time)}</time>
+      ${id ? `<button class="message-report" type="button" data-report-message="${id}">Report</button>` : ""}
+    </p>
+  `;
+}
+
+function attachReportHandlers(container) {
+  container.querySelectorAll("[data-report-message]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const message = getMessages().find((item) => item.id === button.dataset.reportMessage);
+      if (!message || !currentAccount) return;
+      const category = window.prompt("Report category: contact details, inappropriate behaviour, bullying/harassment, safeguarding concern, spam/scam, or other.", "safeguarding concern");
+      if (!category) return;
+      const notes = window.prompt("Optional: add any extra detail for the safeguarding team.", "") || "";
+      await saveSafetyEvent({
+        type: "reported_message",
+        source: "manual",
+        severity: /safeguarding|inappropriate|bullying|harassment/i.test(category) ? "HIGH" : "MEDIUM",
+        category,
+        reason: `Manual report: ${category}`,
+        messageId: message.id,
+        messageBody: message.text,
+        reporterEmail: currentAccount.email,
+        reporterRole: currentAccount.role,
+        notes,
+        recipientEmail: message.recipientEmail || currentRecipientEmail(),
+        threadKey: threadKey()
+      });
+      queueEmail("tutrstem@gmail.com", "New tutrSTEM moderation report", `${currentAccount.name} submitted a ${category} report for review.`, {
+        key: `report-${message.id}-${Date.now()}`,
+        type: "moderation_report"
+      });
+      signupStatus.textContent = "Report sent to the tutrSTEM safeguarding team.";
+      signupStatus.classList.add("success");
+    });
+  });
+}
+
 function renderChat(role) {
   const chatPartner = role === "tutor" ? (selectedStudentAccount ? studentSummary(selectedStudentAccount).name : "student and parent") : selectedThreadTutor.name;
   document.querySelector("#chatTitle").textContent = role === "tutor" ? "Student and parent chat" : "Tutor chat";
@@ -2051,12 +2345,8 @@ function renderChat(role) {
   chatInput.placeholder = `Message ${chatPartner}...`;
   const messages = getMessages();
   markCurrentThreadRead();
-  chatMessages.innerHTML = messages.length ? messages.map((message) => `
-    <p class="bubble ${message.direction}">
-      ${escapeHtml(message.text)}
-      <time>${escapeHtml(message.time)}</time>
-    </p>
-  `).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  chatMessages.innerHTML = messages.length ? messages.map(messageBubbleHtml).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  attachReportHandlers(chatMessages);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -2142,13 +2432,94 @@ function renderMessagesPage() {
 
   messagePageInput.placeholder = `Message ${messagePageWith.textContent}...`;
   const messages = getMessages();
-  messagePageMessages.innerHTML = messages.length ? messages.map((message) => `
-    <p class="bubble ${message.direction}">
-      ${escapeHtml(message.text)}
-      <time>${escapeHtml(message.time)}</time>
-    </p>
-  `).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  messagePageMessages.innerHTML = messages.length ? messages.map(messageBubbleHtml).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  attachReportHandlers(messagePageMessages);
   messagePageMessages.scrollTop = messagePageMessages.scrollHeight;
+}
+
+async function updateSafetyEventStatus(id, status, notes = "") {
+  const reviewer = normalizeEmail(currentAccount?.email);
+  const updates = {
+    status,
+    reviewer,
+    reviewerNotes: notes,
+    reviewedAtLabel: nowLabel(),
+    reviewedAtMs: Date.now()
+  };
+  cloudSafetyEvents = cloudSafetyEvents.map((event) => event.id === id ? { ...event, ...updates } : event);
+  const localEvents = readStore(storage.safetyEvents, []).map((event) => event.id === id ? { ...event, ...updates } : event);
+  writeStore(storage.safetyEvents, localEvents);
+  if (isCloudReady()) {
+    await db.collection("safetyEvents").doc(id).set({
+      ...updates,
+      reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+  await writeModerationAudit(id, `Status changed to ${status}`, notes);
+}
+
+function getModerationEvents() {
+  const merged = [...cloudSafetyEvents, ...readStore(storage.safetyEvents, [])];
+  const seen = new Set();
+  return merged
+    .filter((event) => {
+      if (!event?.id || seen.has(event.id)) return false;
+      seen.add(event.id);
+      return true;
+    })
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
+function renderModerationPage() {
+  if (!moderationList) return;
+  if (!isModerationUser()) {
+    moderationList.innerHTML = `<p class="empty-copy">You do not have access to moderation.</p>`;
+    return;
+  }
+  const statusFilter = moderationStatusFilter?.value || "open";
+  const severityFilter = moderationSeverityFilter?.value || "all";
+  const openStatuses = new Set(["NEW", "UNDER REVIEW", "ESCALATED"]);
+  const events = getModerationEvents().filter((event) => {
+    const status = event.status || "NEW";
+    const statusMatch = statusFilter === "all"
+      || (statusFilter === "open" ? openStatuses.has(status) : status === statusFilter);
+    const severityMatch = severityFilter === "all" || event.severity === severityFilter;
+    return statusMatch && severityMatch;
+  });
+  moderationList.innerHTML = events.length ? events.map((event) => `
+    <article class="moderation-card ${escapeHtml(String(event.severity || "LOW").toLowerCase())}">
+      <div class="moderation-card-top">
+        <strong>${escapeHtml(event.severity || "LOW")} · ${escapeHtml(event.type || "event")}</strong>
+        <span>${escapeHtml(event.status || "NEW")}</span>
+      </div>
+      <p>${escapeHtml(event.reason || event.category || "Review item")}</p>
+      ${event.messageBody ? `<blockquote>${escapeHtml(event.messageBody)}</blockquote>` : ""}
+      <dl>
+        <div><dt>Sender</dt><dd>${escapeHtml(event.senderName || event.senderEmail || "")} (${escapeHtml(event.senderRole || "")})</dd></div>
+        <div><dt>Recipient</dt><dd>${escapeHtml(event.recipientEmail || "")}</dd></div>
+        <div><dt>Reporter</dt><dd>${escapeHtml(event.reporterEmail || "Automatic")}</dd></div>
+        <div><dt>Time</dt><dd>${escapeHtml(event.createdLabel || "")}</dd></div>
+      </dl>
+      ${event.reviewerNotes ? `<p class="moderation-note">${escapeHtml(event.reviewerNotes)}</p>` : ""}
+      <div class="booking-actions">
+        <button class="secondary-btn compact-btn" type="button" data-moderation-status="UNDER REVIEW" data-event-id="${escapeHtml(event.id)}">Review</button>
+        <button class="secondary-btn compact-btn" type="button" data-moderation-status="CLEARED" data-event-id="${escapeHtml(event.id)}">Clear</button>
+        <button class="secondary-btn compact-btn" type="button" data-moderation-status="ACTION TAKEN" data-event-id="${escapeHtml(event.id)}">Action taken</button>
+        <button class="secondary-btn compact-btn" type="button" data-moderation-status="ESCALATED" data-event-id="${escapeHtml(event.id)}">Escalate</button>
+      </div>
+    </article>
+  `).join("") : `<p class="empty-copy">No moderation items match this filter.</p>`;
+
+  moderationList.querySelectorAll("[data-moderation-status]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const status = button.dataset.moderationStatus;
+      const notes = window.prompt(`Internal note for ${status}:`, "") || "";
+      if (["ACTION TAKEN", "ESCALATED"].includes(status) && !window.confirm(`Confirm ${status.toLowerCase()} for this moderation item?`)) return;
+      await updateSafetyEventStatus(button.dataset.eventId, status, notes);
+      renderModerationPage();
+    });
+  });
 }
 
 function renderProfile(role) {
@@ -3273,6 +3644,9 @@ function updateAccess() {
   document.querySelectorAll("[data-tutor-nav]").forEach((item) => {
     item.hidden = role !== "tutor" || !currentAccount;
   });
+  document.querySelectorAll("[data-admin-only]").forEach((item) => {
+    item.hidden = !isModerationUser();
+  });
   userMenu.hidden = !currentAccount;
   if (currentAccount) {
     userMenuName.textContent = currentAccount.name;
@@ -3464,6 +3838,10 @@ window.addEventListener("popstate", () => {
   control.addEventListener("change", renderTutors);
 });
 
+[moderationStatusFilter, moderationSeverityFilter].filter(Boolean).forEach((control) => {
+  control.addEventListener("change", renderModerationPage);
+});
+
 admissionsFilter?.addEventListener("change", () => {
   populateAdmissionsModuleFilter();
   renderTutors();
@@ -3613,11 +3991,12 @@ chatForm.addEventListener("submit", async (event) => {
   const text = chatInput.value.trim();
   if (!text) return;
 
-  await saveMessage({
+  const sent = await saveMessage({
     direction: "outgoing",
     text,
     time: nowLabel()
   });
+  if (!sent) return;
   chatInput.value = "";
   addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedTutor.name}`, "Chat");
   renderChat(currentAccount.role);
@@ -3633,11 +4012,12 @@ messagePageForm.addEventListener("submit", async (event) => {
   const text = messagePageInput.value.trim();
   if (!text) return;
 
-  await saveMessage({
+  const sent = await saveMessage({
     direction: "outgoing",
     text,
     time: nowLabel()
   });
+  if (!sent) return;
   messagePageInput.value = "";
   addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedThreadTutor.name}`, "Chat");
   renderMessagesPage();

@@ -1668,6 +1668,93 @@ img.profile-photo {
   padding-right: 8px;
 }
 
+.message-report {
+  display: block;
+  width: fit-content;
+  margin-top: 6px;
+  border: 0;
+  background: transparent;
+  color: currentColor;
+  opacity: 0.58;
+  font: inherit;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.message-report:hover,
+.message-report:focus-visible {
+  opacity: 1;
+}
+
+.moderation-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 280px));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.moderation-list {
+  display: grid;
+  gap: 14px;
+}
+
+.moderation-card {
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--muted);
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 8px;
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
+}
+
+.moderation-card.medium {
+  border-left-color: #b9852b;
+}
+
+.moderation-card.high {
+  border-left-color: #a9362b;
+}
+
+.moderation-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.moderation-card blockquote {
+  margin: 12px 0;
+  padding: 12px;
+  border-left: 3px solid var(--line);
+  background: rgba(243, 237, 225, 0.72);
+  border-radius: 6px;
+}
+
+.moderation-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin: 12px 0;
+}
+
+.moderation-card dt {
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.moderation-card dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.moderation-note {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(23, 22, 19, 0.06);
+}
+
 .bookings-layout {
   grid-template-columns: minmax(300px, 380px) 1fr;
   align-items: start;
