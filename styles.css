@@ -1926,6 +1926,36 @@ img.profile-photo {
   color: #c78300;
 }
 
+.review-card-top,
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-card-top {
+  justify-content: space-between;
+}
+
+.review-actions {
+  flex-wrap: wrap;
+}
+
+.review-edit-field {
+  margin-bottom: 10px;
+}
+
+.danger-btn {
+  color: #8a1f1f;
+  border-color: rgba(138, 31, 31, 0.26);
+}
+
+.danger-btn:hover,
+.danger-btn:focus-visible {
+  color: #5e1212;
+  border-color: rgba(138, 31, 31, 0.48);
+}
+
 .review-card p {
   margin: 10px 0;
   color: var(--ink);

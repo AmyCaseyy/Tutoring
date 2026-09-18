@@ -568,7 +568,9 @@ let pendingConfirmation = "";
 let cloudTutorProfiles = [];
 let cloudBookings = [];
 let cloudMessages = [];
+let cloudReviews = [];
 let cloudSafetyEvents = [];
+let editingReviewKey = "";
 let pendingProfilePhoto = "";
 let activeReschedulePicker = null;
 const signupWizard = {
@@ -1366,6 +1368,7 @@ async function loadCloudData() {
   if (!currentAccount?.email) {
     cloudBookings = [];
     cloudMessages = [];
+    cloudReviews = [];
     cloudSafetyEvents = [];
     updateMessageBadge();
     updateBookingBadge();
@@ -1387,6 +1390,15 @@ async function loadCloudData() {
   cloudMessages = messageSnapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
+
+  try {
+    const reviewSnapshot = await db.collection("reviews")
+      .limit(300)
+      .get();
+    cloudReviews = reviewSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  } catch {
+    cloudReviews = [];
+  }
 
   if (isModerationUser()) {
     const safetySnapshot = await db.collection("safetyEvents")
@@ -1441,6 +1453,30 @@ async function updateBookingInCloud(id, updates) {
     ...updates,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
+}
+
+async function saveReviewToCloud(review) {
+  if (!isCloudReady() || !review?.id) return;
+  await db.collection("reviews").doc(review.id).set({
+    ...review,
+    byEmail: normalizeEmail(review.byEmail),
+    tutorEmail: normalizeEmail(review.tutorEmail),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+}
+
+async function updateReviewInCloud(id, updates) {
+  if (!isCloudReady() || !id) return;
+  await db.collection("reviews").doc(id).set({
+    ...updates,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+}
+
+async function deleteReviewFromCloud(id) {
+  if (!isCloudReady() || !id) return;
+  await db.collection("reviews").doc(id).delete();
 }
 
 async function queueCloudEmail(to, subject, body, meta = {}) {
@@ -2588,9 +2624,13 @@ function saveRating() {
   const ratings = readStore(storage.ratings, {});
   const tutorRatings = ratings[selectedTutor.name] || [];
   tutorRatings.push({
+    id: createId("review"),
     score,
     note,
     by: currentAccount.name,
+    byEmail: currentAccount.email,
+    tutor: selectedTutor.name,
+    tutorEmail: tutorEmail(selectedTutor),
     time: nowLabel()
   });
   ratings[selectedTutor.name] = tutorRatings;
@@ -2601,9 +2641,54 @@ function saveRating() {
   renderTutors();
 }
 
+function reviewKey(review, index = 0) {
+  return review.id || `local-${normalizeEmail(review.byEmail || review.by || "unknown")}-${review.time || index}-${index}`;
+}
+
+function reviewBelongsToCurrentAccount(review) {
+  if (!currentAccount?.email || !review?.byEmail) return false;
+  return normalizeEmail(review.byEmail) === normalizeEmail(currentAccount.email);
+}
+
 function getReviewsFor(tutor) {
   const ratings = readStore(storage.ratings, {});
-  return ratings[tutor.name] || [];
+  const localReviews = ratings[tutor.name] || [];
+  const tutorAddress = normalizeEmail(tutorEmail(tutor));
+  const cloudTutorReviews = cloudReviews.filter((review) => (
+    normalizeEmail(review.tutorEmail) === tutorAddress || review.tutor === tutor.name
+  ));
+  const seen = new Set();
+  return [...cloudTutorReviews, ...localReviews]
+    .filter((review, index) => {
+      const key = review.id || [
+        normalizeEmail(review.byEmail),
+        normalizeEmail(review.tutorEmail || tutorAddress),
+        review.time,
+        review.score,
+        review.note
+      ].join("|");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      review._reviewKey = reviewKey(review, index);
+      return true;
+    })
+    .sort((a, b) => Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0));
+}
+
+function updateLocalReview(tutor, key, updates) {
+  const ratings = readStore(storage.ratings, {});
+  const tutorRatings = ratings[tutor.name] || [];
+  ratings[tutor.name] = tutorRatings.map((review, index) => (
+    review.id === key || reviewKey(review, index) === key ? { ...review, ...updates } : review
+  ));
+  writeStore(storage.ratings, ratings);
+}
+
+function deleteLocalReview(tutor, key) {
+  const ratings = readStore(storage.ratings, {});
+  const tutorRatings = ratings[tutor.name] || [];
+  ratings[tutor.name] = tutorRatings.filter((review, index) => review.id !== key && reviewKey(review, index) !== key);
+  writeStore(storage.ratings, ratings);
 }
 
 function renderPublicProfile() {
@@ -2715,13 +2800,97 @@ function renderReviewsPage() {
   const reviews = getReviewsFor(selectedTutor);
   reviewsTitle.textContent = `${selectedTutor.name} reviews`;
   reviewsSummary.textContent = `${getTutorRating(selectedTutor).toFixed(2)} average from ${reviews.length} review${reviews.length === 1 ? "" : "s"}.`;
-  reviewList.innerHTML = reviews.length ? reviews.map((review) => `
-    <article class="review-card">
-      <strong>${"★".repeat(review.score)}${"☆".repeat(5 - review.score)}</strong>
-      ${review.note ? `<p>${escapeHtml(review.note)}</p>` : ""}
-      <span>${escapeHtml(review.by)} · ${escapeHtml(review.time)}</span>
-    </article>
-  `).join("") : `<p class="empty-copy">No reviews yet.</p>`;
+  reviewList.innerHTML = reviews.length ? reviews.map((review, index) => {
+    const key = review._reviewKey || reviewKey(review, index);
+    const score = Math.max(1, Math.min(5, Number(review.score || 0)));
+    const isOwnReview = reviewBelongsToCurrentAccount(review);
+    const isEditing = editingReviewKey === key && isOwnReview;
+    return `
+      <article class="review-card" data-review-key="${escapeHtml(key)}">
+        ${isEditing ? `
+          <label class="field review-edit-field">
+            <span>Rating</span>
+            <select data-review-edit-score>
+              ${[5, 4, 3, 2, 1].map((value) => `<option value="${value}" ${value === score ? "selected" : ""}>${value} / 5</option>`).join("")}
+            </select>
+          </label>
+          <label class="field review-edit-field">
+            <span>Review</span>
+            <input data-review-edit-note type="text" value="${escapeHtml(review.note || "")}" placeholder="What was helpful?" />
+          </label>
+          <div class="review-actions">
+            <button class="primary-btn compact-btn" type="button" data-review-save="${escapeHtml(key)}">Save</button>
+            <button class="secondary-btn compact-btn" type="button" data-review-cancel>Cancel</button>
+          </div>
+        ` : `
+          <div class="review-card-top">
+            <strong>${"★".repeat(score)}${"☆".repeat(5 - score)}</strong>
+            ${isOwnReview ? `<div class="review-actions">
+              <button class="secondary-btn compact-btn" type="button" data-review-edit="${escapeHtml(key)}">Edit</button>
+              <button class="secondary-btn compact-btn danger-btn" type="button" data-review-delete="${escapeHtml(key)}">Delete</button>
+            </div>` : ""}
+          </div>
+          ${review.note ? `<p>${escapeHtml(review.note)}</p>` : ""}
+          <span>${escapeHtml(review.by)} · ${escapeHtml(review.time || "")}</span>
+        `}
+      </article>
+    `;
+  }).join("") : `<p class="empty-copy">No reviews yet.</p>`;
+
+  reviewList.querySelectorAll("[data-review-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      editingReviewKey = button.dataset.reviewEdit;
+      renderReviewsPage();
+    });
+  });
+
+  reviewList.querySelectorAll("[data-review-cancel]").forEach((button) => {
+    button.addEventListener("click", () => {
+      editingReviewKey = "";
+      renderReviewsPage();
+    });
+  });
+
+  reviewList.querySelectorAll("[data-review-save]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const key = button.dataset.reviewSave;
+      const review = getReviewsFor(selectedTutor).find((item) => (item._reviewKey || reviewKey(item)) === key);
+      if (!reviewBelongsToCurrentAccount(review)) return;
+      const card = button.closest(".review-card");
+      const updates = {
+        score: Number(card.querySelector("[data-review-edit-score]").value),
+        note: card.querySelector("[data-review-edit-note]").value.trim(),
+        updated: nowLabel()
+      };
+      updateLocalReview(selectedTutor, key, updates);
+      cloudReviews = cloudReviews.map((item) => item.id === review.id ? { ...item, ...updates } : item);
+      if (review.id) await updateReviewInCloud(review.id, updates).catch(() => {});
+      editingReviewKey = "";
+      signupStatus.textContent = "Review saved.";
+      signupStatus.classList.add("success");
+      renderReviewsPage();
+      renderPublicProfile();
+      renderTutors();
+    });
+  });
+
+  reviewList.querySelectorAll("[data-review-delete]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const key = button.dataset.reviewDelete;
+      const review = getReviewsFor(selectedTutor).find((item) => (item._reviewKey || reviewKey(item)) === key);
+      if (!reviewBelongsToCurrentAccount(review)) return;
+      if (!window.confirm("Delete your review? This only removes your own review.")) return;
+      deleteLocalReview(selectedTutor, key);
+      cloudReviews = cloudReviews.filter((item) => item.id !== review.id);
+      if (review.id) await deleteReviewFromCloud(review.id).catch(() => {});
+      editingReviewKey = "";
+      signupStatus.textContent = "Review deleted.";
+      signupStatus.classList.add("success");
+      renderReviewsPage();
+      renderPublicProfile();
+      renderTutors();
+    });
+  });
 }
 
 function getBookings() {
@@ -4119,21 +4288,25 @@ reviewPageForm.addEventListener("submit", (event) => {
   const ratings = readStore(storage.ratings, {});
   const tutorRatings = ratings[selectedTutor.name] || [];
   const review = {
+    id: createId("review"),
     score: Number(reviewScore.value),
     note: reviewText.value.trim(),
     by: currentAccount.name,
     byEmail: currentAccount.email,
     tutor: selectedTutor.name,
     tutorEmail: tutorEmail(selectedTutor),
-    time: nowLabel()
+    time: nowLabel(),
+    createdAtMs: Date.now()
   };
   tutorRatings.push(review);
   ratings[selectedTutor.name] = tutorRatings;
   writeStore(storage.ratings, ratings);
   if (isCloudReady()) {
-    db.collection("reviews").add({
-      ...review,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    saveReviewToCloud(review).then(() => {
+      cloudReviews = [...cloudReviews.filter((item) => item.id !== review.id), review];
+      renderReviewsPage();
+      renderPublicProfile();
+      renderTutors();
     }).catch(() => {});
   }
   reviewText.value = "";
