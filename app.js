@@ -298,6 +298,88 @@ const subjectById = new Map(SUBJECTS.map((subject) => [subject.id, subject]));
 const gradeById = new Map(GRADES.map((grade) => [grade.id, grade]));
 const admissionsById = new Map(ADMISSIONS_TESTS.map((test) => [test.id, test]));
 const admissionModuleById = new Map(ADMISSIONS_TESTS.flatMap((test) => test.modules.map((module) => [module.id, { ...module, parentId: test.id }])));
+const SEO_LANDING_PAGES = {
+  "/gcse-maths-tutor": {
+    subjectId: "mathematics",
+    level: "GCSE",
+    title: "GCSE Maths Tutor Online | tutrSTEM",
+    h1: "GCSE Maths tutors online",
+    description: "Find GCSE Maths tutors online with tutrSTEM. Browse specialist tutor profiles, message tutors and request lessons.",
+    intro: "Find GCSE Maths tutors who can support number, algebra, geometry, statistics, exam technique and confidence before mocks or final exams."
+  },
+  "/gcse-physics-tutor": {
+    subjectId: "physics",
+    level: "GCSE",
+    title: "GCSE Physics Tutor Online | tutrSTEM",
+    h1: "GCSE Physics tutors online",
+    description: "Find GCSE Physics tutors online for mechanics, electricity, waves, required practicals and exam technique.",
+    intro: "Browse GCSE Physics tutors who can help with topic gaps, calculations, required practical questions and structured revision."
+  },
+  "/gcse-biology-tutor": {
+    subjectId: "biology",
+    level: "GCSE",
+    title: "GCSE Biology Tutor Online | tutrSTEM",
+    h1: "GCSE Biology tutors online",
+    description: "Find GCSE Biology tutors online for cell biology, genetics, ecology, required practicals and exam revision.",
+    intro: "Find GCSE Biology tutors for content review, exam wording, practical skills, recall systems and confidence building."
+  },
+  "/a-level-maths-tutor-online": {
+    subjectId: "mathematics",
+    level: "A-Level",
+    title: "A-Level Maths Tutor Online | tutrSTEM",
+    h1: "A-Level Maths tutors online",
+    description: "Find A-Level Maths tutors online for pure maths, mechanics, statistics and exam preparation.",
+    intro: "Browse A-Level Maths tutors for pure maths, mechanics, statistics, problem-solving and exam strategy."
+  },
+  "/a-level-physics-tutor": {
+    subjectId: "physics",
+    level: "A-Level",
+    title: "A-Level Physics Tutor Online | tutrSTEM",
+    h1: "A-Level Physics tutors online",
+    description: "Find A-Level Physics tutors online for mechanics, electricity, waves, fields, practical skills and exam technique.",
+    intro: "Find A-Level Physics tutors who can support calculations, practical skills, conceptual understanding and timed exam answers."
+  },
+  "/a-level-chemistry-tutor": {
+    subjectId: "chemistry",
+    level: "A-Level",
+    title: "A-Level Chemistry Tutor Online | tutrSTEM",
+    h1: "A-Level Chemistry tutors online",
+    description: "Find A-Level Chemistry tutors online for organic, physical and inorganic chemistry and exam preparation.",
+    intro: "Browse A-Level Chemistry tutors for organic mechanisms, calculations, practical papers and high-mark written answers."
+  },
+  "/a-level-biology-tutor": {
+    subjectId: "biology",
+    level: "A-Level",
+    title: "A-Level Biology Tutor Online | tutrSTEM",
+    h1: "A-Level Biology tutors online",
+    description: "Find A-Level Biology tutors online for topic mastery, synoptic essays, practical skills and exam technique.",
+    intro: "Find A-Level Biology tutors for complex content, exam mark schemes, synoptic links and calm weekly revision structure."
+  },
+  "/a-level-economics-tutor": {
+    subjectId: "economics",
+    level: "A-Level",
+    title: "A-Level Economics Tutor Online | tutrSTEM",
+    h1: "A-Level Economics tutors online",
+    description: "Find A-Level Economics tutors online for microeconomics, macroeconomics, diagrams, essays and evaluation.",
+    intro: "Browse A-Level Economics tutors for diagrams, chains of analysis, real-world examples, timed essays and evaluation."
+  },
+  "/a-level-psychology-tutor": {
+    subjectId: "psychology",
+    level: "A-Level",
+    title: "A-Level Psychology Tutor Online | tutrSTEM",
+    h1: "A-Level Psychology tutors online",
+    description: "Find A-Level Psychology tutors online for research methods, biopsychology, evaluation and essay technique.",
+    intro: "Find A-Level Psychology tutors for research methods, evaluation, essay structure and topic confidence."
+  },
+  "/computer-science-tutor": {
+    subjectId: "computer-science",
+    level: "GCSE and A-Level",
+    title: "Computer Science Tutor Online | tutrSTEM",
+    h1: "Computer Science tutors online",
+    description: "Find Computer Science tutors online for programming, algorithms, pseudocode and exam technique.",
+    intro: "Browse Computer Science tutors for programming, algorithms, pseudocode, logic, systems and exam preparation."
+  }
+};
 let selectedProfileSubjectIds = [];
 let selectedProfileModuleIds = [];
 let selectedProfileSubjectGrades = {};
@@ -473,6 +555,11 @@ const passwordResetConfirmForm = document.querySelector("#passwordResetConfirmFo
 const resetNewPassword = document.querySelector("#resetNewPassword");
 const resetConfirmPassword = document.querySelector("#resetConfirmPassword");
 const signupStatus = document.querySelector("#signupStatus");
+const subjectLandingTitle = document.querySelector("#subjectLandingTitle");
+const subjectLandingIntro = document.querySelector("#subjectLandingIntro");
+const subjectLandingEyebrow = document.querySelector("#subjectLandingEyebrow");
+const subjectLandingSpecialist = document.querySelector("#subjectLandingSpecialist");
+const subjectLandingCta = document.querySelector("#subjectLandingCta");
 const userMenu = document.querySelector("#userMenu");
 const userMenuButton = document.querySelector("#userMenuButton");
 const userDropdown = document.querySelector("#userDropdown");
@@ -574,6 +661,7 @@ let selectedTutor = tutors[0];
 let selectedThreadTutor = tutors[0];
 let selectedStudentAccount = null;
 let currentAccount = null;
+let activeLandingPage = null;
 let pendingConfirmation = "";
 let cloudTutorProfiles = [];
 let cloudBookings = [];
@@ -612,7 +700,7 @@ const storage = {
 };
 
 function showPage(pageName, options = {}) {
-  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy"];
+  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy", "subject-landing"];
   const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support", "moderation"];
   const fallback = currentAccount
     ? (isModerationUser() ? "moderation" : (currentAccount.role === "tutor" ? "profile" : "tutors"))
@@ -649,6 +737,7 @@ function showPage(pageName, options = {}) {
   if (nextPage === "messages") renderMessagesPage();
   if (nextPage === "bookings") renderBookingsPage();
   if (nextPage === "profile") renderPublicProfile();
+  if (nextPage === "subject-landing") renderSubjectLandingPage();
   if (nextPage === "student-profile") renderStudentProfile();
   if (nextPage === "reviews") renderReviewsPage();
   if (nextPage === "account-details") populateAccountDetails();
@@ -668,6 +757,8 @@ function showPage(pageName, options = {}) {
   routeLinks.forEach((link) => {
     link.classList.toggle("active", link.dataset.route === nextPage);
   });
+
+  updateSeoMeta(metaForPage(nextPage));
 
   if (!options.skipHistory && window.location.hash !== `#${nextPage}`) {
     const historyMethod = options.replaceHistory ? "replaceState" : "pushState";
@@ -754,10 +845,33 @@ function getFirebaseActionCode() {
   return "";
 }
 
+function getPrettyRouteFromPath() {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const landing = SEO_LANDING_PAGES[path];
+  if (landing) {
+    activeLandingPage = { ...landing, path };
+    return "subject-landing";
+  }
+  const tutorMatch = path.match(/^\/tutors\/([^/]+)$/);
+  if (tutorMatch) {
+    const tutor = tutorBySlug(decodeURIComponent(tutorMatch[1]));
+    if (tutor) {
+      selectedTutor = tutor;
+      return "profile";
+    }
+  }
+  return "";
+}
+
 function openInitialRoute(options = {}) {
   if (getFirebaseActionCode()) {
     showPage("accounts", options);
     showNewPasswordView();
+    return;
+  }
+  const prettyRoute = getPrettyRouteFromPath();
+  if (prettyRoute) {
+    showPage(prettyRoute, { ...options, skipHistory: true });
     return;
   }
   showPage(getRouteFromHash() || "home", options);
@@ -2159,6 +2273,86 @@ function tutorId(tutor) {
   return tutor.email || tutor.name;
 }
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function tutorSlug(tutor) {
+  return slugify(tutor.name || tutor.email || "tutor");
+}
+
+function tutorBySlug(slug) {
+  return getAllTutors().find((tutor) => tutorSlug(tutor) === slug);
+}
+
+function setMetaTag(selector, attrName, attrValue, content) {
+  let tag = document.head.querySelector(selector);
+  if (!tag) {
+    tag = document.createElement("meta");
+    const [name, value] = attrName;
+    tag.setAttribute(name, value);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("content", content);
+}
+
+function setCanonical(url) {
+  let link = document.head.querySelector("link[rel='canonical']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "canonical";
+    document.head.appendChild(link);
+  }
+  link.href = url;
+}
+
+function updateSeoMeta({ title, description, url = "https://tutrstem.co.uk/", image = "https://tutrstem.co.uk/assets/hero-tutoring.png" }) {
+  document.title = title;
+  setMetaTag("meta[name='description']", ["name", "description"], "description", description);
+  setMetaTag("meta[property='og:title']", ["property", "og:title"], "property", title);
+  setMetaTag("meta[property='og:description']", ["property", "og:description"], "property", description);
+  setMetaTag("meta[property='og:url']", ["property", "og:url"], "property", url);
+  setMetaTag("meta[property='og:image']", ["property", "og:image"], "property", image);
+  setCanonical(url);
+}
+
+function metaForPage(pageName) {
+  if (pageName === "subject-landing" && activeLandingPage) {
+    return {
+      title: activeLandingPage.title,
+      description: activeLandingPage.description,
+      url: `https://tutrstem.co.uk${activeLandingPage.path}`
+    };
+  }
+  if (pageName === "profile" && selectedTutor?.name) {
+    const subject = tutorSubjectLabel(selectedTutor);
+    const level = tutorLevelLabel(selectedTutor);
+    const title = `${selectedTutor.name} | ${subject || "Tutor"} | tutrSTEM`;
+    const description = `${selectedTutor.name} teaches ${[level, subject].filter(Boolean).join(" ")} with tutrSTEM. View subjects, profile details and reviews.`;
+    return {
+      title: title.slice(0, 70),
+      description: description.slice(0, 155),
+      url: `https://tutrstem.co.uk/tutors/${tutorSlug(selectedTutor)}`
+    };
+  }
+  const defaults = {
+    home: ["tutrSTEM | Online GCSE & A-Level STEM Tutors", "Find trusted online GCSE and A-Level STEM, Economics and Psychology tutors. Browse profiles, message tutors and book lessons."],
+    tutors: ["Find Online STEM Tutors | tutrSTEM", "Search tutrSTEM tutors by subject, level, grade, university or admissions test support."],
+    about: ["About tutrSTEM | STEM, Economics & Psychology Tutors", "Learn about tutrSTEM specialist GCSE, A-Level and admissions tutoring."],
+    how: ["How tutrSTEM Works | Online Tutor Booking", "See how students and parents find tutors, message privately and book lessons on tutrSTEM."],
+    "pricing-faq": ["Pricing & FAQ | tutrSTEM", "Read tutrSTEM pricing and frequently asked questions for students, parents and tutors."],
+    "tutor-requirements": ["Tutor Requirements | tutrSTEM", "Learn what tutors need to join tutrSTEM and how tutor approval works."],
+    terms: ["Terms of Service | tutrSTEM", "Read the tutrSTEM terms of service."],
+    privacy: ["Privacy Policy | tutrSTEM", "Read how tutrSTEM handles student, parent and tutor data."]
+  };
+  const [title, description] = defaults[pageName] || defaults.home;
+  return { title, description, url: `https://tutrstem.co.uk/${pageName === "home" ? "" : `#${pageName}`}` };
+}
+
 function gradeRank(grade) {
   const gradeId = gradeIdFromValue(grade);
   const order = gradeSortOrder(gradeId);
@@ -2245,6 +2439,8 @@ function renderTutors() {
       selectedTutor = visibleTutors[Number(button.dataset.profile)];
       renderPublicProfile();
       showPage("profile");
+      history.replaceState({ page: "profile" }, "", `/tutors/${tutorSlug(selectedTutor)}`);
+      updateSeoMeta(metaForPage("profile"));
     });
   });
 
@@ -2261,6 +2457,24 @@ function renderTutors() {
       showPage("messages");
     });
   });
+}
+
+function renderSubjectLandingPage() {
+  const fallbackLanding = {
+    path: "/",
+    subjectId: "mathematics",
+    level: "GCSE and A-Level",
+    title: "Online STEM Tutors | tutrSTEM",
+    h1: "Online GCSE and A-Level tutors",
+    description: "Find online STEM, Economics and Psychology tutors with tutrSTEM.",
+    intro: "Find specialist online tutors for GCSE and A-Level subjects, admissions tests and weekly exam support."
+  };
+  const landing = activeLandingPage || fallbackLanding;
+  const subject = subjectById.get(landing.subjectId);
+  subjectLandingEyebrow.textContent = `${landing.level} tutoring`;
+  subjectLandingTitle.textContent = landing.h1;
+  subjectLandingIntro.textContent = landing.intro;
+  subjectLandingSpecialist.textContent = `${subject?.canonicalName || "Subject"} tutors can support exam content, technique, revision planning, confidence and structured weekly lessons.`;
 }
 
 function getMessages() {
@@ -4064,6 +4278,11 @@ window.addEventListener("hashchange", () => {
 });
 
 window.addEventListener("popstate", () => {
+  const prettyRoute = getPrettyRouteFromPath();
+  if (prettyRoute) {
+    showPage(prettyRoute, { keepScroll: true, skipHistory: true });
+    return;
+  }
   showPage(getRouteFromHash(), { keepScroll: true, skipHistory: true });
 });
 
@@ -4074,6 +4293,14 @@ window.addEventListener("popstate", () => {
 
 [moderationStatusFilter, moderationSeverityFilter].filter(Boolean).forEach((control) => {
   control.addEventListener("change", renderModerationPage);
+});
+
+subjectLandingCta?.addEventListener("click", () => {
+  if (activeLandingPage?.subjectId) {
+    subjectFilter.value = activeLandingPage.subjectId;
+  }
+  renderTutors();
+  showPage("tutors");
 });
 
 admissionsFilter?.addEventListener("change", () => {
