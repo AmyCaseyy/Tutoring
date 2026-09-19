@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tutrSTEM.</title>
-    <link rel="stylesheet" href="styles.css?v=20260918-owned-reviews" />
+    <link rel="stylesheet" href="styles.css?v=20260919-reset-polish" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -37,12 +37,12 @@
         <a href="#how" data-route="how" data-public-only>How it works</a>
         <a href="#about" data-route="about" data-public-only>About us</a>
         <a href="#" id="becomeTutorLink" data-public-only>Become a tutor</a>
-        <a href="#profile" data-route="profile" data-tutor-nav>Profile</a>
-        <a href="#messages" data-route="messages" data-auth-only>Messages <span class="message-badge" id="messageBadge" hidden>0</span></a>
-        <a href="#bookings" data-route="bookings" data-auth-only>Bookings <span class="message-badge" id="bookingBadge" hidden>0</span></a>
+        <a href="#profile" data-route="profile" data-tutor-nav hidden>Profile</a>
+        <a href="#messages" data-route="messages" data-auth-only hidden>Messages <span class="message-badge" id="messageBadge" hidden>0</span></a>
+        <a href="#bookings" data-route="bookings" data-auth-only hidden>Bookings <span class="message-badge" id="bookingBadge" hidden>0</span></a>
       </nav>
       <div class="top-actions">
-        <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages" data-auth-only>
+        <button class="icon-btn" id="topMessagesButton" type="button" aria-label="Open messages" title="Messages" data-auth-only hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
           <span class="message-badge icon-message-badge" id="topMessageBadge" hidden>0</span>
         </button>
@@ -272,7 +272,40 @@
                 <span>Password</span>
                 <input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password" required />
               </label>
+              <button class="text-link forgot-password-link" type="button" id="forgotPasswordLink">Forgot password?</button>
               <button class="primary-btn wide" type="submit">Log in</button>
+            </form>
+          </div>
+
+          <div class="account-reset-view" id="accountResetView" hidden>
+            <form class="auth-panel" id="passwordResetRequestForm">
+              <p class="eyebrow">Password reset</p>
+              <h3>Reset your password</h3>
+              <p class="form-note">Enter your account email and we'll send a secure reset link if it is registered.</p>
+              <label class="field">
+                <span>Email address</span>
+                <input id="resetEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+              </label>
+              <button class="primary-btn wide" type="submit">Send reset link</button>
+              <button class="text-link account-switch" type="button" id="backToLoginFromReset">Back to log in</button>
+            </form>
+          </div>
+
+          <div class="account-new-password-view" id="accountNewPasswordView" hidden>
+            <form class="auth-panel" id="passwordResetConfirmForm">
+              <p class="eyebrow">Choose password</p>
+              <h3>Create a new password</h3>
+              <p class="form-note">Enter a new password for your tutrSTEM account.</p>
+              <label class="field">
+                <span>New password</span>
+                <input id="resetNewPassword" type="password" placeholder="Create password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <label class="field">
+                <span>Retype new password</span>
+                <input id="resetConfirmPassword" type="password" placeholder="Retype password" autocomplete="new-password" minlength="6" required />
+              </label>
+              <button class="primary-btn wide" type="submit">Save new password</button>
+              <button class="text-link account-switch" type="button" id="requestNewResetLink">Request a new link</button>
             </form>
           </div>
 
@@ -1009,6 +1042,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260918-owned-reviews"></script>
+    <script src="app.js?v=20260919-reset-polish"></script>
   </body>
 </html>

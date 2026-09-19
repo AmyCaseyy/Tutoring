@@ -266,9 +266,9 @@ button {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   min-height: 94px;
   padding: 12px clamp(18px, 5vw, 72px);
@@ -312,6 +312,7 @@ button {
 .nav-links {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 26px;
   color: var(--muted);
   font-size: 0.84rem;
@@ -331,6 +332,10 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.top-actions {
+  justify-self: end;
 }
 
 .user-menu {
@@ -2704,6 +2709,7 @@ body.site-ready .hero-media {
 
 @media (max-width: 760px) {
   .topbar {
+    grid-template-columns: 1fr auto;
     min-height: auto;
     align-items: start;
   }

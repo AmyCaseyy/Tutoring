@@ -446,8 +446,13 @@ const signupForm = document.querySelector("#signupForm");
 const loginPanel = document.querySelector("#loginPanel");
 const accountLoginView = document.querySelector("#accountLoginView");
 const accountSignupView = document.querySelector("#accountSignupView");
+const accountResetView = document.querySelector("#accountResetView");
+const accountNewPasswordView = document.querySelector("#accountNewPasswordView");
 const showSignupFlow = document.querySelector("#showSignupFlow");
 const showLoginFlow = document.querySelector("#showLoginFlow");
+const forgotPasswordLink = document.querySelector("#forgotPasswordLink");
+const backToLoginFromReset = document.querySelector("#backToLoginFromReset");
+const requestNewResetLink = document.querySelector("#requestNewResetLink");
 const signupSubject = document.querySelector("#signupSubject");
 const signupProgressBar = document.querySelector("#signupProgressBar");
 const signupContext = document.querySelector("#signupContext");
@@ -462,6 +467,11 @@ const signupPassword = document.querySelector("#signupPassword");
 const signupConfirmPassword = document.querySelector("#signupConfirmPassword");
 const loginEmail = document.querySelector("#loginEmail");
 const loginPassword = document.querySelector("#loginPassword");
+const passwordResetRequestForm = document.querySelector("#passwordResetRequestForm");
+const resetEmail = document.querySelector("#resetEmail");
+const passwordResetConfirmForm = document.querySelector("#passwordResetConfirmForm");
+const resetNewPassword = document.querySelector("#resetNewPassword");
+const resetConfirmPassword = document.querySelector("#resetConfirmPassword");
 const signupStatus = document.querySelector("#signupStatus");
 const userMenu = document.querySelector("#userMenu");
 const userMenuButton = document.querySelector("#userMenuButton");
@@ -705,6 +715,8 @@ function showConfirmation(message) {
 function showLoginAccountView() {
   accountLoginView.hidden = false;
   if (accountSignupView) accountSignupView.hidden = true;
+  if (accountResetView) accountResetView.hidden = true;
+  if (accountNewPasswordView) accountNewPasswordView.hidden = true;
   signupForm.hidden = false;
   loginPanel.hidden = true;
   document.querySelector("#accountTitle").textContent = "Welcome back";
@@ -713,8 +725,42 @@ function showLoginAccountView() {
 function showSignupAccountView() {
   accountLoginView.hidden = true;
   if (accountSignupView) accountSignupView.hidden = false;
+  if (accountResetView) accountResetView.hidden = true;
+  if (accountNewPasswordView) accountNewPasswordView.hidden = true;
   signupForm.hidden = false;
   updateSignupMode();
+}
+
+function showPasswordResetRequestView(prefillEmail = "") {
+  accountLoginView.hidden = true;
+  if (accountSignupView) accountSignupView.hidden = true;
+  if (accountNewPasswordView) accountNewPasswordView.hidden = true;
+  if (accountResetView) accountResetView.hidden = false;
+  if (resetEmail && prefillEmail) resetEmail.value = prefillEmail;
+  window.setTimeout(() => resetEmail?.focus(), 0);
+}
+
+function showNewPasswordView() {
+  accountLoginView.hidden = true;
+  if (accountSignupView) accountSignupView.hidden = true;
+  if (accountResetView) accountResetView.hidden = true;
+  if (accountNewPasswordView) accountNewPasswordView.hidden = false;
+  window.setTimeout(() => resetNewPassword?.focus(), 0);
+}
+
+function getFirebaseActionCode() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("mode") === "resetPassword" && params.get("oobCode")) return params.get("oobCode");
+  return "";
+}
+
+function openInitialRoute(options = {}) {
+  if (getFirebaseActionCode()) {
+    showPage("accounts", options);
+    showNewPasswordView();
+    return;
+  }
+  showPage(getRouteFromHash() || "home", options);
 }
 
 function renderSignupStep(stepName = signupWizard.steps[signupWizard.stepIndex]) {
@@ -1869,6 +1915,16 @@ function nowLabel() {
   }).format(new Date());
 }
 
+function dateLabel(date = new Date()) {
+  const parsed = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit"
+  }).format(parsed);
+}
+
 function getTutorRating(tutor) {
   const ratings = readStore(storage.ratings, {});
   const tutorRatings = ratings[tutor.name] || [];
@@ -2631,7 +2687,8 @@ function saveRating() {
     byEmail: currentAccount.email,
     tutor: selectedTutor.name,
     tutorEmail: tutorEmail(selectedTutor),
-    time: nowLabel()
+    date: dateLabel(),
+    time: dateLabel()
   });
   ratings[selectedTutor.name] = tutorRatings;
   writeStore(storage.ratings, ratings);
@@ -2648,6 +2705,14 @@ function reviewKey(review, index = 0) {
 function reviewBelongsToCurrentAccount(review) {
   if (!currentAccount?.email || !review?.byEmail) return false;
   return normalizeEmail(review.byEmail) === normalizeEmail(currentAccount.email);
+}
+
+function reviewDateLabel(review) {
+  if (review?.date || review?.createdDate) return review.date || review.createdDate;
+  if (typeof review?.createdAt?.toDate === "function") return dateLabel(review.createdAt.toDate());
+  if (typeof review?.createdAt?.seconds === "number") return dateLabel(review.createdAt.seconds * 1000);
+  if (review?.createdAtMs) return dateLabel(Number(review.createdAtMs));
+  return review?.time || "";
 }
 
 function getReviewsFor(tutor) {
@@ -2831,7 +2896,7 @@ function renderReviewsPage() {
             </div>` : ""}
           </div>
           ${review.note ? `<p>${escapeHtml(review.note)}</p>` : ""}
-          <span>${escapeHtml(review.by)} · ${escapeHtml(review.time || "")}</span>
+          <span>${escapeHtml(review.by)} · ${escapeHtml(reviewDateLabel(review))}</span>
         `}
       </article>
     `;
@@ -4295,7 +4360,8 @@ reviewPageForm.addEventListener("submit", (event) => {
     byEmail: currentAccount.email,
     tutor: selectedTutor.name,
     tutorEmail: tutorEmail(selectedTutor),
-    time: nowLabel(),
+    date: dateLabel(),
+    time: dateLabel(),
     createdAtMs: Date.now()
   };
   tutorRatings.push(review);
@@ -4331,6 +4397,9 @@ signupDob?.addEventListener("input", updateSignupMode);
 
 showSignupFlow?.addEventListener("click", showSignupAccountView);
 showLoginFlow?.addEventListener("click", showLoginAccountView);
+forgotPasswordLink?.addEventListener("click", () => showPasswordResetRequestView(loginEmail.value));
+backToLoginFromReset?.addEventListener("click", showLoginAccountView);
+requestNewResetLink?.addEventListener("click", () => showPasswordResetRequestView());
 document.querySelectorAll("[data-login-role]").forEach((button) => {
   button.addEventListener("click", () => {
     const role = button.dataset.loginRole;
@@ -4550,6 +4619,61 @@ loginPanel.addEventListener("submit", async (event) => {
   setAccount(account, { confirm: true, redirect: true });
 });
 
+passwordResetRequestForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const email = normalizeEmail(resetEmail.value);
+  const confirmationText = "If that email is registered, we've sent a reset link.";
+  if (!isCloudReady()) {
+    signupStatus.textContent = "Password reset uses Firebase Auth. Check Firebase is connected and try again.";
+    signupStatus.classList.remove("success");
+    return;
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(email, {
+      url: `${window.location.origin}${window.location.pathname}#accounts`,
+      handleCodeInApp: false
+    });
+  } catch {
+    // Keep the same user-facing response so the form never reveals whether an account exists.
+  }
+  signupStatus.textContent = confirmationText;
+  signupStatus.classList.add("success");
+  resetEmail.value = "";
+  showLoginAccountView();
+});
+
+passwordResetConfirmForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const code = getFirebaseActionCode();
+  if (!isCloudReady() || !code) {
+    signupStatus.textContent = "This reset link is invalid or has expired. Request a new one.";
+    signupStatus.classList.remove("success");
+    showPasswordResetRequestView();
+    return;
+  }
+  if (resetNewPassword.value !== resetConfirmPassword.value) {
+    signupStatus.textContent = "Passwords do not match. Retype the same password.";
+    signupStatus.classList.remove("success");
+    resetConfirmPassword.focus();
+    return;
+  }
+
+  try {
+    await auth.confirmPasswordReset(code, resetNewPassword.value);
+    resetNewPassword.value = "";
+    resetConfirmPassword.value = "";
+    signupStatus.textContent = "Password reset. You can now log in with your new password.";
+    signupStatus.classList.add("success");
+    window.history.replaceState({}, "", `${window.location.pathname}#accounts`);
+    showLoginAccountView();
+  } catch {
+    signupStatus.textContent = "This reset link is invalid or has expired. Request a new one.";
+    signupStatus.classList.remove("success");
+    showPasswordResetRequestView();
+  }
+});
+
 accountDetailsForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!currentAccount) {
@@ -4758,7 +4882,7 @@ async function initializeSite() {
       setRole(currentAccount?.role || signupRole.value);
       updateAccess();
       renderTutors();
-      showPage(getRouteFromHash() || "home", { instant: true, replaceHistory: true });
+      openInitialRoute({ instant: true, replaceHistory: true });
       checkLessonReminders();
     });
   } else {
@@ -4768,7 +4892,7 @@ async function initializeSite() {
     setRole(currentAccount?.role || signupRole.value);
     updateAccess();
     renderTutors();
-    showPage(getRouteFromHash() || "home", { instant: true, replaceHistory: true });
+    openInitialRoute({ instant: true, replaceHistory: true });
     checkLessonReminders();
   }
   window.setInterval(checkLessonReminders, 60000);
