@@ -656,6 +656,14 @@ const applicationVerificationNotes = document.querySelector("#applicationVerific
 const applicationAccurate = document.querySelector("#applicationAccurate");
 const applicationSafeguarding = document.querySelector("#applicationSafeguarding");
 const tutorApplicationStatus = document.querySelector("#tutorApplicationStatus");
+const tutorApplicationSteps = document.querySelector("#tutorApplicationSteps");
+const tutorApplicationTitle = document.querySelector("#tutorApplicationTitle");
+const tutorApplicationLede = document.querySelector("#tutorApplicationLede");
+const tutorApplicationProgress = document.querySelector("#tutorApplicationProgress");
+const tutorApplicationBack = document.querySelector("#tutorApplicationBack");
+const tutorApplicationNext = document.querySelector("#tutorApplicationNext");
+const tutorApplicationReview = document.querySelector("#tutorApplicationReview");
+const tutorApplicationNav = document.querySelector("#tutorApplicationNav");
 const bookingPageForm = document.querySelector("#bookingPageForm");
 const bookingTutor = document.querySelector("#bookingTutor");
 const bookingTutorSearch = document.querySelector("#bookingTutorSearch");
@@ -703,6 +711,9 @@ let adminApplicationStatusFilter = "pending";
 let editingReviewKey = "";
 let pendingProfilePhoto = "";
 let activeReschedulePicker = null;
+let tutorApplicationStep = 0;
+let tutorApplicationMaxStep = 0;
+const tutorApplicationSelfieCode = `TS-${Math.floor(1000 + Math.random() * 9000)}`;
 const signupWizard = {
   stepIndex: 0,
   steps: ["subject", "level", "role", "name", "dob", "email", "password"],
@@ -3004,29 +3015,158 @@ function splitNameForApplication(name = "") {
   };
 }
 
-function parseApplicationSubjects(value = "", level = "") {
-  return String(value || "")
-    .split(/[,;\n]+/)
-    .map((subject) => subject.trim())
-    .filter(Boolean)
-    .map((subject) => ({ subject, level: level || "" }));
-}
-
 function setApplicationStatus(message, success = false) {
   if (!tutorApplicationStatus) return;
   tutorApplicationStatus.textContent = message;
   tutorApplicationStatus.classList.toggle("success", success);
 }
 
+function applicationSteps() {
+  return [...document.querySelectorAll(".application-step")];
+}
+
+function applicationValue(name) {
+  const field = tutorApplicationForm?.elements[name];
+  if (!field) return "";
+  if (field instanceof RadioNodeList) {
+    const checked = [...field].find((item) => item.checked);
+    return checked?.value || "";
+  }
+  if (field.type === "checkbox") return field.checked;
+  if (field.type === "file") return field.files?.[0]?.name || "";
+  return String(field.value || "").trim();
+}
+
+function applicationCheckedValues(name) {
+  if (!tutorApplicationForm) return [];
+  return [...tutorApplicationForm.querySelectorAll(`[name="${name}"]:checked`)].map((item) => item.value);
+}
+
+function selectedApplicationSubjects() {
+  return applicationCheckedValues("subjects").map((value) => {
+    const [subject, level] = value.split("|");
+    return { subject, level };
+  });
+}
+
+function filePathForApplication(folder, name) {
+  const fileName = applicationValue(name);
+  return fileName ? `applications/pending/${folder}/${fileName}` : "";
+}
+
+function isApplicationAdult() {
+  const value = applicationValue("dob");
+  if (!value) return false;
+  const date = new Date(value);
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  if (today < new Date(today.getFullYear(), date.getMonth(), date.getDate())) age -= 1;
+  return age >= 18;
+}
+
+function renderTutorApplicationStepper() {
+  const steps = applicationSteps();
+  if (!steps.length) return;
+  steps.forEach((step, index) => {
+    step.hidden = index !== tutorApplicationStep;
+  });
+  const active = steps[tutorApplicationStep];
+  if (tutorApplicationTitle) tutorApplicationTitle.textContent = active?.dataset.title || "Tutor application";
+  if (tutorApplicationLede) tutorApplicationLede.textContent = active?.dataset.lede || "";
+  if (tutorApplicationBack) tutorApplicationBack.hidden = tutorApplicationStep === 0 || tutorApplicationStep === 7;
+  if (tutorApplicationNext) tutorApplicationNext.textContent = tutorApplicationStep === 6 ? "Submit application" : "Continue";
+  if (tutorApplicationNav) tutorApplicationNav.hidden = tutorApplicationStep === 7;
+  if (tutorApplicationProgress) tutorApplicationProgress.textContent = `${Math.min(tutorApplicationMaxStep, 7)} of 7 sections complete`;
+  if (tutorApplicationSteps) {
+    tutorApplicationSteps.innerHTML = steps.slice(0, 7).map((step, index) => `
+      <li class="${index === tutorApplicationStep ? "current" : (index < tutorApplicationMaxStep ? "done" : "")}">
+        <button type="button" data-application-step="${index}" ${index > tutorApplicationMaxStep ? "disabled" : ""}>
+          <span>${index < tutorApplicationMaxStep ? "✓" : index + 1}</span>
+          ${escapeHtml(step.dataset.title || `Step ${index + 1}`)}
+        </button>
+      </li>
+    `).join("");
+  }
+  if (tutorApplicationStep === 6) buildTutorApplicationReview();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function validateTutorApplicationStep() {
+  const active = applicationSteps()[tutorApplicationStep];
+  if (!active || tutorApplicationStep === 7) return true;
+  let ok = true;
+  active.querySelectorAll(".field, .checkbox-line, article").forEach((item) => item.classList.remove("invalid"));
+  active.querySelectorAll("input, select, textarea").forEach((field) => {
+    if (field.type === "file") return;
+    if (field.type === "radio") return;
+    if (field.required && field.type === "checkbox" && !field.checked) {
+      field.closest(".checkbox-line, .field, article")?.classList.add("invalid");
+      ok = false;
+      return;
+    }
+    if (field.required && !String(field.value || "").trim()) {
+      field.closest(".field, article")?.classList.add("invalid");
+      ok = false;
+      return;
+    }
+    if (field.value && !field.checkValidity()) {
+      field.closest(".field, article")?.classList.add("invalid");
+      ok = false;
+    }
+  });
+  active.querySelectorAll("input[type='radio'][required]").forEach((field) => {
+    if (!applicationValue(field.name)) {
+      field.closest("article")?.classList.add("invalid");
+      ok = false;
+    }
+  });
+  if (tutorApplicationStep === 0 && !isApplicationAdult()) {
+    document.querySelector("#applicationDob")?.closest(".field")?.classList.add("invalid");
+    setApplicationStatus("Tutors must be 18 or over.");
+    ok = false;
+  }
+  if (tutorApplicationStep === 1 && !selectedApplicationSubjects().length) {
+    document.querySelector(".application-subject-table")?.classList.add("invalid");
+    setApplicationStatus("Choose at least one subject and level.");
+    ok = false;
+  }
+  if (tutorApplicationStep === 6) {
+    const expectedSignature = `${applicationValue("firstName")} ${applicationValue("lastName")}`.replace(/\s+/g, " ").trim().toLowerCase();
+    if (applicationValue("signature").replace(/\s+/g, " ").trim().toLowerCase() !== expectedSignature) {
+      document.querySelector("#applicationSignature")?.closest(".field")?.classList.add("invalid");
+      setApplicationStatus("Your signature must match your legal first and last name.");
+      ok = false;
+    }
+  }
+  if (!ok && !tutorApplicationStatus.textContent) setApplicationStatus("Some answers need fixing. They are marked on this section.");
+  if (ok) setApplicationStatus("");
+  return ok;
+}
+
+function goTutorApplicationStep(step) {
+  tutorApplicationStep = Math.max(0, Math.min(step, 7));
+  renderTutorApplicationStepper();
+}
+
 async function populateTutorApplicationForm() {
   if (!tutorApplicationForm) return;
   if (currentAccount) {
     const nameParts = splitNameForApplication(currentAccount.name);
-    applicationFirstName.value ||= nameParts.firstName;
-    applicationLastName.value ||= nameParts.lastName;
-    applicationEmailInput.value ||= currentAccount.email || "";
-    applicationDob.value ||= currentAccount.dob || "";
+    document.querySelector("#applicationFirstName").value ||= nameParts.firstName;
+    document.querySelector("#applicationLastName").value ||= nameParts.lastName;
+    document.querySelector("#applicationEmail").value ||= currentAccount.email || "";
+    document.querySelector("#applicationDob").value ||= currentAccount.dob || "";
   }
+  const selfieCode = document.querySelector("#applicationSelfieCode");
+  if (selfieCode) selfieCode.textContent = tutorApplicationSelfieCode;
+  const signDate = document.querySelector("#applicationSignDate");
+  if (signDate) signDate.value = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  if (!tutorApplicationSteps?.children.length) {
+    tutorApplicationStep = 0;
+    tutorApplicationMaxStep = Math.max(tutorApplicationMaxStep, 0);
+  }
+  renderTutorApplicationStepper();
 
   if (!isCloudReady()) {
     setApplicationStatus("Firebase needs to be connected before tutor applications can be submitted.");
@@ -3046,25 +3186,28 @@ async function populateTutorApplicationForm() {
     }
     const application = snap.data();
     const subjects = nestedValue(application, "teaching.subjects", []);
-    applicationFirstName.value = nestedValue(application, "personal.firstName", applicationFirstName.value);
-    applicationLastName.value = nestedValue(application, "personal.lastName", applicationLastName.value);
-    applicationEmailInput.value = nestedValue(application, "personal.email", applicationEmailInput.value);
-    applicationDob.value = nestedValue(application, "personal.dob", applicationDob.value);
-    applicationLocation.value = nestedValue(application, "personal.location", "");
-    applicationMainSubject.value = nestedValue(application, "teaching.mainSubject", "");
-    applicationSubjectsInput.value = Array.isArray(subjects)
-      ? subjects.map((item) => typeof item === "string" ? item : [item.subject, item.grade || item.grade_achieved].filter(Boolean).join(" ")).join(", ")
-      : "";
-    applicationLevel.value = nestedValue(application, "teaching.level", applicationLevel.value);
-    applicationHourlyRate.value = nestedValue(application, "teaching.hourlyRate", "");
-    applicationHeadline.value = nestedValue(application, "teaching.headline", "");
-    applicationBio.value = nestedValue(application, "teaching.bio", "");
-    applicationAvailability.value = nestedValue(application, "teaching.availabilityText", "");
-    applicationUniversity.value = nestedValue(application, "qualifications.university", "");
-    applicationCourse.value = nestedValue(application, "qualifications.course", "");
-    applicationGrades.value = nestedValue(application, "qualifications.gradesSummary", "");
-    applicationDbsStatus.value = nestedValue(application, "safeguarding.dbsStatus", applicationDbsStatus.value);
-    applicationVerificationNotes.value = nestedValue(application, "identity.notes", "");
+    document.querySelector("#applicationFirstName").value = nestedValue(application, "personal.firstName", applicationValue("firstName"));
+    document.querySelector("#applicationLastName").value = nestedValue(application, "personal.lastName", applicationValue("lastName"));
+    document.querySelector("#applicationEmail").value = nestedValue(application, "personal.email", applicationValue("email"));
+    document.querySelector("#applicationDob").value = nestedValue(application, "personal.dob", applicationValue("dob"));
+    document.querySelector("#applicationLocation").value = nestedValue(application, "personal.town", "");
+    document.querySelector("#applicationMainSubject").value = nestedValue(application, "teaching.mainSubject", "");
+    document.querySelector("#applicationHourlyRate").value = nestedValue(application, "teaching.hourlyRate", "");
+    document.querySelector("#applicationHeadline").value = nestedValue(application, "teaching.headline", "");
+    document.querySelector("#applicationBio").value = nestedValue(application, "teaching.bio", "");
+    document.querySelector("#applicationApproach").value = nestedValue(application, "teaching.approach", "");
+    document.querySelector("#applicationAvailability").value = nestedValue(application, "teaching.availabilityText", "");
+    document.querySelector("#applicationUniversity").value = nestedValue(application, "qualifications.university", "");
+    document.querySelector("#applicationCourse").value = nestedValue(application, "qualifications.course", "");
+    document.querySelector("#applicationGrades").value = nestedValue(application, "qualifications.gradesSummary", "");
+    document.querySelector("#applicationDbsStatus").value = nestedValue(application, "safeguarding.dbsStatus", "");
+    if (Array.isArray(subjects)) {
+      subjects.forEach((item) => {
+        const value = `${item.subject}|${item.level}`;
+        const checkbox = tutorApplicationForm.querySelector(`[name="subjects"][value="${CSS.escape(value)}"]`);
+        if (checkbox) checkbox.checked = true;
+      });
+    }
     const status = applicationStatus(application).replace(/_/g, " ");
     setApplicationStatus(`Your application is currently ${status}.`, applicationStatusGroup(application) !== "rejected");
   } catch {
@@ -3073,61 +3216,147 @@ async function populateTutorApplicationForm() {
 }
 
 function tutorApplicationPayload(status = "submitted") {
-  const subjects = parseApplicationSubjects(applicationSubjectsInput.value, applicationLevel.value);
+  const subjects = selectedApplicationSubjects();
   const now = firebase.firestore.FieldValue.serverTimestamp();
+  const dbsHave = applicationValue("dbsStatus") === "have";
   return {
     applicantUid: auth?.currentUser?.uid || "",
     status,
     updatedAt: now,
     submittedAt: now,
     personal: {
-      firstName: applicationFirstName.value.trim(),
-      lastName: applicationLastName.value.trim(),
-      email: normalizeEmail(applicationEmailInput.value),
-      dob: applicationDob.value,
-      location: applicationLocation.value.trim()
+      firstName: applicationValue("firstName"),
+      lastName: applicationValue("lastName"),
+      preferredName: applicationValue("preferredName") || null,
+      pronouns: applicationValue("pronouns") || null,
+      email: normalizeEmail(applicationValue("email")),
+      phone: applicationValue("phone"),
+      dob: applicationValue("dob"),
+      town: applicationValue("town"),
+      timezone: applicationValue("timezone"),
+      heardFrom: applicationValue("heardFrom") || null,
+      photoPath: filePathForApplication("photos", "photo")
     },
     teaching: {
-      mainSubject: applicationMainSubject.value.trim(),
+      mainSubject: applicationValue("mainSubject"),
       subjects,
-      level: applicationLevel.value,
-      hourlyRate: Number(applicationHourlyRate.value || 0),
-      headline: applicationHeadline.value.trim(),
-      bio: applicationBio.value.trim(),
-      availabilityText: applicationAvailability.value.trim()
+      examBoards: applicationValue("examBoards").split(",").map((item) => item.trim()).filter(Boolean),
+      format: "online",
+      onlineSetup: {
+        broadband: Boolean(applicationValue("setupInternet")),
+        webcamMic: Boolean(applicationValue("setupCamera")),
+        quietSpace: Boolean(applicationValue("setupQuiet"))
+      },
+      kit: applicationCheckedValues("kit"),
+      otherSubject: applicationValue("otherSubject") || null,
+      hoursPerWeek: applicationValue("maxHours"),
+      availabilityText: applicationValue("availability"),
+      hourlyRate: Number(applicationValue("rate") || 0),
+      platformFee: 0.5,
+      headline: applicationValue("headline"),
+      bio: applicationValue("bio"),
+      approach: applicationValue("approach"),
+      experience: applicationValue("experience"),
+      hoursTaught: Number(applicationValue("hoursTaught") || 0) || null
     },
     qualifications: {
-      university: applicationUniversity.value.trim(),
-      course: applicationCourse.value.trim(),
-      gradesSummary: applicationGrades.value.trim()
+      status: applicationValue("studyStatus"),
+      university: applicationValue("university"),
+      course: applicationValue("course"),
+      classification: applicationValue("degreeClass"),
+      gradYear: Number(applicationValue("gradYear") || 0) || null,
+      uniEmail: applicationValue("uniEmail") || null,
+      gradesSummary: applicationValue("grades"),
+      gcseMaths: applicationValue("gcseMaths"),
+      gcseEnglish: applicationValue("gcseEnglish"),
+      qts: applicationValue("qts") === "yes",
+      trn: applicationValue("qts") === "yes" ? applicationValue("trn") : null,
+      otherQuals: applicationValue("otherQuals") || null,
+      certificatePath: filePathForApplication("certificates", "certificate")
     },
     identity: {
-      notes: applicationVerificationNotes.value.trim()
+      idType: applicationValue("idType"),
+      idExpiry: applicationValue("idExpiry"),
+      idPath: filePathForApplication("id", "idFront"),
+      selfiePath: filePathForApplication("id", "selfie"),
+      selfieCode: tutorApplicationSelfieCode,
+      rightToWork: applicationValue("rightToWork"),
+      shareCode: applicationValue("shareCode") || null
     },
     safeguarding: {
-      dbsStatus: applicationDbsStatus.value,
-      accurate: applicationAccurate.checked,
-      agreedPlatformRules: applicationSafeguarding.checked
+      dbsStatus: applicationValue("dbsStatus"),
+      dbsCertificateNumber: dbsHave ? applicationValue("dbsNumber") : null,
+      dbsIssueDate: dbsHave ? applicationValue("dbsIssued") : null,
+      onUpdateService: Boolean(applicationValue("dbsUpdate")),
+      updateServiceConsent: Boolean(applicationValue("dbsConsent")),
+      barred: applicationValue("barred") === "yes",
+      hasDeclaration: applicationValue("declare") === "yes",
+      declarationDetail: applicationValue("declare") === "yes" ? applicationValue("declareDetail") : null,
+      agreedPolicy: Boolean(applicationValue("agreeSafeguarding")),
+      agreedOnPlatformContact: Boolean(applicationValue("agreeContact")),
+      agreedLessonRoom: Boolean(applicationValue("agreeLessonRoom"))
+    },
+    references: [1, 2].map((index) => ({
+      name: applicationValue(`ref${index}Name`),
+      relationship: applicationValue(`ref${index}Relationship`),
+      organisation: applicationValue(`ref${index}Org`),
+      knownFor: applicationValue(`ref${index}Years`),
+      email: normalizeEmail(applicationValue(`ref${index}Email`)),
+      phone: applicationValue(`ref${index}Phone`) || null,
+      status: "requested"
+    })),
+    checks: {
+      idVerified: false,
+      qualificationsVerified: false,
+      referencesComplete: false,
+      dbsVerified: false,
+      interviewDone: false
     },
     declarations: {
-      accurate: applicationAccurate.checked,
-      safeguarding: applicationSafeguarding.checked,
-      signedName: [applicationFirstName.value, applicationLastName.value].map((value) => value.trim()).filter(Boolean).join(" "),
+      accurate: Boolean(applicationValue("decAccurate")),
+      consentToChecks: Boolean(applicationValue("decChecks")),
+      terms: Boolean(applicationValue("decTerms")),
+      privacy: Boolean(applicationValue("decPrivacy")),
+      signedName: applicationValue("signature"),
       signedAt: new Date().toISOString()
     },
-    uploads: [],
+    uploads: [
+      { label: "Profile photo", path: filePathForApplication("photos", "photo") },
+      { label: "Certificate or transcript", path: filePathForApplication("certificates", "certificate") },
+      { label: "ID", path: filePathForApplication("id", "idFront") },
+      { label: "Selfie", path: filePathForApplication("id", "selfie") }
+    ].filter((item) => item.path),
     files: []
   };
 }
 
+function buildTutorApplicationReview() {
+  if (!tutorApplicationReview) return;
+  document.querySelector("#applicationSignDate").value = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const rows = [
+    ["Name", `${applicationValue("firstName")} ${applicationValue("lastName")}`],
+    ["Email", applicationValue("email")],
+    ["Subjects", selectedApplicationSubjects().map((item) => `${item.subject} ${item.level}`).join(", ")],
+    ["Main subject", applicationValue("mainSubject")],
+    ["Rate", applicationValue("rate") ? `£${applicationValue("rate")}/hr` : ""],
+    ["University", [applicationValue("course"), applicationValue("university")].filter(Boolean).join(", ")],
+    ["DBS", applicationValue("dbsStatus") || "Not answered"],
+    ["Referee 1", [applicationValue("ref1Name"), applicationValue("ref1Email")].filter(Boolean).join(" · ")],
+    ["Referee 2", [applicationValue("ref2Name"), applicationValue("ref2Email")].filter(Boolean).join(" · ")]
+  ];
+  tutorApplicationReview.innerHTML = `<dl>${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "Not supplied")}</dd></div>`).join("")}</dl>`;
+}
+
 async function submitTutorApplication(event) {
   event.preventDefault();
-  if (!isCloudReady()) {
-    setApplicationStatus("Firebase is not connected, so the application cannot be submitted yet.");
+  if (!validateTutorApplicationStep()) return;
+  if (tutorApplicationStep < 6) {
+    tutorApplicationMaxStep = Math.max(tutorApplicationMaxStep, tutorApplicationStep + 1);
+    goTutorApplicationStep(tutorApplicationStep + 1);
     return;
   }
-  if (!applicationAccurate.checked || !applicationSafeguarding.checked) {
-    setApplicationStatus("Please confirm the declaration before submitting.");
+  if (!isCloudReady()) {
+    setApplicationStatus("Firebase is not connected, so the application cannot be submitted yet.");
     return;
   }
 
@@ -3135,7 +3364,7 @@ async function submitTutorApplication(event) {
   try {
     submitButton.disabled = true;
     setApplicationStatus("Submitting your application...");
-    const payload = tutorApplicationPayload(applicationDbsStatus.value === "not_yet" ? "awaiting_dbs" : "submitted");
+    const payload = tutorApplicationPayload(applicationValue("dbsStatus") === "have" ? "submitted" : "awaiting_dbs");
     const applicationRef = auth?.currentUser
       ? db.collection("tutorApplications").doc(auth.currentUser.uid)
       : db.collection("tutorApplications").doc();
@@ -3151,6 +3380,8 @@ async function submitTutorApplication(event) {
     });
     setApplicationStatus("Application submitted. The tutrSTEM team can now review it in the admin panel.", true);
     showConfirmation("Tutor application submitted for review.");
+    tutorApplicationMaxStep = 7;
+    goTutorApplicationStep(7);
   } catch (error) {
     setApplicationStatus(error.code === "permission-denied"
       ? "Firebase blocked this application. Check the tutorApplications Firestore rules are deployed."
@@ -5643,6 +5874,17 @@ becomeTutorLink.addEventListener("click", (event) => {
 });
 
 tutorApplicationForm?.addEventListener("submit", submitTutorApplication);
+
+tutorApplicationBack?.addEventListener("click", () => {
+  goTutorApplicationStep(tutorApplicationStep - 1);
+});
+
+tutorApplicationSteps?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-application-step]");
+  if (!button) return;
+  const targetStep = Number(button.dataset.applicationStep);
+  if (targetStep <= tutorApplicationMaxStep) goTutorApplicationStep(targetStep);
+});
 
 lessonType.addEventListener("change", updateDueToday);
 

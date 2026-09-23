@@ -1450,6 +1450,95 @@ img.avatar {
   align-items: start;
 }
 
+.full-application-shell {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+
+.application-rail {
+  position: sticky;
+  top: 92px;
+  min-height: calc(100vh - 120px);
+  padding: 22px 12px;
+  background: #141413;
+  color: #f5efe3;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.application-rail strong {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.4rem;
+}
+
+.application-rail span {
+  color: rgba(245, 239, 227, 0.64);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.application-rail ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.application-rail button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 10px;
+  background: transparent;
+  color: rgba(245, 239, 227, 0.62);
+  border: 0;
+  border-radius: 8px;
+  text-align: left;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.application-rail button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.application-rail li.current button {
+  background: #f5efe3;
+  color: #141413;
+}
+
+.application-rail li.done button {
+  color: #f5efe3;
+}
+
+.application-rail button span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+.application-rail p {
+  margin: auto 8px 0;
+  color: rgba(245, 239, 227, 0.62);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .application-intro {
   position: sticky;
   top: 96px;
@@ -1481,7 +1570,12 @@ img.avatar {
   gap: 18px;
 }
 
-.application-form section {
+.application-form-header {
+  position: static;
+}
+
+.application-form section,
+.application-form article {
   display: grid;
   gap: 16px;
   padding: 24px;
@@ -1489,6 +1583,20 @@ img.avatar {
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow);
+}
+
+.application-form section {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.application-form article.invalid,
+.application-form .field.invalid,
+.application-subject-table.invalid {
+  border-color: #b8412c;
+  box-shadow: 0 0 0 3px rgba(184, 65, 44, 0.12);
 }
 
 .application-form h3 {
@@ -1503,6 +1611,140 @@ img.avatar {
 
 .form-grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.application-subject-table {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.application-subject-table > div,
+.application-subject-table label {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 92px 92px;
+  align-items: center;
+}
+
+.application-subject-table > div {
+  background: rgba(233, 226, 214, 0.58);
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.application-subject-table strong,
+.application-subject-table span,
+.application-subject-table input {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.application-subject-table label:last-child span,
+.application-subject-table label:last-child input {
+  border-bottom: 0;
+}
+
+.application-subject-table input {
+  width: 20px;
+  height: 20px;
+  justify-self: center;
+  accent-color: var(--ink);
+}
+
+.application-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.application-chip-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 252, 246, 0.76);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.application-chip-grid input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+
+.application-alert {
+  background: #141413 !important;
+  color: #f5efe3;
+  border-color: #141413 !important;
+}
+
+.application-alert p {
+  margin: 0;
+  color: rgba(245, 239, 227, 0.74);
+}
+
+.application-review dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.application-review div {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.application-review div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.application-review dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.application-review dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.application-timeline {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.application-timeline li {
+  padding-left: 6px;
+}
+
+.application-timeline strong {
+  display: block;
+}
+
+.application-timeline span {
+  color: var(--muted);
+}
+
+.application-nav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 0 0;
 }
 
 .info-grid article,
@@ -3162,6 +3404,15 @@ body.site-ready .hero-media {
   .application-intro {
     position: static;
   }
+
+  .application-rail {
+    position: static;
+    min-height: auto;
+  }
+
+  .application-rail ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -3303,6 +3554,23 @@ body.site-ready .hero-media {
   .application-form section,
   .application-intro {
     padding: 20px;
+  }
+
+  .application-form section {
+    padding: 0;
+  }
+
+  .application-rail ol {
+    grid-template-columns: 1fr;
+  }
+
+  .application-subject-table > div,
+  .application-subject-table label {
+    grid-template-columns: minmax(120px, 1fr) 70px 70px;
+  }
+
+  .application-nav {
+    grid-template-columns: 1fr;
   }
 
   .admin-topline,

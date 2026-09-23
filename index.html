@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20260923-public-application" />
+    <link rel="stylesheet" href="styles.css?v=20260923-full-application" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -460,71 +460,243 @@
 
       <section class="tutor-application-page app-page" id="tutor-application" data-page="tutor-application">
         <div class="page-shell">
-          <div class="application-shell">
-            <div class="application-intro">
-              <p class="eyebrow">Become a tutor</p>
-              <h2>Apply to tutor with tutrSTEM.</h2>
-              <p>Tell us about your teaching experience, qualifications, and safeguarding checks. The tutrSTEM team will review your application before tutor access is approved.</p>
-            </div>
-            <form class="application-form" id="tutorApplicationForm">
-              <section>
-                <h3>Personal details</h3>
-                <div class="form-grid two">
-                  <label class="field"><span>First name</span><input id="applicationFirstName" type="text" required /></label>
-                  <label class="field"><span>Last name</span><input id="applicationLastName" type="text" required /></label>
-                  <label class="field"><span>Email address</span><input id="applicationEmail" type="email" required /></label>
-                  <label class="field"><span>Date of birth</span><input id="applicationDob" type="date" required /></label>
-                  <label class="field"><span>City or area</span><input id="applicationLocation" type="text" placeholder="e.g. London / online" /></label>
-                  <label class="field"><span>Main subject</span><input id="applicationMainSubject" type="text" placeholder="e.g. A-Level Mathematics" required /></label>
-                </div>
+          <div class="application-shell full-application-shell">
+            <aside class="application-rail" aria-label="Tutor application progress">
+              <div>
+                <strong>tutrSTEM.</strong>
+                <span>Tutor application</span>
+              </div>
+              <ol id="tutorApplicationSteps"></ol>
+              <p id="tutorApplicationProgress">0 of 7 sections complete</p>
+            </aside>
+            <form class="application-form multi-application-form" id="tutorApplicationForm" novalidate>
+              <header class="application-intro application-form-header">
+                <p class="eyebrow">Become a tutor</p>
+                <h2 id="tutorApplicationTitle">About you</h2>
+                <p id="tutorApplicationLede">Your application is private and reviewed by the tutrSTEM team before tutor access is approved.</p>
+              </header>
+
+              <section class="application-step" data-app-step="0" data-title="About you" data-lede="The basics. Your first name, subjects and bio appear on your public profile once approved; everything else stays private.">
+                <article>
+                  <h3>Personal details</h3>
+                  <p class="form-note">Use your legal name exactly as it appears on your ID.</p>
+                  <div class="form-grid two">
+                    <label class="field"><span>Legal first name</span><input id="applicationFirstName" name="firstName" type="text" required /></label>
+                    <label class="field"><span>Legal last name</span><input id="applicationLastName" name="lastName" type="text" required /></label>
+                    <label class="field"><span>Preferred name</span><input id="applicationPreferredName" name="preferredName" type="text" /></label>
+                    <label class="field"><span>Pronouns</span><select id="applicationPronouns" name="pronouns"><option value="">Prefer not to say</option><option>she/her</option><option>he/him</option><option>they/them</option><option>Other</option></select></label>
+                    <label class="field"><span>Email address</span><input id="applicationEmail" name="email" type="email" required /></label>
+                    <label class="field"><span>Mobile number</span><input id="applicationPhone" name="phone" type="tel" placeholder="07700 900123" required /></label>
+                    <label class="field"><span>Date of birth</span><input id="applicationDob" name="dob" type="date" required /></label>
+                    <label class="field"><span>Town or city</span><input id="applicationLocation" name="town" type="text" required /></label>
+                    <label class="field"><span>Where you'll teach from</span><select id="applicationTimezone" name="timezone" required><option value="">Choose...</option><option>UK</option><option>Europe outside UK</option><option>Elsewhere</option></select></label>
+                    <label class="field"><span>How did you hear about us?</span><select id="applicationHeardFrom" name="heardFrom"><option value="">Choose...</option><option>University careers service</option><option>Friend or tutor</option><option>Instagram / TikTok</option><option>Google search</option><option>Other</option></select></label>
+                  </div>
+                </article>
+                <article>
+                  <h3>Profile photo</h3>
+                  <p class="form-note">Supabase uploads will be wired once the bucket details are added. For now this stores the selected file name for admin review.</p>
+                  <label class="field"><span>Profile photo</span><input id="applicationPhoto" name="photo" type="file" accept="image/jpeg,image/png" /></label>
+                </article>
               </section>
 
-              <section>
-                <h3>Teaching profile</h3>
-                <label class="field"><span>Subjects you can teach</span><textarea id="applicationSubjects" rows="3" placeholder="Mathematics A*, Physics A, ESAT Physics..." required></textarea></label>
-                <div class="form-grid two">
-                  <label class="field">
-                    <span>Levels</span>
-                    <select id="applicationLevel">
-                      <option value="GCSE and A-Level">GCSE and A-Level</option>
-                      <option value="GCSE">GCSE</option>
-                      <option value="A-Level">A-Level</option>
-                      <option value="Admissions tests">Admissions tests</option>
-                    </select>
-                  </label>
-                  <label class="field"><span>Hourly rate</span><input id="applicationHourlyRate" type="number" min="0" step="1" placeholder="e.g. 30" /></label>
-                </div>
-                <label class="field"><span>Profile headline</span><input id="applicationHeadline" type="text" placeholder="e.g. Cambridge Maths graduate helping students build confidence" /></label>
-                <label class="field"><span>Bio</span><textarea id="applicationBio" rows="5" placeholder="Your background, teaching style, and who you help." required></textarea></label>
-                <label class="field"><span>Typical availability</span><textarea id="applicationAvailability" rows="3" placeholder="e.g. Weekdays after 5pm, Sunday mornings"></textarea></label>
+              <section class="application-step" data-app-step="1" data-title="What you'll teach" data-lede="Tick every subject and level you're confident teaching, plus your rate, profile copy, and online setup.">
+                <article>
+                  <h3>Subjects and levels</h3>
+                  <div class="application-subject-table">
+                    <div><strong>Subject</strong><strong>GCSE</strong><strong>A-Level</strong></div>
+                    <label><span>Mathematics</span><input type="checkbox" name="subjects" value="Mathematics|GCSE" /><input type="checkbox" name="subjects" value="Mathematics|A-Level" /></label>
+                    <label><span>Further Mathematics</span><input type="checkbox" name="subjects" value="Further Mathematics|GCSE" /><input type="checkbox" name="subjects" value="Further Mathematics|A-Level" /></label>
+                    <label><span>Biology</span><input type="checkbox" name="subjects" value="Biology|GCSE" /><input type="checkbox" name="subjects" value="Biology|A-Level" /></label>
+                    <label><span>Chemistry</span><input type="checkbox" name="subjects" value="Chemistry|GCSE" /><input type="checkbox" name="subjects" value="Chemistry|A-Level" /></label>
+                    <label><span>Physics</span><input type="checkbox" name="subjects" value="Physics|GCSE" /><input type="checkbox" name="subjects" value="Physics|A-Level" /></label>
+                    <label><span>Computer Science</span><input type="checkbox" name="subjects" value="Computer Science|GCSE" /><input type="checkbox" name="subjects" value="Computer Science|A-Level" /></label>
+                    <label><span>Economics</span><input type="checkbox" name="subjects" value="Economics|GCSE" /><input type="checkbox" name="subjects" value="Economics|A-Level" /></label>
+                    <label><span>Psychology</span><input type="checkbox" name="subjects" value="Psychology|GCSE" /><input type="checkbox" name="subjects" value="Psychology|A-Level" /></label>
+                  </div>
+                  <div class="form-grid two">
+                    <label class="field"><span>Main subject</span><input id="applicationMainSubject" name="mainSubject" type="text" required /></label>
+                    <label class="field"><span>Subject not listed?</span><input id="applicationOtherSubject" name="otherSubject" type="text" placeholder="e.g. Core Maths" /></label>
+                  </div>
+                  <label class="field"><span>Exam boards you know</span><input id="applicationExamBoards" name="examBoards" type="text" placeholder="AQA, Edexcel, OCR, CIE..." /></label>
+                </article>
+                <article>
+                  <h3>When and how you teach</h3>
+                  <div class="application-chip-grid">
+                    <label><input id="applicationSetupInternet" name="setupInternet" type="checkbox" required /> Reliable broadband</label>
+                    <label><input id="applicationSetupCamera" name="setupCamera" type="checkbox" required /> Webcam and microphone</label>
+                    <label><input id="applicationSetupQuiet" name="setupQuiet" type="checkbox" required /> Quiet private space</label>
+                    <label><input name="kit" type="checkbox" value="Graphics tablet or stylus" /> Graphics tablet or stylus</label>
+                    <label><input name="kit" type="checkbox" value="Headset" /> Headset</label>
+                    <label><input name="kit" type="checkbox" value="Second screen" /> Second screen</label>
+                  </div>
+                  <div class="form-grid two">
+                    <label class="field"><span>Hours available per week</span><select id="applicationMaxHours" name="maxHours"><option>1-3</option><option>4-6</option><option>7-10</option><option>11-15</option><option>16+</option></select></label>
+                    <label class="field"><span>Hourly rate</span><input id="applicationHourlyRate" name="rate" type="number" min="15" max="120" step="1" required /></label>
+                  </div>
+                  <label class="field"><span>Typical availability</span><textarea id="applicationAvailability" name="availability" rows="3" placeholder="e.g. Mon evenings, Saturday mornings"></textarea></label>
+                </article>
+                <article>
+                  <h3>Profile and experience</h3>
+                  <label class="field"><span>Profile headline</span><input id="applicationHeadline" name="headline" type="text" maxlength="80" required /></label>
+                  <label class="field"><span>About you</span><textarea id="applicationBio" name="bio" rows="5" minlength="80" maxlength="1200" required></textarea></label>
+                  <label class="field"><span>How you teach</span><textarea id="applicationApproach" name="approach" rows="4" minlength="60" maxlength="800" required></textarea></label>
+                  <div class="form-grid two">
+                    <label class="field"><span>Tutoring or teaching experience</span><select id="applicationExperience" name="experience" required><option value="">Choose...</option><option>None yet</option><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
+                    <label class="field"><span>Approx. hours taught</span><input id="applicationHoursTaught" name="hoursTaught" type="number" min="0" step="10" /></label>
+                  </div>
+                </article>
               </section>
 
-              <section>
-                <h3>Qualifications and checks</h3>
-                <div class="form-grid two">
-                  <label class="field"><span>University or qualification</span><input id="applicationUniversity" type="text" placeholder="e.g. Cambridge, Imperial, UCL..." /></label>
-                  <label class="field"><span>Course or degree</span><input id="applicationCourse" type="text" placeholder="e.g. Natural Sciences" /></label>
-                  <label class="field"><span>A-Level / equivalent grades</span><input id="applicationGrades" type="text" placeholder="e.g. Maths A*, Physics A*" /></label>
-                  <label class="field">
-                    <span>DBS status</span>
-                    <select id="applicationDbsStatus">
-                      <option value="not_yet">Not yet</option>
-                      <option value="applied">Applied</option>
-                      <option value="has_dbs">I have a DBS certificate</option>
-                    </select>
-                  </label>
-                </div>
-                <p class="form-note">Supabase file upload will be added once the Supabase project URL, anon key, and private bucket are supplied. For now, mention certificates or ID checks in your notes.</p>
-                <label class="field"><span>Verification notes</span><textarea id="applicationVerificationNotes" rows="3" placeholder="Anything the team should know about your ID, certificates, or DBS."></textarea></label>
+              <section class="application-step" data-app-step="2" data-title="Qualifications" data-lede="Tell us about your university, school qualifications, and any teaching credentials.">
+                <article>
+                  <h3>Degree or current study</h3>
+                  <div class="form-grid two">
+                    <label class="field"><span>Current status</span><select id="applicationStudyStatus" name="studyStatus" required><option value="">Choose...</option><option>Undergraduate</option><option>Postgraduate student</option><option>Graduate</option><option>Qualified teacher</option></select></label>
+                    <label class="field"><span>University</span><input id="applicationUniversity" name="university" type="text" required /></label>
+                    <label class="field"><span>Course</span><input id="applicationCourse" name="course" type="text" required /></label>
+                    <label class="field"><span>Classification</span><select id="applicationDegreeClass" name="degreeClass" required><option value="">Choose...</option><option>First</option><option>2:1</option><option>2:2</option><option>Distinction</option><option>Merit</option><option>Doctorate</option><option>Not finished yet</option></select></label>
+                    <label class="field"><span>Year graduated or expected</span><input id="applicationGradYear" name="gradYear" type="number" min="1970" max="2032" required /></label>
+                    <label class="field"><span>University email</span><input id="applicationUniEmail" name="uniEmail" type="email" placeholder="name@student.ac.uk" /></label>
+                  </div>
+                </article>
+                <article>
+                  <h3>School qualifications</h3>
+                  <label class="field"><span>A-Level / equivalent grades</span><textarea id="applicationGrades" name="grades" rows="3" placeholder="Maths A*, Physics A, Chemistry A"></textarea></label>
+                  <div class="form-grid two">
+                    <label class="field"><span>GCSE Maths grade</span><input id="applicationGcseMaths" name="gcseMaths" type="text" required /></label>
+                    <label class="field"><span>GCSE English grade</span><input id="applicationGcseEnglish" name="gcseEnglish" type="text" required /></label>
+                  </div>
+                </article>
+                <article>
+                  <h3>Teaching qualifications and certificate</h3>
+                  <div class="form-grid two">
+                    <label class="field"><span>QTS?</span><select id="applicationQts" name="qts"><option value="no">No</option><option value="yes">Yes</option></select></label>
+                    <label class="field"><span>Teacher reference number</span><input id="applicationTrn" name="trn" type="text" maxlength="7" /></label>
+                  </div>
+                  <label class="field"><span>Other teaching certificates</span><input id="applicationOtherQuals" name="otherQuals" type="text" placeholder="PGCE, TEFL, STEM Ambassador..." /></label>
+                  <label class="field"><span>Certificate or transcript</span><input id="applicationCertificate" name="certificate" type="file" accept="image/*,application/pdf" /></label>
+                </article>
               </section>
 
-              <section>
-                <h3>Declaration</h3>
-                <label class="checkbox-line"><input id="applicationAccurate" type="checkbox" required /> I confirm this information is accurate.</label>
-                <label class="checkbox-line"><input id="applicationSafeguarding" type="checkbox" required /> I agree to follow tutrSTEM safeguarding and platform rules.</label>
-                <button class="primary-btn wide" type="submit">Submit application</button>
+              <section class="application-step" data-app-step="3" data-title="Identity and right to work" data-lede="We verify identity and right to work before approving tutor access.">
+                <article>
+                  <h3>Photo ID</h3>
+                  <div class="form-grid two">
+                    <label class="field"><span>Document type</span><select id="applicationIdType" name="idType" required><option value="">Choose...</option><option>UK passport</option><option>Non-UK passport</option><option>UK photocard driving licence</option><option>Biometric residence permit</option></select></label>
+                    <label class="field"><span>Expiry date</span><input id="applicationIdExpiry" name="idExpiry" type="date" required /></label>
+                  </div>
+                  <label class="field"><span>ID photo</span><input id="applicationIdFront" name="idFront" type="file" accept="image/*" /></label>
+                </article>
+                <article>
+                  <h3>Selfie with ID</h3>
+                  <p class="form-note">Write this code on paper and hold it next to your ID: <strong id="applicationSelfieCode">TS-0000</strong></p>
+                  <label class="field"><span>Selfie with ID and code</span><input id="applicationSelfie" name="selfie" type="file" accept="image/*" /></label>
+                </article>
+                <article>
+                  <h3>Right to work</h3>
+                  <div class="application-chip-grid">
+                    <label><input type="radio" name="rightToWork" value="UK or Irish passport" required /> UK or Irish passport</label>
+                    <label><input type="radio" name="rightToWork" value="Share code" /> Share code</label>
+                  </div>
+                  <label class="field"><span>Share code if relevant</span><input id="applicationShareCode" name="shareCode" type="text" maxlength="11" /></label>
+                </article>
+              </section>
+
+              <section class="application-step" data-app-step="4" data-title="Safeguarding and DBS" data-lede="Most students are under 18, so safeguarding checks are essential.">
+                <article class="application-alert">
+                  <strong>You arrange and pay for your DBS.</strong>
+                  <p>Self-employed tutors can apply for an Enhanced check through a DBS umbrella body. The Update Service lets us check certificate status with your permission.</p>
+                </article>
+                <article>
+                  <h3>Your DBS certificate</h3>
+                  <label class="field"><span>DBS status</span><select id="applicationDbsStatus" name="dbsStatus" required><option value="">Choose...</option><option value="have">I have an Enhanced DBS with Children's Barred List</option><option value="applied">I've applied</option><option value="none">Not yet</option></select></label>
+                  <div class="form-grid two">
+                    <label class="field"><span>Certificate number</span><input id="applicationDbsNumber" name="dbsNumber" type="text" maxlength="12" /></label>
+                    <label class="field"><span>Issue date</span><input id="applicationDbsIssued" name="dbsIssued" type="date" /></label>
+                  </div>
+                  <div class="application-chip-grid">
+                    <label><input type="checkbox" id="applicationDbsUpdate" name="dbsUpdate" /> Certificate is on the DBS Update Service</label>
+                    <label><input type="checkbox" id="applicationDbsConsent" name="dbsConsent" /> I consent to tutrSTEM checking my DBS status</label>
+                  </div>
+                </article>
+                <article>
+                  <h3>Suitability to work with children</h3>
+                  <label class="field"><span>Are you barred from working with children?</span><select id="applicationBarred" name="barred" required><option value="">Choose...</option><option value="no">No</option><option value="yes">Yes</option></select></label>
+                  <label class="field"><span>Anything unfiltered to declare?</span><select id="applicationDeclare" name="declare" required><option value="">Choose...</option><option value="no">No</option><option value="yes">Yes</option></select></label>
+                  <label class="field"><span>Declaration details if yes</span><textarea id="applicationDeclareDetail" name="declareDetail" rows="3"></textarea></label>
+                </article>
+                <article>
+                  <h3>Safeguarding rules</h3>
+                  <label class="checkbox-line"><input id="applicationSafeguarding" name="agreeSafeguarding" type="checkbox" required /> I will follow tutrSTEM safeguarding rules and report concerns the same day.</label>
+                  <label class="checkbox-line"><input id="applicationContactRules" name="agreeContact" type="checkbox" required /> I will keep all lessons and messages on tutrSTEM and not share personal contact details.</label>
+                  <label class="checkbox-line"><input id="applicationLessonRules" name="agreeLessonRoom" type="checkbox" required /> I will teach only in the tutrSTEM lesson room.</label>
+                </article>
+              </section>
+
+              <section class="application-step" data-app-step="5" data-title="References" data-lede="Give two referees who are not family. We may email them a short reference form.">
+                <article>
+                  <h3>Referee 1</h3>
+                  <div class="form-grid two">
+                    <label class="field"><span>Full name</span><input id="applicationRef1Name" name="ref1Name" type="text" required /></label>
+                    <label class="field"><span>Relationship</span><input id="applicationRef1Relationship" name="ref1Relationship" type="text" required /></label>
+                    <label class="field"><span>Organisation</span><input id="applicationRef1Org" name="ref1Org" type="text" required /></label>
+                    <label class="field"><span>Work email</span><input id="applicationRef1Email" name="ref1Email" type="email" required /></label>
+                    <label class="field"><span>Phone</span><input id="applicationRef1Phone" name="ref1Phone" type="tel" /></label>
+                    <label class="field"><span>Known for</span><select id="applicationRef1Years" name="ref1Years"><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
+                  </div>
+                </article>
+                <article>
+                  <h3>Referee 2</h3>
+                  <div class="form-grid two">
+                    <label class="field"><span>Full name</span><input id="applicationRef2Name" name="ref2Name" type="text" required /></label>
+                    <label class="field"><span>Relationship</span><input id="applicationRef2Relationship" name="ref2Relationship" type="text" required /></label>
+                    <label class="field"><span>Organisation</span><input id="applicationRef2Org" name="ref2Org" type="text" required /></label>
+                    <label class="field"><span>Work email</span><input id="applicationRef2Email" name="ref2Email" type="email" required /></label>
+                    <label class="field"><span>Phone</span><input id="applicationRef2Phone" name="ref2Phone" type="tel" /></label>
+                    <label class="field"><span>Known for</span><select id="applicationRef2Years" name="ref2Years"><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
+                  </div>
+                  <label class="checkbox-line"><input id="applicationRefConsent" name="refConsent" type="checkbox" required /> Both referees know I have named them and are happy to be contacted.</label>
+                </article>
+              </section>
+
+              <section class="application-step" data-app-step="6" data-title="Review and submit" data-lede="Check everything before you send it. You cannot edit your application after submitting.">
+                <article>
+                  <h3>Application summary</h3>
+                  <div class="application-review" id="tutorApplicationReview"></div>
+                </article>
+                <article>
+                  <h3>Declarations</h3>
+                  <label class="checkbox-line"><input id="applicationAccurate" name="decAccurate" type="checkbox" required /> Everything in this application is true and complete.</label>
+                  <label class="checkbox-line"><input id="applicationChecks" name="decChecks" type="checkbox" required /> I consent to identity, qualification, reference, and DBS checks.</label>
+                  <label class="checkbox-line"><input id="applicationTerms" name="decTerms" type="checkbox" required /> I agree to the Tutor Terms, including the platform fee, and understand I am self-employed.</label>
+                  <label class="checkbox-line"><input id="applicationPrivacy" name="decPrivacy" type="checkbox" required /> I have read the Privacy Notice.</label>
+                  <div class="form-grid two">
+                    <label class="field"><span>Type your full legal name to sign</span><input id="applicationSignature" name="signature" type="text" required /></label>
+                    <label class="field"><span>Date</span><input id="applicationSignDate" name="signDate" type="text" readonly /></label>
+                  </div>
+                </article>
+              </section>
+
+              <section class="application-step" data-app-step="7" data-title="Application submitted" data-lede="Thanks for applying. Here's what happens next." hidden>
+                <article>
+                  <h3>Application submitted</h3>
+                  <p class="form-note">Your application is now visible in the tutrSTEM admin panel for review.</p>
+                  <ol class="application-timeline">
+                    <li><strong>Application received</strong><span>Confirmation is queued.</span></li>
+                    <li><strong>Document review</strong><span>The team checks ID, selfie, qualifications, and references.</span></li>
+                    <li><strong>DBS check</strong><span>If you do not have a DBS yet, the application waits at Awaiting DBS.</span></li>
+                    <li><strong>Short video call</strong><span>Bring your ID and be ready to explain one topic.</span></li>
+                    <li><strong>Profile goes live</strong><span>Approved tutor emails can then create tutor access.</span></li>
+                  </ol>
+                </article>
+              </section>
+
+              <div class="application-nav" id="tutorApplicationNav">
+                <button class="secondary-btn" type="button" id="tutorApplicationBack">Back</button>
                 <p class="signup-status" id="tutorApplicationStatus"></p>
-              </section>
+                <button class="primary-btn" type="submit" id="tutorApplicationNext">Continue</button>
+              </div>
             </form>
           </div>
         </div>
@@ -1268,6 +1440,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260923-public-application"></script>
+    <script src="app.js?v=20260923-full-application"></script>
   </body>
 </html>
