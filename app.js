@@ -3195,7 +3195,6 @@ async function populateTutorApplicationForm() {
     document.querySelector("#applicationHourlyRate").value = nestedValue(application, "teaching.hourlyRate", "");
     document.querySelector("#applicationHeadline").value = nestedValue(application, "teaching.headline", "");
     document.querySelector("#applicationBio").value = nestedValue(application, "teaching.bio", "");
-    document.querySelector("#applicationApproach").value = nestedValue(application, "teaching.approach", "");
     document.querySelector("#applicationAvailability").value = nestedValue(application, "teaching.availabilityText", "");
     document.querySelector("#applicationUniversity").value = nestedValue(application, "qualifications.university", "");
     document.querySelector("#applicationCourse").value = nestedValue(application, "qualifications.course", "");
@@ -3255,7 +3254,6 @@ function tutorApplicationPayload(status = "submitted") {
       platformFee: 0.5,
       headline: applicationValue("headline"),
       bio: applicationValue("bio"),
-      approach: applicationValue("approach"),
       experience: applicationValue("experience"),
       hoursTaught: Number(applicationValue("hoursTaught") || 0) || null
     },

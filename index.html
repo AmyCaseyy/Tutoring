@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20260923-full-application" />
+    <link rel="stylesheet" href="styles.css?v=20260923-application-polish" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -540,7 +540,6 @@
                   <h3>Profile and experience</h3>
                   <label class="field"><span>Profile headline</span><input id="applicationHeadline" name="headline" type="text" maxlength="80" required /></label>
                   <label class="field"><span>About you</span><textarea id="applicationBio" name="bio" rows="5" minlength="80" maxlength="1200" required></textarea></label>
-                  <label class="field"><span>How you teach</span><textarea id="applicationApproach" name="approach" rows="4" minlength="60" maxlength="800" required></textarea></label>
                   <div class="form-grid two">
                     <label class="field"><span>Tutoring or teaching experience</span><select id="applicationExperience" name="experience" required><option value="">Choose...</option><option>None yet</option><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
                     <label class="field"><span>Approx. hours taught</span><input id="applicationHoursTaught" name="hoursTaught" type="number" min="0" step="10" /></label>
@@ -559,6 +558,7 @@
                     <label class="field"><span>Year graduated or expected</span><input id="applicationGradYear" name="gradYear" type="number" min="1970" max="2032" required /></label>
                     <label class="field"><span>University email</span><input id="applicationUniEmail" name="uniEmail" type="email" placeholder="name@student.ac.uk" /></label>
                   </div>
+                  <label class="field"><span>Degree certificate or transcript</span><input id="applicationCertificate" name="certificate" type="file" accept="image/*,application/pdf" /></label>
                 </article>
                 <article>
                   <h3>School qualifications</h3>
@@ -569,13 +569,12 @@
                   </div>
                 </article>
                 <article>
-                  <h3>Teaching qualifications and certificate</h3>
+                  <h3>Teaching qualifications</h3>
                   <div class="form-grid two">
                     <label class="field"><span>QTS?</span><select id="applicationQts" name="qts"><option value="no">No</option><option value="yes">Yes</option></select></label>
                     <label class="field"><span>Teacher reference number</span><input id="applicationTrn" name="trn" type="text" maxlength="7" /></label>
                   </div>
                   <label class="field"><span>Other teaching certificates</span><input id="applicationOtherQuals" name="otherQuals" type="text" placeholder="PGCE, TEFL, STEM Ambassador..." /></label>
-                  <label class="field"><span>Certificate or transcript</span><input id="applicationCertificate" name="certificate" type="file" accept="image/*,application/pdf" /></label>
                 </article>
               </section>
 
@@ -1440,6 +1439,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260923-full-application"></script>
+    <script src="app.js?v=20260923-application-polish"></script>
   </body>
 </html>
