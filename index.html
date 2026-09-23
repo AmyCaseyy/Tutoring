@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20260923-admin-panel" />
+    <link rel="stylesheet" href="styles.css?v=20260923-public-application" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -454,6 +454,78 @@
               <h2>Contact tutrSTEM.</h2>
               <p>Email <a href="mailto:tutrstem@gmail.com">tutrstem@gmail.com</a> and the tutrSTEM team will help.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tutor-application-page app-page" id="tutor-application" data-page="tutor-application">
+        <div class="page-shell">
+          <div class="application-shell">
+            <div class="application-intro">
+              <p class="eyebrow">Become a tutor</p>
+              <h2>Apply to tutor with tutrSTEM.</h2>
+              <p>Tell us about your teaching experience, qualifications, and safeguarding checks. The tutrSTEM team will review your application before tutor access is approved.</p>
+            </div>
+            <form class="application-form" id="tutorApplicationForm">
+              <section>
+                <h3>Personal details</h3>
+                <div class="form-grid two">
+                  <label class="field"><span>First name</span><input id="applicationFirstName" type="text" required /></label>
+                  <label class="field"><span>Last name</span><input id="applicationLastName" type="text" required /></label>
+                  <label class="field"><span>Email address</span><input id="applicationEmail" type="email" required /></label>
+                  <label class="field"><span>Date of birth</span><input id="applicationDob" type="date" required /></label>
+                  <label class="field"><span>City or area</span><input id="applicationLocation" type="text" placeholder="e.g. London / online" /></label>
+                  <label class="field"><span>Main subject</span><input id="applicationMainSubject" type="text" placeholder="e.g. A-Level Mathematics" required /></label>
+                </div>
+              </section>
+
+              <section>
+                <h3>Teaching profile</h3>
+                <label class="field"><span>Subjects you can teach</span><textarea id="applicationSubjects" rows="3" placeholder="Mathematics A*, Physics A, ESAT Physics..." required></textarea></label>
+                <div class="form-grid two">
+                  <label class="field">
+                    <span>Levels</span>
+                    <select id="applicationLevel">
+                      <option value="GCSE and A-Level">GCSE and A-Level</option>
+                      <option value="GCSE">GCSE</option>
+                      <option value="A-Level">A-Level</option>
+                      <option value="Admissions tests">Admissions tests</option>
+                    </select>
+                  </label>
+                  <label class="field"><span>Hourly rate</span><input id="applicationHourlyRate" type="number" min="0" step="1" placeholder="e.g. 30" /></label>
+                </div>
+                <label class="field"><span>Profile headline</span><input id="applicationHeadline" type="text" placeholder="e.g. Cambridge Maths graduate helping students build confidence" /></label>
+                <label class="field"><span>Bio</span><textarea id="applicationBio" rows="5" placeholder="Your background, teaching style, and who you help." required></textarea></label>
+                <label class="field"><span>Typical availability</span><textarea id="applicationAvailability" rows="3" placeholder="e.g. Weekdays after 5pm, Sunday mornings"></textarea></label>
+              </section>
+
+              <section>
+                <h3>Qualifications and checks</h3>
+                <div class="form-grid two">
+                  <label class="field"><span>University or qualification</span><input id="applicationUniversity" type="text" placeholder="e.g. Cambridge, Imperial, UCL..." /></label>
+                  <label class="field"><span>Course or degree</span><input id="applicationCourse" type="text" placeholder="e.g. Natural Sciences" /></label>
+                  <label class="field"><span>A-Level / equivalent grades</span><input id="applicationGrades" type="text" placeholder="e.g. Maths A*, Physics A*" /></label>
+                  <label class="field">
+                    <span>DBS status</span>
+                    <select id="applicationDbsStatus">
+                      <option value="not_yet">Not yet</option>
+                      <option value="applied">Applied</option>
+                      <option value="has_dbs">I have a DBS certificate</option>
+                    </select>
+                  </label>
+                </div>
+                <p class="form-note">Supabase file upload will be added once the Supabase project URL, anon key, and private bucket are supplied. For now, mention certificates or ID checks in your notes.</p>
+                <label class="field"><span>Verification notes</span><textarea id="applicationVerificationNotes" rows="3" placeholder="Anything the team should know about your ID, certificates, or DBS."></textarea></label>
+              </section>
+
+              <section>
+                <h3>Declaration</h3>
+                <label class="checkbox-line"><input id="applicationAccurate" type="checkbox" required /> I confirm this information is accurate.</label>
+                <label class="checkbox-line"><input id="applicationSafeguarding" type="checkbox" required /> I agree to follow tutrSTEM safeguarding and platform rules.</label>
+                <button class="primary-btn wide" type="submit">Submit application</button>
+                <p class="signup-status" id="tutorApplicationStatus"></p>
+              </section>
+            </form>
           </div>
         </div>
       </section>
@@ -1108,7 +1180,7 @@
         </nav>
         <nav class="footer-column" aria-label="Tutor links">
           <h2>For Tutors</h2>
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform" target="_blank" rel="noopener">Become a Tutor</a>
+          <a href="#tutor-application" data-route="tutor-application">Become a Tutor</a>
           <a href="#tutor-requirements" data-route="tutor-requirements">Tutor Requirements</a>
           <a href="#accounts" data-route="accounts">Tutor Portal Login</a>
         </nav>
@@ -1196,6 +1268,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260923-admin-panel"></script>
+    <script src="app.js?v=20260923-public-application"></script>
   </body>
 </html>

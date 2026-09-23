@@ -635,6 +635,27 @@ const adminApplicationsTable = document.querySelector("#adminApplicationsTable")
 const adminApplicationDetail = document.querySelector("#adminApplicationDetail");
 const adminApplicationsBadge = document.querySelector("#adminApplicationsBadge");
 const adminApplicationsListBadge = document.querySelector("#adminApplicationsListBadge");
+const tutorApplicationForm = document.querySelector("#tutorApplicationForm");
+const applicationFirstName = document.querySelector("#applicationFirstName");
+const applicationLastName = document.querySelector("#applicationLastName");
+const applicationEmailInput = document.querySelector("#applicationEmail");
+const applicationDob = document.querySelector("#applicationDob");
+const applicationLocation = document.querySelector("#applicationLocation");
+const applicationMainSubject = document.querySelector("#applicationMainSubject");
+const applicationSubjectsInput = document.querySelector("#applicationSubjects");
+const applicationLevel = document.querySelector("#applicationLevel");
+const applicationHourlyRate = document.querySelector("#applicationHourlyRate");
+const applicationHeadline = document.querySelector("#applicationHeadline");
+const applicationBio = document.querySelector("#applicationBio");
+const applicationAvailability = document.querySelector("#applicationAvailability");
+const applicationUniversity = document.querySelector("#applicationUniversity");
+const applicationCourse = document.querySelector("#applicationCourse");
+const applicationGrades = document.querySelector("#applicationGrades");
+const applicationDbsStatus = document.querySelector("#applicationDbsStatus");
+const applicationVerificationNotes = document.querySelector("#applicationVerificationNotes");
+const applicationAccurate = document.querySelector("#applicationAccurate");
+const applicationSafeguarding = document.querySelector("#applicationSafeguarding");
+const tutorApplicationStatus = document.querySelector("#tutorApplicationStatus");
 const bookingPageForm = document.querySelector("#bookingPageForm");
 const bookingTutor = document.querySelector("#bookingTutor");
 const bookingTutorSearch = document.querySelector("#bookingTutorSearch");
@@ -693,8 +714,6 @@ const signupWizard = {
 const firebaseBackend = window.tutrStemFirebase || null;
 const auth = firebaseBackend?.auth || null;
 const db = firebaseBackend?.db || null;
-const TUTOR_APPLICATION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfe9ZfB70h7I1on9Dj609MKK6guCYqlAm-QgEGbVdGswfh5iw/viewform";
-
 function isCloudReady() {
   return Boolean(auth && db);
 }
@@ -711,7 +730,7 @@ const storage = {
 };
 
 function showPage(pageName, options = {}) {
-  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy", "subject-landing"];
+  const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy", "subject-landing", "tutor-application"];
   const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support", "moderation", "admin", "admin-applications", "admin-application-detail"];
   const adminPages = ["admin", "admin-applications", "admin-application-detail"];
   const fallback = currentAccount
@@ -762,6 +781,7 @@ function showPage(pageName, options = {}) {
   if (nextPage === "reviews") renderReviewsPage();
   if (nextPage === "account-details") populateAccountDetails();
   if (nextPage === "moderation") renderModerationPage();
+  if (nextPage === "tutor-application") populateTutorApplicationForm();
   if (nextPage === "admin") renderAdminDashboard();
   if (nextPage === "admin-applications") renderAdminApplications();
   if (nextPage === "admin-application-detail") renderAdminApplicationDetail();
@@ -2974,6 +2994,170 @@ function applicationDocumentCount(application) {
 
 function getPendingApplications() {
   return cloudTutorApplications.filter((application) => applicationStatusGroup(application) === "pending");
+}
+
+function splitNameForApplication(name = "") {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" ")
+  };
+}
+
+function parseApplicationSubjects(value = "", level = "") {
+  return String(value || "")
+    .split(/[,;\n]+/)
+    .map((subject) => subject.trim())
+    .filter(Boolean)
+    .map((subject) => ({ subject, level: level || "" }));
+}
+
+function setApplicationStatus(message, success = false) {
+  if (!tutorApplicationStatus) return;
+  tutorApplicationStatus.textContent = message;
+  tutorApplicationStatus.classList.toggle("success", success);
+}
+
+async function populateTutorApplicationForm() {
+  if (!tutorApplicationForm) return;
+  if (currentAccount) {
+    const nameParts = splitNameForApplication(currentAccount.name);
+    applicationFirstName.value ||= nameParts.firstName;
+    applicationLastName.value ||= nameParts.lastName;
+    applicationEmailInput.value ||= currentAccount.email || "";
+    applicationDob.value ||= currentAccount.dob || "";
+  }
+
+  if (!isCloudReady()) {
+    setApplicationStatus("Firebase needs to be connected before tutor applications can be submitted.");
+    return;
+  }
+
+  if (!auth?.currentUser) {
+    setApplicationStatus("Complete the form below. You do not need an approved tutor login to apply.");
+    return;
+  }
+
+  try {
+    const snap = await db.collection("tutorApplications").doc(auth.currentUser.uid).get();
+    if (!snap.exists) {
+      setApplicationStatus("Complete the form below and submit it for review.");
+      return;
+    }
+    const application = snap.data();
+    const subjects = nestedValue(application, "teaching.subjects", []);
+    applicationFirstName.value = nestedValue(application, "personal.firstName", applicationFirstName.value);
+    applicationLastName.value = nestedValue(application, "personal.lastName", applicationLastName.value);
+    applicationEmailInput.value = nestedValue(application, "personal.email", applicationEmailInput.value);
+    applicationDob.value = nestedValue(application, "personal.dob", applicationDob.value);
+    applicationLocation.value = nestedValue(application, "personal.location", "");
+    applicationMainSubject.value = nestedValue(application, "teaching.mainSubject", "");
+    applicationSubjectsInput.value = Array.isArray(subjects)
+      ? subjects.map((item) => typeof item === "string" ? item : [item.subject, item.grade || item.grade_achieved].filter(Boolean).join(" ")).join(", ")
+      : "";
+    applicationLevel.value = nestedValue(application, "teaching.level", applicationLevel.value);
+    applicationHourlyRate.value = nestedValue(application, "teaching.hourlyRate", "");
+    applicationHeadline.value = nestedValue(application, "teaching.headline", "");
+    applicationBio.value = nestedValue(application, "teaching.bio", "");
+    applicationAvailability.value = nestedValue(application, "teaching.availabilityText", "");
+    applicationUniversity.value = nestedValue(application, "qualifications.university", "");
+    applicationCourse.value = nestedValue(application, "qualifications.course", "");
+    applicationGrades.value = nestedValue(application, "qualifications.gradesSummary", "");
+    applicationDbsStatus.value = nestedValue(application, "safeguarding.dbsStatus", applicationDbsStatus.value);
+    applicationVerificationNotes.value = nestedValue(application, "identity.notes", "");
+    const status = applicationStatus(application).replace(/_/g, " ");
+    setApplicationStatus(`Your application is currently ${status}.`, applicationStatusGroup(application) !== "rejected");
+  } catch {
+    setApplicationStatus("We could not load your saved application yet. You can still try submitting again.");
+  }
+}
+
+function tutorApplicationPayload(status = "submitted") {
+  const subjects = parseApplicationSubjects(applicationSubjectsInput.value, applicationLevel.value);
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+  return {
+    applicantUid: auth?.currentUser?.uid || "",
+    status,
+    updatedAt: now,
+    submittedAt: now,
+    personal: {
+      firstName: applicationFirstName.value.trim(),
+      lastName: applicationLastName.value.trim(),
+      email: normalizeEmail(applicationEmailInput.value),
+      dob: applicationDob.value,
+      location: applicationLocation.value.trim()
+    },
+    teaching: {
+      mainSubject: applicationMainSubject.value.trim(),
+      subjects,
+      level: applicationLevel.value,
+      hourlyRate: Number(applicationHourlyRate.value || 0),
+      headline: applicationHeadline.value.trim(),
+      bio: applicationBio.value.trim(),
+      availabilityText: applicationAvailability.value.trim()
+    },
+    qualifications: {
+      university: applicationUniversity.value.trim(),
+      course: applicationCourse.value.trim(),
+      gradesSummary: applicationGrades.value.trim()
+    },
+    identity: {
+      notes: applicationVerificationNotes.value.trim()
+    },
+    safeguarding: {
+      dbsStatus: applicationDbsStatus.value,
+      accurate: applicationAccurate.checked,
+      agreedPlatformRules: applicationSafeguarding.checked
+    },
+    declarations: {
+      accurate: applicationAccurate.checked,
+      safeguarding: applicationSafeguarding.checked,
+      signedName: [applicationFirstName.value, applicationLastName.value].map((value) => value.trim()).filter(Boolean).join(" "),
+      signedAt: new Date().toISOString()
+    },
+    uploads: [],
+    files: []
+  };
+}
+
+async function submitTutorApplication(event) {
+  event.preventDefault();
+  if (!isCloudReady()) {
+    setApplicationStatus("Firebase is not connected, so the application cannot be submitted yet.");
+    return;
+  }
+  if (!applicationAccurate.checked || !applicationSafeguarding.checked) {
+    setApplicationStatus("Please confirm the declaration before submitting.");
+    return;
+  }
+
+  const submitButton = tutorApplicationForm.querySelector("button[type='submit']");
+  try {
+    submitButton.disabled = true;
+    setApplicationStatus("Submitting your application...");
+    const payload = tutorApplicationPayload(applicationDbsStatus.value === "not_yet" ? "awaiting_dbs" : "submitted");
+    const applicationRef = auth?.currentUser
+      ? db.collection("tutorApplications").doc(auth.currentUser.uid)
+      : db.collection("tutorApplications").doc();
+    await applicationRef.set({
+      ...payload,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: Boolean(auth?.currentUser) });
+    const applicantName = [payload.personal.firstName, payload.personal.lastName].filter(Boolean).join(" ");
+    queueEmail("applications@tutrstem.org.uk", "New tutor application", `${applicantName || payload.personal.email} submitted a tutor application. Review it in /admin/applications.`, {
+      type: "tutor_application",
+      applicantUid: payload.applicantUid,
+      applicationId: applicationRef.id
+    });
+    setApplicationStatus("Application submitted. The tutrSTEM team can now review it in the admin panel.", true);
+    showConfirmation("Tutor application submitted for review.");
+  } catch (error) {
+    setApplicationStatus(error.code === "permission-denied"
+      ? "Firebase blocked this application. Check the tutorApplications Firestore rules are deployed."
+      : "The application could not be submitted yet. Please try again.");
+  } finally {
+    submitButton.disabled = false;
+  }
 }
 
 function bookingMonthKey(value = new Date()) {
@@ -5455,8 +5639,10 @@ logoutButton.addEventListener("click", () => {
 
 becomeTutorLink.addEventListener("click", (event) => {
   event.preventDefault();
-  window.open(TUTOR_APPLICATION_URL, "_blank", "noopener");
+  showPage("tutor-application");
 });
+
+tutorApplicationForm?.addEventListener("submit", submitTutorApplication);
 
 lessonType.addEventListener("change", updateDueToday);
 
