@@ -1,0 +1,191 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userEmail() {
+      return request.auth.token.email;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isApprovedTutor() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/approvedTutors/$(userEmail()))
+        && get(/databases/$(database)/documents/approvedTutors/$(userEmail())).data.status == "approved";
+    }
+
+    function isParticipant() {
+      return signedIn() && request.auth.token.email in resource.data.participantEmails;
+    }
+
+    function applicantApplicationKeysAreSafe() {
+      return request.resource.data.keys().hasOnly([
+        "applicantUid",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "submittedAt",
+        "personal",
+        "teaching",
+        "qualifications",
+        "identity",
+        "safeguarding",
+        "references",
+        "declarations",
+        "uploads",
+        "files"
+      ]);
+    }
+
+    function applicantUidMatchesAuthState() {
+      return (request.auth == null && request.resource.data.applicantUid == "")
+        || (request.auth != null && request.resource.data.applicantUid == request.auth.uid);
+    }
+
+    function applicationCreateLooksSafe() {
+      return applicantApplicationKeysAreSafe()
+        && applicantUidMatchesAuthState()
+        && request.resource.data.status in ["draft", "submitted", "awaiting_dbs"]
+        && request.resource.data.personal.email is string
+        && request.resource.data.personal.firstName is string
+        && request.resource.data.personal.lastName is string
+        && request.resource.data.teaching.mainSubject is string
+        && request.resource.data.teaching.bio is string;
+    }
+
+    match /admins/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    match /approvedTutors/{email} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow update, delete: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.email == userEmail()
+        && (
+          request.resource.data.role in ["student", "parent"]
+          || (request.resource.data.role == "tutor" && isApprovedTutor())
+        );
+    }
+
+    match /tutorProfiles/{uid} {
+      allow read: if isAdmin() || resource.data.visible == true || isOwner(uid);
+      allow create, update: if isAdmin() || (
+        isOwner(uid)
+        && isApprovedTutor()
+        && request.resource.data.email == userEmail()
+        && (
+          (request.resource.data.visible == true
+            && get(/databases/$(database)/documents/approvedTutors/$(userEmail())).data.visible == true)
+          || (request.resource.data.visible == false
+            && get(/databases/$(database)/documents/approvedTutors/$(userEmail())).data.visible != true)
+        )
+      );
+      allow delete: if isAdmin() || isOwner(uid);
+    }
+
+    match /tutorApplications/{uid} {
+      allow create: if applicationCreateLooksSafe();
+      allow read: if isAdmin()
+        || (isOwner(uid) && resource.data.applicantUid == request.auth.uid);
+      allow update: if isAdmin()
+        || (
+          isOwner(uid)
+          && resource.data.applicantUid == request.auth.uid
+          && resource.data.status == "draft"
+          && request.resource.data.applicantUid == request.auth.uid
+          && applicantApplicationKeysAreSafe()
+          && request.resource.data.status in ["draft", "submitted", "awaiting_dbs"]
+        );
+      allow delete: if isAdmin();
+
+      match /restricted/{document=**} {
+        allow create: if isOwner(uid);
+        allow read, update, delete: if isAdmin();
+      }
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAdmin() || (
+        signedIn()
+        && (resource.data.studentEmail == userEmail() || resource.data.tutorEmail == userEmail())
+      );
+      allow create: if signedIn()
+        && request.resource.data.studentEmail == userEmail()
+        && request.resource.data.tutorEmail is string;
+      allow update: if isAdmin() || (
+        signedIn()
+        && (resource.data.studentEmail == userEmail() || resource.data.tutorEmail == userEmail())
+      );
+      allow delete: if false;
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAdmin() || isParticipant();
+      allow create: if signedIn()
+        && request.auth.token.email in request.resource.data.participantEmails
+        && request.resource.data.senderEmail == userEmail();
+      allow update, delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.byEmail == userEmail();
+      allow update, delete: if isAdmin();
+    }
+
+    match /emailQueue/{emailId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /subjectRequests/{requestId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /safetyEvents/{eventId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /moderationAudit/{auditId} {
+      allow create, read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /subjectModules/{moduleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
