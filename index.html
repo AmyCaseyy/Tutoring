@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20260919-seo-foundation" />
+    <link rel="stylesheet" href="styles.css?v=20260923-admin-panel" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -83,10 +83,6 @@
             <button type="button" data-route="support">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
               Contact support
-            </button>
-            <button type="button" data-route="moderation" data-admin-only>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M9 12l2 2 4-4"/></svg>
-              Moderation
             </button>
             <button type="button" id="logoutButton">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -650,6 +646,102 @@
         </div>
       </section>
 
+      <section class="admin-page app-page" id="admin" data-page="admin" aria-label="Admin dashboard">
+        <div class="admin-shell">
+          <aside class="admin-sidebar" aria-label="Admin navigation">
+            <a class="admin-brand" href="/admin">tutrSTEM.</a>
+            <span>Internal admin</span>
+            <button class="admin-nav active" type="button" data-admin-route="admin">Dashboard</button>
+            <button class="admin-nav" type="button" data-admin-route="admin-applications">Applications <span id="adminApplicationsBadge" hidden>0</span></button>
+            <button class="admin-nav" type="button" data-admin-route="admin-tutors">Live tutors</button>
+          </aside>
+          <div class="admin-main">
+            <div class="admin-topline">
+              <div>
+                <p class="eyebrow">Founder dashboard</p>
+                <h2>Admin overview</h2>
+              </div>
+              <button class="secondary-btn compact-btn" type="button" data-admin-refresh>Refresh</button>
+            </div>
+            <div class="admin-stats" id="adminStats"></div>
+            <section class="admin-card">
+              <div class="admin-card-head">
+                <div>
+                  <h3>Recent applications</h3>
+                  <p>Latest pending tutor applications needing review.</p>
+                </div>
+                <button class="secondary-btn compact-btn" type="button" data-admin-route="admin-applications">View all</button>
+              </div>
+              <div class="admin-list" id="adminRecentApplications"></div>
+            </section>
+            <section class="admin-card admin-placeholder">
+              <h3>Safeguarding review</h3>
+              <p>Server-side flagged-message monitoring is not built yet. Reports and manual moderation can stay separate until that feature is ready.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-page app-page" id="admin-applications" data-page="admin-applications" aria-label="Tutor applications">
+        <div class="admin-shell">
+          <aside class="admin-sidebar" aria-label="Admin navigation">
+            <a class="admin-brand" href="/admin">tutrSTEM.</a>
+            <span>Internal admin</span>
+            <button class="admin-nav" type="button" data-admin-route="admin">Dashboard</button>
+            <button class="admin-nav active" type="button" data-admin-route="admin-applications">Applications <span id="adminApplicationsListBadge" hidden>0</span></button>
+            <button class="admin-nav" type="button" data-admin-route="admin-tutors">Live tutors</button>
+          </aside>
+          <div class="admin-main">
+            <div class="admin-topline">
+              <div>
+                <p class="eyebrow">Tutor vetting</p>
+                <h2>Applications</h2>
+              </div>
+              <button class="secondary-btn compact-btn" type="button" data-admin-refresh>Refresh</button>
+            </div>
+            <div class="admin-tabs" role="tablist" aria-label="Application status filters">
+              <button class="active" type="button" data-admin-status="pending">Pending</button>
+              <button type="button" data-admin-status="approved">Approved</button>
+              <button type="button" data-admin-status="rejected">Rejected</button>
+              <button type="button" data-admin-status="all">All</button>
+            </div>
+            <section class="admin-card">
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Tutor</th>
+                      <th>Subject(s)</th>
+                      <th>Applied</th>
+                      <th>Docs</th>
+                      <th>Status</th>
+                      <th>Review</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminApplicationsTable"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-page app-page" id="admin-application-detail" data-page="admin-application-detail" aria-label="Tutor application review">
+        <div class="admin-shell">
+          <aside class="admin-sidebar" aria-label="Admin navigation">
+            <a class="admin-brand" href="/admin">tutrSTEM.</a>
+            <span>Internal admin</span>
+            <button class="admin-nav" type="button" data-admin-route="admin">Dashboard</button>
+            <button class="admin-nav active" type="button" data-admin-route="admin-applications">Applications</button>
+            <button class="admin-nav" type="button" data-admin-route="admin-tutors">Live tutors</button>
+          </aside>
+          <div class="admin-main">
+            <button class="text-link" type="button" data-admin-route="admin-applications">Back to applications</button>
+            <div id="adminApplicationDetail"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="bookings-page app-page" id="bookings" data-page="bookings">
         <div class="page-shell">
           <div class="page-title-row">
@@ -1104,6 +1196,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260919-seo-foundation"></script>
+    <script src="app.js?v=20260923-admin-panel"></script>
   </body>
 </html>

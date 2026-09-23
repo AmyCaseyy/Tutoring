@@ -629,6 +629,12 @@ const viewMessageProfile = document.querySelector("#viewMessageProfile");
 const moderationList = document.querySelector("#moderationList");
 const moderationStatusFilter = document.querySelector("#moderationStatusFilter");
 const moderationSeverityFilter = document.querySelector("#moderationSeverityFilter");
+const adminStats = document.querySelector("#adminStats");
+const adminRecentApplications = document.querySelector("#adminRecentApplications");
+const adminApplicationsTable = document.querySelector("#adminApplicationsTable");
+const adminApplicationDetail = document.querySelector("#adminApplicationDetail");
+const adminApplicationsBadge = document.querySelector("#adminApplicationsBadge");
+const adminApplicationsListBadge = document.querySelector("#adminApplicationsListBadge");
 const bookingPageForm = document.querySelector("#bookingPageForm");
 const bookingTutor = document.querySelector("#bookingTutor");
 const bookingTutorSearch = document.querySelector("#bookingTutorSearch");
@@ -668,6 +674,11 @@ let cloudBookings = [];
 let cloudMessages = [];
 let cloudReviews = [];
 let cloudSafetyEvents = [];
+let cloudTutorApplications = [];
+let currentIsAdmin = false;
+let adminCheckResolved = false;
+let activeAdminApplicationId = "";
+let adminApplicationStatusFilter = "pending";
 let editingReviewKey = "";
 let pendingProfilePhoto = "";
 let activeReschedulePicker = null;
@@ -701,11 +712,20 @@ const storage = {
 
 function showPage(pageName, options = {}) {
   const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy", "subject-landing"];
-  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support", "moderation"];
+  const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support", "moderation", "admin", "admin-applications", "admin-application-detail"];
+  const adminPages = ["admin", "admin-applications", "admin-application-detail"];
   const fallback = currentAccount
-    ? (isModerationUser() ? "moderation" : (currentAccount.role === "tutor" ? "profile" : "tutors"))
+    ? (currentAccount.role === "tutor" ? "profile" : "tutors")
     : "accounts";
   let nextPage = pages.some((page) => page.dataset.page === pageName) ? pageName : fallback;
+
+  if (adminPages.includes(nextPage)) {
+    if (!adminCheckResolved) return;
+    if (!currentIsAdmin) {
+      window.location.replace("/");
+      return;
+    }
+  }
 
   if (!currentAccount && !publicPages.includes(nextPage)) {
     nextPage = "accounts";
@@ -742,6 +762,9 @@ function showPage(pageName, options = {}) {
   if (nextPage === "reviews") renderReviewsPage();
   if (nextPage === "account-details") populateAccountDetails();
   if (nextPage === "moderation") renderModerationPage();
+  if (nextPage === "admin") renderAdminDashboard();
+  if (nextPage === "admin-applications") renderAdminApplications();
+  if (nextPage === "admin-application-detail") renderAdminApplicationDetail();
 
   const editingProfile = nextPage === "dashboard" && options.editProfile === true;
   document.body.classList.toggle("editing-profile", editingProfile);
@@ -760,7 +783,10 @@ function showPage(pageName, options = {}) {
 
   updateSeoMeta(metaForPage(nextPage));
 
-  if (!options.skipHistory && window.location.hash !== `#${nextPage}`) {
+  if (!options.skipHistory && adminPages.includes(nextPage)) {
+    const historyMethod = options.replaceHistory ? "replaceState" : "pushState";
+    history[historyMethod]({ page: nextPage }, "", adminPathForPage(nextPage));
+  } else if (!options.skipHistory && window.location.hash !== `#${nextPage}`) {
     const historyMethod = options.replaceHistory ? "replaceState" : "pushState";
     history[historyMethod]({ page: nextPage }, "", `#${nextPage}`);
   }
@@ -795,6 +821,14 @@ function unreadCountForThread(studentEmail, tutorAddress) {
 
 function getRouteFromHash() {
   return window.location.hash.replace("#", "") || "home";
+}
+
+function adminPathForPage(pageName) {
+  if (pageName === "admin-applications") return "/admin/applications";
+  if (pageName === "admin-application-detail" && activeAdminApplicationId) {
+    return `/admin/applications/${encodeURIComponent(activeAdminApplicationId)}`;
+  }
+  return "/admin";
 }
 
 function showConfirmation(message) {
@@ -847,6 +881,13 @@ function getFirebaseActionCode() {
 
 function getPrettyRouteFromPath() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (path === "/admin") return "admin";
+  if (path === "/admin/applications") return "admin-applications";
+  const adminApplicationMatch = path.match(/^\/admin\/applications\/([^/]+)$/);
+  if (adminApplicationMatch) {
+    activeAdminApplicationId = decodeURIComponent(adminApplicationMatch[1]);
+    return "admin-application-detail";
+  }
   const landing = SEO_LANDING_PAGES[path];
   if (landing) {
     activeLandingPage = { ...landing, path };
@@ -1439,6 +1480,16 @@ async function getCloudAccount(user) {
   };
 }
 
+async function checkIsAdmin(user = auth?.currentUser) {
+  if (!isCloudReady() || !user) return false;
+  try {
+    const snapshot = await db.collection("admins").doc(user.uid).get();
+    return snapshot.exists;
+  } catch {
+    return false;
+  }
+}
+
 function tutorApprovalIsActive(record) {
   return record?.status === "approved" || record?.approved === true || record?.isApproved === true;
 }
@@ -1537,10 +1588,10 @@ async function loadCloudData() {
 
   const accountEmail = normalizeEmail(currentAccount.email);
   const bookingField = currentAccount.role === "tutor" ? "tutorEmail" : "studentEmail";
-  const bookingSnapshot = await db.collection("bookings")
-    .where(bookingField, "==", accountEmail)
-    .limit(120)
-    .get();
+  const bookingQuery = currentIsAdmin
+    ? db.collection("bookings").limit(300)
+    : db.collection("bookings").where(bookingField, "==", accountEmail).limit(120);
+  const bookingSnapshot = await bookingQuery.get();
   cloudBookings = bookingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   const messageSnapshot = await db.collection("messages")
@@ -1569,6 +1620,22 @@ async function loadCloudData() {
       .sort((a, b) => (Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0)));
   } else {
     cloudSafetyEvents = [];
+  }
+
+  if (currentIsAdmin) {
+    try {
+      const applicationSnapshot = await db.collection("tutorApplications")
+        .limit(200)
+        .get();
+      cloudTutorApplications = applicationSnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((application) => application.verificationStatus || application.status)
+        .sort((a, b) => applicationTimestamp(b) - applicationTimestamp(a));
+    } catch {
+      cloudTutorApplications = [];
+    }
+  } else {
+    cloudTutorApplications = [];
   }
   updateMessageBadge();
   updateBookingBadge();
@@ -1681,7 +1748,7 @@ function queueEmail(to, subject, body, meta = {}) {
 }
 
 function isModerationUser(account = currentAccount) {
-  return ["admin", "safeguarding"].includes(account?.role) || account?.isAdmin === true || account?.moderation === true;
+  return currentIsAdmin === true;
 }
 
 function compactWhitespace(value) {
@@ -2824,6 +2891,272 @@ function renderModerationPage() {
       if (["ACTION TAKEN", "ESCALATED"].includes(status) && !window.confirm(`Confirm ${status.toLowerCase()} for this moderation item?`)) return;
       await updateSafetyEventStatus(button.dataset.eventId, status, notes);
       renderModerationPage();
+    });
+  });
+}
+
+function applicationTimestamp(application) {
+  const value = application.submittedAt || application.appliedAt || application.createdAt || application.updatedAt || application.decisionAt;
+  if (typeof value?.toMillis === "function") return value.toMillis();
+  if (typeof value?.seconds === "number") return value.seconds * 1000;
+  if (typeof value === "number") return value;
+  const parsed = Date.parse(value || "");
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function formatAdminDate(value) {
+  const timestamp = applicationTimestamp({ submittedAt: value });
+  if (!timestamp) return "Not recorded";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(timestamp));
+}
+
+function applicationStatus(application) {
+  return String(application.verificationStatus || application.status || "pending").toLowerCase().replace(/\s+/g, "_");
+}
+
+function applicationStatusGroup(application) {
+  const status = applicationStatus(application);
+  if (["approved", "active"].includes(status)) return "approved";
+  if (["rejected", "declined"].includes(status)) return "rejected";
+  return "pending";
+}
+
+function statusBadgeHtml(status) {
+  const group = ["approved", "active"].includes(status) ? "approved" : (["rejected", "declined", "suspended"].includes(status) ? "rejected" : "pending");
+  return `<span class="admin-status ${group}">${escapeHtml(status.replace(/_/g, " "))}</span>`;
+}
+
+function nestedValue(source, path, fallback = "") {
+  return path.split(".").reduce((value, key) => value?.[key], source) ?? fallback;
+}
+
+function applicationName(application) {
+  const first = nestedValue(application, "personal.firstName", "");
+  const last = nestedValue(application, "personal.lastName", "");
+  return [first, last].filter(Boolean).join(" ")
+    || application.name
+    || application.displayName
+    || application.email
+    || nestedValue(application, "personal.email", "")
+    || "Unnamed applicant";
+}
+
+function applicationEmail(application) {
+  return application.email || nestedValue(application, "personal.email", "");
+}
+
+function applicationSubjects(application) {
+  const teachingSubjects = nestedValue(application, "teaching.subjects", []);
+  if (Array.isArray(teachingSubjects) && teachingSubjects.length) {
+    return teachingSubjects.map((item) => {
+      if (typeof item === "string") return item;
+      return [item.subject, item.level, item.grade || item.grade_achieved].filter(Boolean).join(" ");
+    }).filter(Boolean).join(", ");
+  }
+  if (Array.isArray(application.subjects)) return application.subjects.join(", ");
+  return nestedValue(application, "teaching.mainSubject", "") || application.subject || "Not listed";
+}
+
+function applicationDocumentCount(application) {
+  const paths = [
+    nestedValue(application, "personal.photoPath", ""),
+    nestedValue(application, "qualifications.certificatePath", ""),
+    nestedValue(application, "identity.idPath", ""),
+    nestedValue(application, "identity.selfiePath", "")
+  ].filter(Boolean);
+  const uploads = application.uploads || application.files || [];
+  return paths.length + (Array.isArray(uploads) ? uploads.length : 0);
+}
+
+function getPendingApplications() {
+  return cloudTutorApplications.filter((application) => applicationStatusGroup(application) === "pending");
+}
+
+function bookingMonthKey(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function bookingAmount(booking) {
+  const explicit = Number(booking.amount || booking.total || booking.price || booking.hourlyRate || 0);
+  if (explicit) return explicit;
+  const tutor = getAllTutors().find((item) => normalizeEmail(tutorEmail(item)) === normalizeEmail(booking.tutorEmail));
+  return Number(tutor?.price || 0);
+}
+
+function adminStatCard(label, value, hint = "") {
+  return `
+    <article class="admin-stat-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      ${hint ? `<small>${escapeHtml(hint)}</small>` : ""}
+    </article>
+  `;
+}
+
+function renderAdminBadges() {
+  const count = getPendingApplications().length;
+  [adminApplicationsBadge, adminApplicationsListBadge].forEach((badge) => {
+    if (!badge) return;
+    badge.hidden = count === 0;
+    badge.textContent = String(count);
+  });
+}
+
+function renderAdminDashboard() {
+  if (!currentIsAdmin) return;
+  renderAdminBadges();
+  const month = bookingMonthKey();
+  const thisMonthBookings = cloudBookings.filter((booking) => bookingMonthKey(booking.dateTime || booking.createdAtMs || Date.now()) === month);
+  const platformRevenue = thisMonthBookings.reduce((sum, booking) => sum + (bookingAmount(booking) * 0.5), 0);
+  if (adminStats) {
+    adminStats.innerHTML = [
+      adminStatCard("Pending applications", String(getPendingApplications().length), "Need review"),
+      adminStatCard("Approved tutors", String(cloudTutorApplications.filter((app) => applicationStatusGroup(app) === "approved").length), "Approved applications"),
+      adminStatCard("Bookings this month", String(thisMonthBookings.length), "Visible to admin"),
+      adminStatCard("Platform revenue", `£${platformRevenue.toFixed(2)}`, "50% platform cut")
+    ].join("");
+  }
+  if (adminRecentApplications) {
+    const recent = getPendingApplications().slice(0, 5);
+    adminRecentApplications.innerHTML = recent.length ? recent.map((application) => `
+      <button class="admin-row-button" type="button" data-admin-application="${escapeHtml(application.id)}">
+        <span>
+          <strong>${escapeHtml(applicationName(application))}</strong>
+          <small>${escapeHtml(applicationSubjects(application))}</small>
+        </span>
+        ${statusBadgeHtml(applicationStatus(application))}
+      </button>
+    `).join("") : `<p class="empty-copy">No pending tutor applications yet.</p>`;
+    attachAdminApplicationLinks(adminRecentApplications);
+  }
+}
+
+function renderAdminApplications() {
+  if (!currentIsAdmin || !adminApplicationsTable) return;
+  renderAdminBadges();
+  const applications = cloudTutorApplications.filter((application) => (
+    adminApplicationStatusFilter === "all" || applicationStatusGroup(application) === adminApplicationStatusFilter
+  ));
+  adminApplicationsTable.innerHTML = applications.length ? applications.map((application) => `
+    <tr>
+      <td><strong>${escapeHtml(applicationName(application))}</strong><small>${escapeHtml(applicationEmail(application))}</small></td>
+      <td>${escapeHtml(applicationSubjects(application))}</td>
+      <td>${escapeHtml(formatAdminDate(application.submittedAt || application.appliedAt || application.createdAt))}</td>
+      <td>${applicationDocumentCount(application)}</td>
+      <td>${statusBadgeHtml(applicationStatus(application))}</td>
+      <td><button class="text-link" type="button" data-admin-application="${escapeHtml(application.id)}">Review</button></td>
+    </tr>
+  `).join("") : `<tr><td colspan="6">No applications match this filter.</td></tr>`;
+  attachAdminApplicationLinks(adminApplicationsTable);
+}
+
+function uploadPathList(application) {
+  return [
+    ["Profile photo", nestedValue(application, "personal.photoPath", "")],
+    ["Certificate/transcript", nestedValue(application, "qualifications.certificatePath", "")],
+    ["ID photo", nestedValue(application, "identity.idPath", "")],
+    ["Selfie with code", nestedValue(application, "identity.selfiePath", "")]
+  ].filter(([, path]) => path);
+}
+
+function checksHtml(checks = {}) {
+  const labels = [
+    ["uniEmailVerified", "University email"],
+    ["idVerified", "ID"],
+    ["qualificationsVerified", "Qualifications"],
+    ["referencesComplete", "References"],
+    ["dbsVerified", "DBS"],
+    ["interviewDone", "Interview"]
+  ];
+  return labels.map(([key, label]) => `
+    <span class="admin-check ${checks[key] ? "ok" : ""}">${checks[key] ? "✓" : "–"} ${escapeHtml(label)}</span>
+  `).join("");
+}
+
+function renderAdminApplicationDetail() {
+  if (!currentIsAdmin || !adminApplicationDetail) return;
+  const application = cloudTutorApplications.find((item) => item.id === activeAdminApplicationId);
+  if (!application) {
+    adminApplicationDetail.innerHTML = `
+      <section class="admin-card">
+        <h2>Application not found</h2>
+        <p>This application could not be loaded, or the current account does not have permission.</p>
+      </section>
+    `;
+    return;
+  }
+  const uploads = uploadPathList(application);
+  adminApplicationDetail.innerHTML = `
+    <div class="admin-topline">
+      <div>
+        <p class="eyebrow">Application review</p>
+        <h2>${escapeHtml(applicationName(application))}</h2>
+        <p>${escapeHtml(applicationEmail(application) || "No email recorded")}</p>
+      </div>
+      ${statusBadgeHtml(applicationStatus(application))}
+    </div>
+    <div class="admin-detail-grid">
+      <section class="admin-card">
+        <h3>Teaching profile</h3>
+        <dl class="admin-dl">
+          <div><dt>Subjects</dt><dd>${escapeHtml(applicationSubjects(application))}</dd></div>
+          <div><dt>University</dt><dd>${escapeHtml(nestedValue(application, "qualifications.university", application.university || "Not recorded"))}</dd></div>
+          <div><dt>Headline</dt><dd>${escapeHtml(nestedValue(application, "teaching.headline", application.headline || "Not recorded"))}</dd></div>
+          <div><dt>Bio</dt><dd>${escapeHtml(nestedValue(application, "teaching.bio", application.bio || "Not recorded"))}</dd></div>
+        </dl>
+      </section>
+      <section class="admin-card">
+        <h3>Verification checks</h3>
+        <div class="admin-checks">${checksHtml(application.checks || {})}</div>
+        <p class="empty-copy">Update these fields in Firestore until the full application-review actions are wired to your final application form.</p>
+      </section>
+      <section class="admin-card">
+        <h3>Uploaded files</h3>
+        ${uploads.length ? `<ul class="admin-file-list">${uploads.map(([label, path]) => `<li><strong>${escapeHtml(label)}</strong><span>${escapeHtml(path)}</span></li>`).join("")}</ul>` : `<p class="empty-copy">No upload paths recorded yet.</p>`}
+        <p class="empty-copy">Firebase Storage rules allow only admins to read these application files. If uploads are stored in Supabase later, store private object paths here and show signed admin-only links.</p>
+      </section>
+      <section class="admin-card">
+        <h3>Decision</h3>
+        <div class="booking-actions">
+          <button class="secondary-btn compact-btn" type="button" data-admin-decision="in_review">Move to review</button>
+          <button class="secondary-btn compact-btn" type="button" data-admin-decision="approved">Approve</button>
+          <button class="secondary-btn compact-btn" type="button" data-admin-decision="rejected">Reject</button>
+        </div>
+      </section>
+    </div>
+  `;
+  adminApplicationDetail.querySelectorAll("[data-admin-decision]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const nextStatus = button.dataset.adminDecision;
+      if (nextStatus === "rejected" && !window.confirm("Reject this tutor application?")) return;
+      await updateTutorApplicationStatus(application.id, nextStatus);
+    });
+  });
+}
+
+async function updateTutorApplicationStatus(id, status) {
+  if (!currentIsAdmin || !isCloudReady() || !id) return;
+  await db.collection("tutorApplications").doc(id).set({
+    verificationStatus: status,
+    status,
+    reviewedBy: normalizeEmail(currentAccount?.email),
+    decisionAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  await loadCloudData();
+  renderAdminApplicationDetail();
+}
+
+function attachAdminApplicationLinks(root) {
+  root.querySelectorAll("[data-admin-application]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeAdminApplicationId = button.dataset.adminApplication;
+      showPage("admin-application-detail");
     });
   });
 }
@@ -4071,6 +4404,29 @@ function populateAccountDetails() {
   accountParentEmail.value = currentAccount.parentEmail || "";
 }
 
+function syncAdminMenuLink() {
+  const existing = userDropdown?.querySelector("[data-dynamic-admin-link]");
+  if (!userDropdown) return;
+  if (!currentIsAdmin) {
+    existing?.remove();
+    return;
+  }
+  if (existing) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.dynamicAdminLink = "true";
+  button.innerHTML = `
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M9 12l2 2 4-4"/></svg>
+    Admin
+  `;
+  button.addEventListener("click", () => {
+    userDropdown.hidden = true;
+    userMenuButton.setAttribute("aria-expanded", "false");
+    showPage("admin");
+  });
+  userDropdown.insertBefore(button, logoutButton);
+}
+
 function updateAccess() {
   const role = currentAccount?.role || signupRole.value;
   document.body.dataset.role = currentAccount ? role : "guest";
@@ -4093,8 +4449,9 @@ function updateAccess() {
     item.hidden = role !== "tutor" || !currentAccount;
   });
   document.querySelectorAll("[data-admin-only]").forEach((item) => {
-    item.hidden = !isModerationUser();
+    item.hidden = !currentIsAdmin;
   });
+  syncAdminMenuLink();
   userMenu.hidden = !currentAccount;
   if (currentAccount) {
     userMenuName.textContent = currentAccount.name;
@@ -4293,6 +4650,38 @@ window.addEventListener("popstate", () => {
 
 [moderationStatusFilter, moderationSeverityFilter].filter(Boolean).forEach((control) => {
   control.addEventListener("change", renderModerationPage);
+});
+
+document.querySelectorAll("[data-admin-route]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const route = button.dataset.adminRoute;
+    if (route === "admin-tutors") {
+      showPage("admin-applications");
+      showConfirmation("Live tutor management will use approved applications and tutor profiles.");
+      return;
+    }
+    showPage(route);
+  });
+});
+
+document.querySelectorAll("[data-admin-status]").forEach((button) => {
+  button.addEventListener("click", () => {
+    adminApplicationStatusFilter = button.dataset.adminStatus;
+    document.querySelectorAll("[data-admin-status]").forEach((item) => {
+      item.classList.toggle("active", item === button);
+    });
+    renderAdminApplications();
+  });
+});
+
+document.querySelectorAll("[data-admin-refresh]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    if (!currentIsAdmin) return;
+    await loadCloudData();
+    renderAdminDashboard();
+    renderAdminApplications();
+    renderAdminApplicationDetail();
+  });
 });
 
 subjectLandingCta?.addEventListener("click", () => {
@@ -5085,6 +5474,8 @@ async function initializeSite() {
     auth.onAuthStateChanged(async (user) => {
       try {
         if (user) {
+          currentIsAdmin = await checkIsAdmin(user);
+          adminCheckResolved = true;
           const cloudAccount = await getCloudAccount(user);
           if (cloudAccount) {
             if (cloudAccount.role === "tutor" && !(await isApprovedTutorEmail(cloudAccount.email))) {
@@ -5092,16 +5483,28 @@ async function initializeSite() {
               currentAccount = null;
               localStorage.removeItem("girlstemTutoringCurrentAccount");
             } else {
-              currentAccount = cloudAccount;
-              localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(cloudAccount));
+              currentAccount = currentIsAdmin ? { ...cloudAccount, role: cloudAccount.role || "admin" } : cloudAccount;
+              localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(currentAccount));
             }
+          } else if (currentIsAdmin) {
+            currentAccount = {
+              uid: user.uid,
+              email: normalizeEmail(user.email),
+              name: user.displayName || "tutrSTEM admin",
+              role: "admin"
+            };
+            localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(currentAccount));
           }
         } else {
           currentAccount = null;
+          currentIsAdmin = false;
+          adminCheckResolved = true;
           localStorage.removeItem("girlstemTutoringCurrentAccount");
         }
         await loadCloudData();
       } catch {
+        currentIsAdmin = false;
+        adminCheckResolved = true;
         signupStatus.textContent = "Firebase is connected, but Firestore is not ready. Check test mode is on.";
         signupStatus.classList.remove("success");
       }
@@ -5113,6 +5516,8 @@ async function initializeSite() {
       checkLessonReminders();
     });
   } else {
+    adminCheckResolved = true;
+    currentIsAdmin = false;
     const savedAccount = readStore("girlstemTutoringCurrentAccount", null);
     if (savedAccount?.email) currentAccount = savedAccount;
     updateSignupMode();
