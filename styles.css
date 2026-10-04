@@ -33,6 +33,13 @@ body {
   background-size: 44px 44px;
 }
 
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
 .is-loading {
   overflow: hidden;
 }
@@ -320,6 +327,10 @@ button {
   text-transform: uppercase;
 }
 
+.nav-links a {
+  white-space: nowrap;
+}
+
 .nav-links a.active {
   color: var(--ink);
   font-weight: 800;
@@ -336,6 +347,7 @@ button {
 
 .top-actions {
   justify-self: end;
+  min-width: 0;
 }
 
 .user-menu {
@@ -3409,6 +3421,49 @@ body.site-ready .hero-media {
 }
 
 @media (max-width: 1100px) {
+  .topbar {
+    grid-template-columns: minmax(150px, auto) minmax(0, 1fr) auto;
+    gap: 14px;
+    padding-inline: clamp(16px, 3vw, 36px);
+  }
+
+  .brand-logo {
+    width: clamp(150px, 20vw, 210px);
+  }
+
+  .nav-links {
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-links a {
+    flex: 0 0 auto;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 999px;
+  }
+
+  .nav-links a.active {
+    background: rgba(25, 24, 21, 0.08);
+    box-shadow: none;
+  }
+
+  .top-actions .secondary-btn,
+  .top-actions .primary-btn {
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+
   .strip-inner {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -3456,6 +3511,14 @@ body.site-ready .hero-media {
 	    grid-template-columns: 1fr;
 	  }
 
+  .booking-lists,
+  .admin-main,
+  .application-form article,
+  .auth-panel,
+  .tutor-card {
+    min-width: 0;
+  }
+
   .profile-photo {
     width: min(180px, 100%);
   }
@@ -3501,32 +3564,76 @@ body.site-ready .hero-media {
   .topbar {
     grid-template-columns: 1fr auto;
     min-height: auto;
-    align-items: start;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px 8px;
   }
 
   .brand-logo {
-    width: min(72vw, 340px);
-    height: 74px;
-    object-fit: cover;
+    width: min(52vw, 210px);
+    height: auto;
+    object-fit: contain;
   }
 
   .top-actions {
+    justify-self: end;
     gap: 6px;
+  }
+
+  .top-actions .icon-btn,
+  .user-trigger {
+    min-width: 42px;
+  }
+
+  .user-trigger {
+    padding-inline: 8px;
+  }
+
+  .user-trigger > span:first-child {
+    display: none;
+  }
+
+  .user-dropdown {
+    right: 0;
+    left: auto;
+    width: min(88vw, 280px);
   }
 
   .top-actions .primary-btn {
     padding: 0 12px;
   }
 
-  .nav-links,
   .top-actions .secondary-btn {
     display: none;
   }
 
+  .nav-links {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: flex-start;
+    order: 3;
+    padding: 6px 0 2px;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    font-size: 0.72rem;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-links a {
+    min-height: 36px;
+    padding: 0 10px;
+    background: rgba(255, 253, 248, 0.72);
+    border: 1px solid rgba(25, 24, 21, 0.08);
+  }
+
   .hero {
-    min-height: 860px;
+    min-height: calc(100svh - 112px);
     align-items: start;
-    padding-top: 54px;
+    padding: 34px 16px 48px;
   }
 
   h1 {
@@ -3553,6 +3660,9 @@ body.site-ready .hero-media {
   }
 
   .strip-inner,
+  .info-grid,
+  .seo-grid,
+  .settings-layout,
   .tutor-grid,
   .option-grid,
   .role-tools,
@@ -3562,6 +3672,27 @@ body.site-ready .hero-media {
   .bookings-layout,
   .reviews-layout {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-page,
+  .profile-page,
+  .messages-page,
+  .bookings-page,
+  .reviews-page,
+  .info-page,
+  .subject-landing,
+  .account-details-page,
+  .tutor-application-page,
+  .workspace {
+    padding: 30px 14px;
+  }
+
+  .page-heading {
+    padding: 40px 14px 22px;
+  }
+
+  .strip-inner {
+    padding: 0 14px 40px;
   }
 
   .card-footer {
@@ -3583,13 +3714,14 @@ body.site-ready .hero-media {
   }
 
   .tutor-card-main {
-    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr);
     align-items: start;
+    gap: 14px;
   }
 
   .tutor-card .avatar {
-    width: 84px;
-    height: 84px;
+    width: 72px;
+    height: 72px;
   }
 
   .tutor-card-rating {
@@ -3600,6 +3732,7 @@ body.site-ready .hero-media {
 
   .segmented {
     width: 100%;
+    overflow-x: auto;
   }
 
   .login-choice-card {
@@ -3627,6 +3760,17 @@ body.site-ready .hero-media {
 
   .booking-actions .secondary-btn {
     flex: 1;
+    min-width: min(100%, 126px);
+  }
+
+  .booking-time-grid,
+  .reschedule-picker .booking-time-grid,
+  .minute-options {
+    grid-template-columns: 1fr;
+  }
+
+  .minute-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .form-grid.two {
@@ -3648,7 +3792,7 @@ body.site-ready .hero-media {
 
   .application-subject-table > div,
   .application-subject-table label {
-    grid-template-columns: minmax(120px, 1fr) 70px 70px;
+    grid-template-columns: minmax(110px, 1fr) 64px 64px;
   }
 
   .application-nav {
@@ -3668,5 +3812,131 @@ body.site-ready .hero-media {
   .lesson-list time {
     width: auto;
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .primary-btn,
+  .secondary-btn {
+    min-width: 0;
+  }
+
+  .hero-search,
+  .booking-builder,
+  .booking-lists,
+  .filters,
+  .admin-card,
+  .auth-panel,
+  .tutor-card,
+  .profile-panel,
+  .activity-panel,
+  .ratings-panel,
+  .application-form article {
+    padding: 16px;
+  }
+
+  .hero-search {
+    margin-top: 22px;
+  }
+
+  .popular-searches a,
+  .seo-link-grid a {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .results-top,
+  .admin-topline,
+  .admin-card-head,
+  .dash-header,
+  .section-title,
+  .review-card-top,
+  .feed-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-lock-note {
+    max-width: none;
+    text-align: left;
+  }
+
+  .tutor-head,
+  .tutor-card-main {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .tutor-card .avatar,
+  .avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .tutor-card-rating {
+    grid-column: 1 / -1;
+  }
+
+  .activity-item,
+  .lesson-list article,
+  .booking-row {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-row .avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .booking-actions,
+  .reschedule-actions,
+  .account-actions,
+  .card-actions,
+  .review-actions {
+    justify-content: stretch;
+  }
+
+  .booking-actions .secondary-btn,
+  .reschedule-actions .secondary-btn,
+  .account-actions .secondary-btn,
+  .account-actions .primary-btn,
+  .card-actions .secondary-btn,
+  .card-actions .primary-btn {
+    width: 100%;
+  }
+
+  .application-rail {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .application-rail button {
+    min-height: 42px;
+  }
+
+  .application-subject-table {
+    overflow-x: auto;
+  }
+
+  .application-subject-table > div,
+  .application-subject-table label {
+    min-width: 300px;
+  }
+
+  .admin-main {
+    padding: 20px 14px;
+  }
+
+  .admin-sidebar {
+    gap: 8px;
+    padding: 16px 14px;
+  }
+
+  .admin-nav {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 130px;
+  }
+
+  .admin-table {
+    min-width: 680px;
   }
 }
