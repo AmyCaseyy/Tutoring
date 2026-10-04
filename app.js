@@ -701,7 +701,7 @@ const pages = [...document.querySelectorAll("[data-page]")];
 const routeLinks = [...document.querySelectorAll("[data-route]")];
 
 let selectedTutor = tutors[0];
-let selectedThreadTutor = tutors[0];
+let selectedThreadTutor = null;
 let selectedStudentAccount = null;
 let currentAccount = null;
 let activeLandingPage = null;
@@ -2134,14 +2134,16 @@ function currentRecipientEmail() {
   if (!currentAccount) return "";
   return currentAccount.role === "tutor"
     ? normalizeEmail(selectedStudentAccount?.email)
-    : normalizeEmail(tutorEmail(selectedThreadTutor));
+    : (selectedThreadTutor ? normalizeEmail(tutorEmail(selectedThreadTutor)) : "");
 }
 
 function threadKey() {
   if (currentAccount?.role === "tutor") {
+    if (!selectedStudentAccount?.email) return "";
     return threadKeyFor(selectedStudentAccount?.email || "", currentAccount.email);
   }
 
+  if (!selectedThreadTutor) return "";
   return threadKeyFor(currentAccount?.email || "", tutorEmail(selectedThreadTutor));
 }
 
@@ -2689,6 +2691,7 @@ function renderSubjectLandingPage() {
 function getMessages() {
   const allMessages = readStore(storage.messages, {});
   const key = threadKey();
+  if (!key) return [];
   const localMessages = allMessages[key] || [];
   const rawCloudThread = cloudMessages
     .filter((message) => message.threadKey === key)
@@ -2721,8 +2724,18 @@ function getMessages() {
 async function saveMessage(message) {
   const allMessages = readStore(storage.messages, {});
   const key = threadKey();
+  if (!key) {
+    signupStatus.textContent = "Choose a chat before sending a message.";
+    signupStatus.classList.remove("success");
+    return false;
+  }
   const messages = allMessages[key] || [];
   const recipientEmail = currentRecipientEmail();
+  if (!recipientEmail) {
+    signupStatus.textContent = "Choose a chat before sending a message.";
+    signupStatus.classList.remove("success");
+    return false;
+  }
   const allowed = await moderateOutgoingText(message.text || message.body || "");
   if (!allowed) return false;
   const enrichedMessage = {
@@ -2786,7 +2799,11 @@ function markCurrentThreadRead() {
   if (!currentAccount?.email) return;
   const ownEmail = normalizeEmail(currentAccount.email);
   const studentEmail = currentAccount.role === "tutor" ? selectedStudentAccount?.email : currentAccount.email;
-  const tutorAddress = currentAccount.role === "tutor" ? currentAccount.email : tutorEmail(selectedThreadTutor);
+  const tutorAddress = currentAccount.role === "tutor" ? currentAccount.email : (selectedThreadTutor ? tutorEmail(selectedThreadTutor) : "");
+  if (!studentEmail || !tutorAddress) {
+    updateMessageBadge();
+    return;
+  }
   const unread = cloudMessages.filter((message) => {
     const sender = normalizeEmail(message.senderEmail);
     const readBy = (message.readBy || []).map(normalizeEmail);
@@ -2892,13 +2909,17 @@ function attachReportHandlers(container) {
 }
 
 function renderChat(role) {
-  const chatPartner = role === "tutor" ? (selectedStudentAccount ? studentSummary(selectedStudentAccount).name : "student and parent") : selectedThreadTutor.name;
+  const chatPartner = role === "tutor"
+    ? (selectedStudentAccount ? studentSummary(selectedStudentAccount).name : "student and parent")
+    : (selectedThreadTutor ? selectedThreadTutor.name : "Choose a chat");
   document.querySelector("#chatTitle").textContent = role === "tutor" ? "Student and parent chat" : "Tutor chat";
   document.querySelector("#chatWith").textContent = chatPartner;
-  chatInput.placeholder = `Message ${chatPartner}...`;
+  chatInput.placeholder = selectedThreadTutor || role === "tutor" ? `Message ${chatPartner}...` : "Choose a tutor to start messaging...";
   const messages = getMessages();
   markCurrentThreadRead();
-  chatMessages.innerHTML = messages.length ? messages.map(messageBubbleHtml).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  chatMessages.innerHTML = !selectedThreadTutor && role !== "tutor"
+    ? `<p class="empty-copy">Choose a chat from Messages to start messaging a tutor.</p>`
+    : (messages.length ? messages.map(messageBubbleHtml).join("") : `<p class="empty-copy">No messages yet.</p>`);
   hydrateSupabaseFileLinks(chatMessages);
   attachReportHandlers(chatMessages);
   chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -2953,12 +2974,10 @@ function renderMessagesPage() {
     viewMessageProfile.onclick = () => showPage("student-profile");
   } else {
     const availableTutors = getAllTutors();
-    if (!selectedThreadTutor) selectedThreadTutor = availableTutors[0];
-    markCurrentThreadRead();
     threadList.innerHTML = availableTutors.map((tutor) => {
       const unread = unreadCountForThread(currentAccount.email, tutorEmail(tutor));
       return `
-        <button class="thread-button ${tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
+        <button class="thread-button ${selectedThreadTutor && tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
           <span class="avatar small-avatar">${escapeHtml(tutor.initials || initialsFromName(tutor.name))}</span>
           <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutorSubjectLabel(tutor))}</small></span>
           ${unread ? `<span class="message-badge thread-unread">${unread}</span>` : ""}
@@ -2975,6 +2994,14 @@ function renderMessagesPage() {
     });
 
     messagePageTitle.textContent = "Tutor chat";
+    if (!selectedThreadTutor) {
+      messagePageWith.textContent = "Choose a chat";
+      messagePageInput.placeholder = "Choose a tutor to start messaging...";
+      messagePageMessages.innerHTML = `<p class="empty-copy">Choose a chat from the list to start messaging a tutor.</p>`;
+      viewMessageProfile.hidden = true;
+      return;
+    }
+    markCurrentThreadRead();
     messagePageWith.textContent = selectedThreadTutor.name;
     viewMessageProfile.hidden = false;
     viewMessageProfile.textContent = "View tutor profile";
