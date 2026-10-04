@@ -737,6 +737,10 @@ function isCloudReady() {
   return Boolean(auth && db);
 }
 
+function isPaymentsReady() {
+  return Boolean(SUPABASE_PROJECT_URL && SUPABASE_PUBLISHABLE_KEY && auth?.currentUser && currentAccount);
+}
+
 const storage = {
   messages: "girlstemTutoringMessages",
   ratings: "girlstemTutoringRatings",
@@ -1779,6 +1783,22 @@ async function sendEmailViaSupabase(to, subject, body, meta = {}) {
     })
   });
   if (!response.ok) throw new Error("Email function did not accept the message.");
+}
+
+async function callPaymentFunction(name, payload = {}) {
+  const token = auth?.currentUser ? await auth.currentUser.getIdToken().catch(() => "") : "";
+  const response = await fetch(`${SUPABASE_PROJECT_URL}/functions/v1/${name}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${token || SUPABASE_PUBLISHABLE_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Payment action could not be completed yet.");
+  return data;
 }
 
 function createId(prefix = "item") {
@@ -4341,6 +4361,39 @@ function bookingStatusClass(status = "Pending tutor approval") {
   return status.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
+function tutorStripeAccountId(tutor = {}) {
+  return tutor.stripeAccountId
+    || tutor.stripeConnectAccountId
+    || tutor.payoutStripeAccountId
+    || tutor.stripeConnectedAccountId
+    || "";
+}
+
+function formatMoneyPounds(value = 0) {
+  return `£${Number(value || 0).toFixed(2).replace(/\.00$/, "")}`;
+}
+
+function bookingNeedsPayment(booking) {
+  return !booking.isFreeTrial && Number(booking.amountPence || Math.round(bookingAmount(booking) * 100)) >= 50;
+}
+
+function bookingIsPaid(booking) {
+  return ["paid_held", "paid_released"].includes(String(booking.paymentStatus || ""));
+}
+
+function bookingCanStartCheckout(booking) {
+  return currentAccount?.role !== "tutor"
+    && bookingNeedsPayment(booking)
+    && !bookingIsPaid(booking)
+    && ["Accepted", "Checkout started - payment not complete"].includes(booking.status || "");
+}
+
+function bookingCanReleasePayment(booking) {
+  return currentAccount?.role === "tutor"
+    && booking.paymentStatus === "paid_held"
+    && booking.payoutStatus !== "released";
+}
+
 function localDateTimeInputValue(date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
@@ -4777,6 +4830,7 @@ function recurringAcceptButtons(booking) {
 
 function bookingActions(booking) {
   const id = escapeHtml(booking.id);
+  const paymentId = escapeHtml(booking.parentBookingId || booking.id);
   const status = booking.status || "Pending tutor approval";
   if (["Cancelled by student", "Cancelled by tutor"].includes(status)) return "";
   const needsTutorDecision = status === "Pending tutor approval" || status === "Reschedule requested by student";
@@ -4785,10 +4839,15 @@ function bookingActions(booking) {
     && ((status === "Reschedule requested by student" && currentAccount?.role === "tutor")
       || (status === "Reschedule requested by tutor" && currentAccount?.role !== "tutor"));
   const proposed = booking.proposedDateTime ? `<small class="booking-proposed">Proposed: ${escapeHtml(formatBookingDate(booking.proposedDateTime))}</small>` : "";
+  const paymentButtons = `
+    ${bookingCanStartCheckout(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="checkout" data-booking-id="${paymentId}">Pay now</button>` : ""}
+    ${bookingCanReleasePayment(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="release" data-booking-id="${paymentId}">Mark complete</button>` : ""}
+  `;
 
   if (currentAccount?.role === "tutor") {
     return `
       ${proposed}
+      ${paymentButtons}
       ${needsTutorDecision && !hasReschedule ? `${recurringAcceptButtons(booking)}
       <button class="secondary-btn compact-btn" type="button" data-booking-action="Rejected" data-booking-id="${id}">Reject</button>` : ""}
       ${canRespondToReschedule ? `${rescheduleDecisionButtons(booking, "Accept reschedule", "Accept time", "Accept future")}
@@ -4802,6 +4861,7 @@ function bookingActions(booking) {
 
   return `
     ${proposed}
+    ${paymentButtons}
     ${canRespondToReschedule ? `${rescheduleDecisionButtons(booking, "Accept reschedule", "Accept time", "Accept future")}
     <button class="secondary-btn compact-btn" type="button" data-open-reschedule="${id}" data-reschedule-action="Counter reschedule">Counter</button>
     ${rescheduleDecisionButtons(booking, "Decline reschedule", "Decline", "Decline future")}` : ""}
@@ -4871,6 +4931,19 @@ function renderBookingList(container, items, emptyText) {
 
   container.innerHTML = sortedItems.map((booking) => {
     const participant = bookingPersonName(booking);
+    const amount = bookingAmount(booking);
+    const paymentLabel = booking.isFreeTrial
+      ? "No payment due"
+      : `${formatMoneyPounds(amount)} lesson fee`;
+    const paymentStatus = booking.paymentStatus === "paid_held"
+      ? "Paid - held safely"
+      : booking.paymentStatus === "paid_released"
+        ? "Paid out"
+        : booking.paymentStatus === "refunded"
+          ? "Refunded"
+          : booking.paymentStatus === "checkout_started"
+            ? "Payment not complete"
+            : paymentLabel;
     return `
       <article class="booking-row">
         <div class="avatar small-avatar">${escapeHtml(booking.initials)}</div>
@@ -4878,6 +4951,7 @@ function renderBookingList(container, items, emptyText) {
           <strong>${escapeHtml(formatBookingDate(booking.dateTime))}</strong>
           <span>${booking.isFreeTrial ? "Free trial lesson" : escapeHtml(booking.type)} with ${escapeHtml(participant)} · ${escapeHtml(booking.subject)}</span>
           <small class="booking-status ${bookingStatusClass(booking.status)}">${escapeHtml(booking.status || "Pending tutor approval")}</small>
+          <small class="booking-status payment-status">${escapeHtml(paymentStatus)}</small>
           ${booking.isGeneratedOccurrence ? `<small class="booking-status">Recurring occurrence</small>` : ""}
           ${booking.isFreeTrial ? `<small class="booking-status">Free trial</small>` : ""}
           ${booking.rescheduleThread?.history?.length ? `<small class="booking-status">${booking.rescheduleThread.history.length} proposed time${booking.rescheduleThread.history.length === 1 ? "" : "s"}</small>` : ""}
@@ -4895,8 +4969,49 @@ function renderBookingList(container, items, emptyText) {
     });
   });
 
+  container.querySelectorAll("[data-payment-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const booking = getDisplayBookings().find((item) => item.id === button.dataset.bookingId || item.parentBookingId === button.dataset.bookingId);
+      if (!booking) return;
+      if (!isPaymentsReady()) {
+        signupStatus.textContent = "Payments need Supabase and a logged-in account.";
+        signupStatus.classList.remove("success");
+        return;
+      }
+      button.disabled = true;
+      try {
+        if (button.dataset.paymentAction === "checkout") {
+          signupStatus.textContent = "Opening secure Stripe checkout...";
+          const result = await callPaymentFunction("create-booking-checkout", {
+            bookingId: booking.parentBookingId || booking.id,
+            origin: window.location.origin
+          });
+          if (result.url) {
+            window.location.assign(result.url);
+            return;
+          }
+          throw new Error("Stripe did not return a checkout link.");
+        }
+        if (button.dataset.paymentAction === "release") {
+          if (!window.confirm("Mark this lesson complete and release the held payment?")) return;
+          signupStatus.textContent = "Releasing the held payment...";
+          await callPaymentFunction("release-completed-lesson", { bookingId: booking.parentBookingId || booking.id });
+          signupStatus.textContent = "Payment released.";
+          signupStatus.classList.add("success");
+          await loadCloudData();
+          renderBookingsPage();
+        }
+      } catch (error) {
+        signupStatus.textContent = error.message || "Payment action could not be completed yet.";
+        signupStatus.classList.remove("success");
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+
   container.querySelectorAll("[data-booking-action]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const status = button.dataset.bookingAction;
       const booking = getDisplayBookings().find((item) => item.id === button.dataset.bookingId);
       if (!booking) return;
@@ -4955,7 +5070,28 @@ function renderBookingList(container, items, emptyText) {
           };
         }
       }
-      updateOccurrenceOrBooking(booking, withBookingSeenByCurrent(updates, recipient), scope);
+      if ((status === "Cancelled by tutor" || status === "Cancelled by student") && !booking.isGeneratedOccurrence && bookingNeedsPayment(booking) && isPaymentsReady()) {
+        try {
+          button.disabled = true;
+          signupStatus.textContent = "Applying the cancellation payment rules...";
+          await callPaymentFunction("cancel-booking-payment", {
+            bookingId: booking.id,
+            cancelledBy: currentAccount.role === "tutor" ? "tutor" : "student"
+          });
+          await loadCloudData();
+          signupStatus.textContent = status === "Cancelled by tutor"
+            ? "Booking cancelled. Any completed payment has been refunded."
+            : "Booking cancelled. Refund rules have been applied.";
+          signupStatus.classList.add("success");
+        } catch (error) {
+          signupStatus.textContent = error.message || "The payment cancellation could not be completed.";
+          signupStatus.classList.remove("success");
+          button.disabled = false;
+          return;
+        }
+      } else {
+        updateOccurrenceOrBooking(booking, withBookingSeenByCurrent(updates, recipient), scope);
+      }
       if (booking) {
         const nextTemplate = bookingActionEmailTemplate(status);
         const nextData = bookingEmailData(booking, {
@@ -5763,12 +5899,17 @@ bookingPageForm.addEventListener("submit", async (event) => {
   const baseBooking = {
     tutor: tutor.name,
     tutorEmail: tutorEmail(tutor),
+    tutorStripeAccountId: tutorStripeAccountId(tutor),
     initials: tutor.initials,
     subject: tutorSubjectLabel(tutor),
     type: bookingLessonType.value,
     dateTime: bookingDateTimeValue,
     status: "Pending tutor approval",
     isFreeTrial: bookingLessonType.value === "Free trial lesson",
+    amount: bookingLessonType.value === "Free trial lesson" ? 0 : Number(tutor.price || 0),
+    amountPence: bookingLessonType.value === "Free trial lesson" ? 0 : Math.round(Number(tutor.price || 0) * 100),
+    paymentStatus: bookingLessonType.value === "Free trial lesson" ? "free_trial" : "not_started",
+    payoutStatus: bookingLessonType.value === "Free trial lesson" ? "not_required" : "not_released",
     student: currentAccount.name,
     studentEmail: currentAccount.email,
     seenBy: [normalizeEmail(currentAccount.email)],
