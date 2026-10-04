@@ -4545,7 +4545,7 @@ function buildBookingRecord(baseBooking) {
   return {
     ...baseBooking,
     id: createId("series"),
-    status: "Accepted",
+    status: "Pending tutor approval",
     isRecurringSeries: true,
     seriesStartDateTime: baseBooking.dateTime,
     recurrenceRule: recurrenceRuleFor(baseBooking.type),
@@ -5767,7 +5767,7 @@ bookingPageForm.addEventListener("submit", async (event) => {
     subject: tutorSubjectLabel(tutor),
     type: bookingLessonType.value,
     dateTime: bookingDateTimeValue,
-    status: isRecurringType(bookingLessonType.value) ? "Accepted" : "Pending tutor approval",
+    status: "Pending tutor approval",
     isFreeTrial: bookingLessonType.value === "Free trial lesson",
     student: currentAccount.name,
     studentEmail: currentAccount.email,
@@ -5798,7 +5798,7 @@ bookingPageForm.addEventListener("submit", async (event) => {
   bookingDate.value = "";
   bookingDateTime.value = "";
   const firstBooking = savedBooking;
-  queueEmail(firstBooking.tutorEmail, firstBooking.status === "Accepted" ? "New recurring lesson confirmed" : "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${firstBooking.isFreeTrial ? " as a free trial." : "."}`, {
+  queueEmail(firstBooking.tutorEmail, "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${firstBooking.isFreeTrial ? " as a free trial." : "."}`, {
     key: `new-booking-${firstBooking.id}`,
     template: "booking_new_for_tutor",
     type: "booking_new_for_tutor",
