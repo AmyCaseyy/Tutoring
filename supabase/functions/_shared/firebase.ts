@@ -5,7 +5,11 @@ const tokenCache = { accessToken: "", expiresAt: 0 };
 function serviceAccount() {
   const raw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT") || "";
   if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT is not configured.");
-  return JSON.parse(raw.replace(/\n/g, "\\n"));
+  const account = JSON.parse(raw);
+  if (typeof account.private_key === "string") {
+    account.private_key = account.private_key.replace(/\\n/g, "\n");
+  }
+  return account;
 }
 
 function base64Url(bytes: Uint8Array) {
