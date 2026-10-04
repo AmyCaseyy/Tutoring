@@ -10,6 +10,11 @@
     "ignore": [
       "firebase.json",
       "functions/**",
+      "supabase/**",
+      "scripts/**",
+      "email-previews/**",
+      "package.json",
+      "package-lock.json",
       "**/.*",
       "**/node_modules/**"
     ],

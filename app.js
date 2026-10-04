@@ -927,6 +927,7 @@ function getPrettyRouteFromPath() {
     activeAdminApplicationId = decodeURIComponent(adminApplicationMatch[1]);
     return "admin-application-detail";
   }
+  if (path === "/bookings" || /^\/bookings\/[^/]+(?:\/review)?$/.test(path)) return "bookings";
   const landing = SEO_LANDING_PAGES[path];
   if (landing) {
     activeLandingPage = { ...landing, path };
@@ -2824,7 +2825,17 @@ function attachReportHandlers(container) {
       });
       queueEmail("tutrstem@gmail.com", "New tutrSTEM moderation report", `${currentAccount.name} submitted a ${category} report for review.`, {
         key: `report-${message.id}-${Date.now()}`,
-        type: "moderation_report"
+        type: "safeguarding_alert",
+        template: "safeguarding_alert",
+        data: {
+          alertId: message.id || createId("alert"),
+          reason: category,
+          from: `${currentAccount.name} (${currentAccount.role})`,
+          to: message.recipientEmail || currentRecipientEmail(),
+          under18: currentAccount.age && Number(currentAccount.age) < 18 ? "Yes" : "No",
+          sent: new Date().toISOString(),
+          excerpt: message.text || message.body || notes
+        }
       });
       signupStatus.textContent = "Report sent to the tutrSTEM safeguarding team.";
       signupStatus.classList.add("success");
@@ -3573,8 +3584,25 @@ async function submitTutorApplication(event) {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: Boolean(auth?.currentUser) });
     const applicantName = [payload.personal.firstName, payload.personal.lastName].filter(Boolean).join(" ");
+    queueEmail(payload.personal.email, "We've got your application", `Thanks for applying to tutor with tutrSTEM, ${payload.personal.firstName || "there"}. We check every application by hand and will email you as soon as we've made a decision.`, templateMeta("application_received", {
+      firstName: payload.personal.firstName,
+      name: applicantName,
+      submitted: new Date().toISOString()
+    }, {
+      key: `application-received-${applicationRef.id}`,
+      applicationId: applicationRef.id
+    }));
     queueEmail("applications@tutrstem.org.uk", "New tutor application", `${applicantName || payload.personal.email} submitted a tutor application. Review it in /admin/applications.`, {
-      type: "tutor_application",
+      type: "admin_new_application",
+      template: "admin_new_application",
+      data: {
+        name: applicantName || payload.personal.email,
+        subjects: selectedApplicationSubjects().map((item) => `${item.subject} ${item.level}`).join(", "),
+        university: [payload.qualifications.course, payload.qualifications.university].filter(Boolean).join(", "),
+        documents: `${uploadedFiles.length || "No"} uploaded file${uploadedFiles.length === 1 ? "" : "s"}`,
+        submitted: new Date().toISOString(),
+        applicationId: applicationRef.id
+      },
       applicantUid: payload.applicantUid,
       applicationId: applicationRef.id
     });
@@ -3838,22 +3866,27 @@ async function updateTutorApplicationStatus(id, status) {
       approvedEmail,
       "Your tutrSTEM tutor application has been accepted",
       `Hi ${applicationName(application) || "there"}, your tutrSTEM tutor application has been accepted. You can now log in with this email and set up your tutor profile.`,
-      {
+      templateMeta("tutor_approved", {
+        firstName: emailFirstName(applicationName(application)),
+        name: applicationName(application)
+      }, {
         key: `application-approved-${id}`,
-        type: "tutor_application_approved",
         applicationId: id
-      }
+      })
     );
   } else if (status === "rejected" && approvedEmail) {
     queueEmail(
       approvedEmail,
       "Your tutrSTEM tutor application update",
       `Hi ${applicationName(application) || "there"}, thank you for applying to tutor with tutrSTEM. We are not able to accept this application at this stage.`,
-      {
+      templateMeta("tutor_rejected", {
+        firstName: emailFirstName(applicationName(application)),
+        name: applicationName(application),
+        reason: "We are not able to accept this application at this stage."
+      }, {
         key: `application-rejected-${id}`,
-        type: "tutor_application_rejected",
         applicationId: id
-      }
+      })
     );
   }
   await loadCloudData();
@@ -4261,6 +4294,47 @@ function formatBookingDate(value) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function emailFirstName(value = "") {
+  return String(value || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+}
+
+function bookingEmailData(booking, overrides = {}) {
+  return {
+    bookingId: booking?.parentBookingId || booking?.id || "",
+    firstName: overrides.firstName || emailFirstName(booking?.student || currentAccount?.name),
+    studentName: booking?.student || currentAccount?.name || "Student",
+    tutorName: booking?.tutor || selectedTutor?.name || "Tutor",
+    subject: booking?.subject || "Tutoring",
+    dateTime: booking?.dateTime || "",
+    oldDateTime: overrides.oldDateTime || booking?.dateTime || "",
+    newDateTime: overrides.newDateTime || booking?.proposedDateTime || "",
+    length: overrides.length || "60 minutes",
+    price: overrides.price ?? bookingAmount(booking),
+    role: overrides.role || currentAccount?.role || "",
+    otherName: overrides.otherName || bookingPersonName(booking),
+    cancelledBy: overrides.cancelledBy || currentAccount?.name || "",
+    yearGroup: overrides.yearGroup || currentAccount?.yearGroup || currentAccount?.subject || "",
+    ...overrides
+  };
+}
+
+function templateMeta(template, data = {}, meta = {}) {
+  return {
+    ...meta,
+    template,
+    type: template,
+    data
+  };
+}
+
+function bookingActionEmailTemplate(status = "") {
+  if (status === "Accepted") return "booking_confirmed";
+  if (status === "Accept reschedule") return "booking_rescheduled";
+  if (status === "Cancelled by tutor" || status === "Cancelled by student" || status === "Rejected") return "booking_cancelled";
+  if (status === "Reschedule requested by tutor" || status === "Reschedule requested by student" || status === "Counter reschedule") return "booking_rescheduled";
+  return "";
 }
 
 function bookingStatusClass(status = "Pending tutor approval") {
@@ -4776,6 +4850,12 @@ function checkLessonReminders() {
     if (minsUntil > 0 && minsUntil <= 10) {
       queueEmail(booking.tutorEmail, `Lesson starts in 10 minutes`, `${booking.type} with ${booking.student || "your student"} starts at ${formatBookingDate(booking.dateTime)}.`, {
         key: `reminder-${booking.id}`,
+        template: "session_reminder_24h",
+        type: "session_reminder_24h",
+        data: bookingEmailData(booking, {
+          firstName: emailFirstName(booking.tutor),
+          otherName: booking.student || "your student"
+        }),
         bookingId: booking.id
       });
     }
@@ -4877,10 +4957,24 @@ function renderBookingList(container, items, emptyText) {
       }
       updateOccurrenceOrBooking(booking, withBookingSeenByCurrent(updates, recipient), scope);
       if (booking) {
-        queueEmail(recipient, `Booking ${status.toLowerCase()}`, `${currentAccount.name} marked ${booking.type} on ${formatBookingDate(booking.dateTime)} as: ${status}.`, {
-          key: `booking-${button.dataset.bookingId}-${status}`,
-          bookingId: button.dataset.bookingId
+        const nextTemplate = bookingActionEmailTemplate(status);
+        const nextData = bookingEmailData(booking, {
+          firstName: emailFirstName(bookingPersonName(booking)),
+          otherName: currentAccount.name,
+          cancelledBy: currentAccount.name,
+          newDateTime: updates.dateTime || updates.proposedDateTime || booking.proposedDateTime || booking.dateTime,
+          oldDateTime: booking.dateTime,
+          role: currentAccount.role === "tutor" ? "student" : "tutor"
         });
+        if (nextTemplate) {
+          queueEmail(recipient, `Booking ${status.toLowerCase()}`, `${currentAccount.name} marked ${booking.type} on ${formatBookingDate(booking.dateTime)} as: ${status}.`, {
+            key: `booking-${button.dataset.bookingId}-${status}`,
+            template: nextTemplate,
+            type: nextTemplate,
+            data: nextData,
+            bookingId: button.dataset.bookingId
+          });
+        }
       }
       addActivity(`Booking marked: ${status}`, "Booking");
       renderBookingsPage();
@@ -4950,6 +5044,14 @@ function renderBookingList(container, items, emptyText) {
       updateOccurrenceOrBooking(booking, withBookingSeenByCurrent(updates, recipient), button.dataset.bookingScope || "single");
       queueEmail(recipient, "New reschedule time proposed", `${currentAccount.name} proposed ${formatBookingDate(proposedDateTime)} for ${booking.type}.`, {
         key: `reschedule-${booking.parentBookingId || booking.id}-${Date.now()}`,
+        template: "booking_rescheduled",
+        type: "booking_rescheduled",
+        data: bookingEmailData(booking, {
+          firstName: emailFirstName(bookingPersonName(booking)),
+          otherName: currentAccount.name,
+          newDateTime: proposedDateTime,
+          oldDateTime: booking.dateTime
+        }),
         bookingId: booking.parentBookingId || booking.id
       });
       activeReschedulePicker = null;
@@ -5698,8 +5800,30 @@ bookingPageForm.addEventListener("submit", async (event) => {
   const firstBooking = savedBooking;
   queueEmail(firstBooking.tutorEmail, firstBooking.status === "Accepted" ? "New recurring lesson confirmed" : "New lesson request", `${currentAccount.name} requested ${bookingLessonType.value} starting ${formatBookingDate(firstBooking.dateTime)}${firstBooking.isFreeTrial ? " as a free trial." : "."}`, {
     key: `new-booking-${firstBooking.id}`,
+    template: "booking_new_for_tutor",
+    type: "booking_new_for_tutor",
+    data: bookingEmailData(firstBooking, {
+      firstName: emailFirstName(firstBooking.tutor),
+      tutorName: firstBooking.tutor,
+      studentName: currentAccount.name,
+      yearGroup: currentAccount.yearGroup || currentAccount.subject || "",
+      price: bookingAmount(firstBooking)
+    }),
     bookingId: firstBooking.id
   });
+  if (firstBooking.status === "Accepted") {
+    queueEmail(firstBooking.studentEmail, "Your tutrSTEM booking is confirmed", `${firstBooking.type} with ${firstBooking.tutor} is confirmed for ${formatBookingDate(firstBooking.dateTime)}.`, {
+      key: `booking-confirmed-${firstBooking.id}`,
+      template: "booking_confirmed",
+      type: "booking_confirmed",
+      data: bookingEmailData(firstBooking, {
+        firstName: emailFirstName(currentAccount.name),
+        tutorName: firstBooking.tutor,
+        price: bookingAmount(firstBooking)
+      }),
+      bookingId: firstBooking.id
+    });
+  }
   addActivity(`Requested ${bookingLessonType.value} with ${tutor.name}`, "Booking");
   updateBookingBadge();
   checkLessonReminders();
