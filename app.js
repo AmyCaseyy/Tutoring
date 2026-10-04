@@ -1798,8 +1798,16 @@ async function callPaymentFunction(name, payload = {}) {
     },
     body: JSON.stringify(payload)
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Payment action could not be completed yet.");
+  const raw = await response.text().catch(() => "");
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    data = { error: raw };
+  }
+  if (!response.ok) {
+    throw new Error(data.error || data.message || raw || `Payment action failed with status ${response.status}.`);
+  }
   return data;
 }
 
@@ -1810,8 +1818,10 @@ async function setupTutorPayouts() {
     signupStatus.classList.remove("success");
     return;
   }
-  const button = document.querySelector("#setupTutorPayouts");
-  if (button) button.disabled = true;
+  const buttons = document.querySelectorAll("[data-setup-tutor-payouts], #setupTutorPayouts");
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
   try {
     signupStatus.textContent = "Opening secure Stripe payout setup...";
     const result = await callPaymentFunction("create-tutor-connect-account-link", {
@@ -1823,10 +1833,14 @@ async function setupTutorPayouts() {
     }
     throw new Error("Stripe did not return an onboarding link.");
   } catch (error) {
-    signupStatus.textContent = error.message || "Could not open Stripe payout setup yet.";
+    const message = error.message || "Could not open Stripe payout setup yet.";
+    signupStatus.textContent = message;
     signupStatus.classList.remove("success");
+    window.alert(`Stripe payout setup could not open: ${message}`);
   } finally {
-    if (button) button.disabled = false;
+    buttons.forEach((button) => {
+      button.disabled = false;
+    });
   }
 }
 
@@ -5406,7 +5420,9 @@ function renderDashboard(role) {
   `;
   document.querySelector("#openBookingsFromDash")?.addEventListener("click", () => showPage("bookings"));
   document.querySelector("#openMessagesFromDash")?.addEventListener("click", () => showPage("messages"));
-  document.querySelector("#setupTutorPayouts")?.addEventListener("click", setupTutorPayouts);
+  document.querySelectorAll("[data-setup-tutor-payouts], #setupTutorPayouts").forEach((button) => {
+    button.onclick = setupTutorPayouts;
+  });
   renderProfile(role);
   renderActivity();
   renderChat(role);

@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261004-checkout-flow" />
+    <link rel="stylesheet" href="styles.css?v=20261004-payout-profile" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -777,6 +777,13 @@
                   <span>Hourly rate (£)</span>
                   <input id="profilePrice" type="number" min="0" step="1" placeholder="25" />
                 </label>
+                <div class="tutor-profile-field tutor-payment-box">
+                  <div>
+                    <strong>Tutor payments</strong>
+                    <span>Connect Stripe so students can pay and your lesson earnings can be released.</span>
+                  </div>
+                  <button class="secondary-btn wide" type="button" data-setup-tutor-payouts>Set up payouts</button>
+                </div>
                 <label class="field tutor-profile-field">
                   <span>Profile picture</span>
                   <input id="profilePhoto" type="file" accept="image/*" />
@@ -1454,6 +1461,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20261004-checkout-errors"></script>
+    <script src="app.js?v=20261004-payout-profile"></script>
   </body>
 </html>
