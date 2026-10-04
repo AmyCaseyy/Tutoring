@@ -1,4 +1,4 @@
-const SITE_URL = "https://tutrstem.org.uk";
+const SITE_URL = "https://tutrstem.co.uk";
 const SUPPORT_EMAIL = "support@tutrstem.org.uk";
 const PRIVACY_EMAIL = "privacy@tutrstem.org.uk";
 const BILLING_EMAIL = "billing@tutrstem.org.uk";
