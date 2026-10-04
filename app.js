@@ -3797,22 +3797,68 @@ function renderAdminApplicationDetail() {
     button.addEventListener("click", async () => {
       const nextStatus = button.dataset.adminDecision;
       if (nextStatus === "rejected" && !window.confirm("Reject this tutor application?")) return;
-      await updateTutorApplicationStatus(application.id, nextStatus);
+      try {
+        await updateTutorApplicationStatus(application.id, nextStatus);
+      } catch (error) {
+        window.alert(error.message || "This tutor application could not be updated.");
+      }
     });
   });
 }
 
 async function updateTutorApplicationStatus(id, status) {
   if (!currentIsAdmin || !isCloudReady() || !id) return;
+  const application = cloudTutorApplications.find((item) => item.id === id) || {};
+  const approvedEmail = normalizeEmail(applicationEmail(application));
+  const reviewerEmail = normalizeEmail(currentAccount?.email);
+  if (status === "approved" && !approvedEmail) {
+    throw new Error("This application does not have an email address to approve.");
+  }
   await db.collection("tutorApplications").doc(id).set({
     verificationStatus: status,
     status,
-    reviewedBy: normalizeEmail(currentAccount?.email),
+    reviewedBy: reviewerEmail,
     decisionAt: firebase.firestore.FieldValue.serverTimestamp(),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
+  if (status === "approved") {
+    await db.collection("approvedTutors").doc(approvedEmail).set({
+      email: approvedEmail,
+      name: applicationName(application),
+      status: "approved",
+      visible: true,
+      approved: true,
+      isApproved: true,
+      approvedApplicationId: id,
+      reviewedBy: reviewerEmail,
+      approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    queueEmail(
+      approvedEmail,
+      "Your tutrSTEM tutor application has been accepted",
+      `Hi ${applicationName(application) || "there"}, your tutrSTEM tutor application has been accepted. You can now log in with this email and set up your tutor profile.`,
+      {
+        key: `application-approved-${id}`,
+        type: "tutor_application_approved",
+        applicationId: id
+      }
+    );
+  } else if (status === "rejected" && approvedEmail) {
+    queueEmail(
+      approvedEmail,
+      "Your tutrSTEM tutor application update",
+      `Hi ${applicationName(application) || "there"}, thank you for applying to tutor with tutrSTEM. We are not able to accept this application at this stage.`,
+      {
+        key: `application-rejected-${id}`,
+        type: "tutor_application_rejected",
+        applicationId: id
+      }
+    );
+  }
   await loadCloudData();
   renderAdminApplicationDetail();
+  if (status === "approved") showConfirmation(`${applicationName(application)} is approved for tutor signup.`);
 }
 
 function attachAdminApplicationLinks(root) {
