@@ -36,6 +36,7 @@ Deno.serve(async (request) => {
           stripeFee,
           stripeNetAmount: net,
           currency: paymentIntent.currency,
+          status: "Confirmed",
           paymentStatus: "paid_held",
           paymentReleaseStatus: "ready",
           paidAt: new Date().toISOString()

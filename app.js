@@ -5080,8 +5080,10 @@ function renderBookingList(container, items, emptyText) {
           renderBookingsPage();
         }
       } catch (error) {
-        signupStatus.textContent = error.message || "Payment action could not be completed yet.";
+        const message = error.message || "Payment action could not be completed yet.";
+        signupStatus.textContent = message;
         signupStatus.classList.remove("success");
+        window.alert(`Stripe payment could not open: ${message}`);
       } finally {
         button.disabled = false;
       }

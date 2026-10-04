@@ -21,6 +21,10 @@ Deno.serve(async (request) => {
 
     const amount = Math.round(Number(booking.amountPence || 0));
     if (!Number.isFinite(amount) || amount < 50) throw new Error("Invalid booking amount.");
+    const tutorStripeAccountId = String(booking.tutorStripeAccountId || "");
+    if (!tutorStripeAccountId.startsWith("acct_")) {
+      throw new Error("This tutor needs to finish Stripe payout setup before payment can be taken.");
+    }
 
     const stripe = stripeClient();
     const session = await stripe.checkout.sessions.create({
@@ -43,14 +47,14 @@ Deno.serve(async (request) => {
         bookingId,
         studentEmail: String(booking.studentEmail || email),
         tutorEmail: String(booking.tutorEmail || ""),
-        tutorStripeAccountId: String(booking.tutorStripeAccountId || "")
+        tutorStripeAccountId
       },
       payment_intent_data: {
         metadata: {
           bookingId,
           studentEmail: String(booking.studentEmail || email),
           tutorEmail: String(booking.tutorEmail || ""),
-          tutorStripeAccountId: String(booking.tutorStripeAccountId || "")
+          tutorStripeAccountId
         }
       }
     }, {
