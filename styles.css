@@ -2655,7 +2655,7 @@ body.editing-profile .profile-panel {
 
 .chat-input {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: center;
   margin-top: 14px;
@@ -2672,6 +2672,73 @@ body.editing-profile .profile-panel {
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.attachment-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 112px;
+  height: 34px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: rgba(20, 20, 19, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.attachment-button:hover {
+  color: var(--ink);
+  background: rgba(20, 20, 19, 0.12);
+}
+
+.attachment-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.attachment-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.message-attachments {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.message-attachment {
+  display: inline-flex;
+  max-width: 100%;
+  width: fit-content;
+  padding: 7px 10px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.incoming .message-attachment {
+  background: rgba(20, 20, 19, 0.06);
+  border-color: var(--line);
 }
 
 #chatMessages {
@@ -3324,6 +3391,21 @@ body.site-ready .hero-media {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.admin-file-list a {
+  justify-self: start;
+  font-weight: 900;
+}
+
+.admin-file-list a[aria-disabled="true"] {
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.admin-file-hint {
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 1100px) {

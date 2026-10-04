@@ -209,6 +209,11 @@ const tutors = [
   }
 ];
 
+const SUPABASE_PROJECT_URL = "https://ahlpuczytpzfilwbmfud.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BwQ1wGUrNX1sr3w3iPuT_Q_G98ZJwcc";
+const SUPABASE_APPLICATION_BUCKET = "tutor-applications";
+const SUPABASE_UPLOAD_BUCKET = SUPABASE_APPLICATION_BUCKET;
+
 const SUBJECTS = [
   { id: "mathematics", canonicalName: "Mathematics", category: "Mathematics", aliases: ["Maths", "Math", "A Level Maths", "A-Level Maths", "AS Maths", "Core Maths (distinct qualification, do not merge)"] },
   { id: "further-mathematics", canonicalName: "Further Mathematics", category: "Mathematics", aliases: ["Further Maths", "FM", "F Maths", "A Level Further Maths", "AFM"] },
@@ -615,6 +620,7 @@ const profileSubjectLabel = document.querySelector("#profileSubjectLabel");
 const profileDetailLabel = document.querySelector("#profileDetailLabel");
 const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
+const chatAttachment = document.querySelector("#chatAttachment");
 const activityFeed = document.querySelector("#activityFeed");
 const activityCount = document.querySelector("#activityCount");
 const publicProfile = document.querySelector("#publicProfile");
@@ -625,6 +631,7 @@ const messagePageWith = document.querySelector("#messagePageWith");
 const messagePageMessages = document.querySelector("#messagePageMessages");
 const messagePageForm = document.querySelector("#messagePageForm");
 const messagePageInput = document.querySelector("#messagePageInput");
+const messagePageAttachment = document.querySelector("#messagePageAttachment");
 const viewMessageProfile = document.querySelector("#viewMessageProfile");
 const moderationList = document.querySelector("#moderationList");
 const moderationStatusFilter = document.querySelector("#moderationStatusFilter");
@@ -710,6 +717,7 @@ let activeAdminApplicationId = "";
 let adminApplicationStatusFilter = "pending";
 let editingReviewKey = "";
 let pendingProfilePhoto = "";
+let pendingProfilePhotoPath = "";
 let activeReschedulePicker = null;
 let tutorApplicationStep = 0;
 let tutorApplicationMaxStep = 0;
@@ -1754,6 +1762,24 @@ async function queueCloudEmail(to, subject, body, meta = {}) {
   });
 }
 
+async function sendEmailViaSupabase(to, subject, body, meta = {}) {
+  if (!to || !SUPABASE_PROJECT_URL || !SUPABASE_PUBLISHABLE_KEY) return;
+  const response = await fetch(`${SUPABASE_PROJECT_URL}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      ...supabaseStorageHeaders("application/json")
+    },
+    body: JSON.stringify({
+      to,
+      subject,
+      text: body,
+      html: `<p>${escapeHtml(body)}</p>`,
+      meta
+    })
+  });
+  if (!response.ok) throw new Error("Email function did not accept the message.");
+}
+
 function createId(prefix = "item") {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -1776,6 +1802,7 @@ function queueEmail(to, subject, body, meta = {}) {
   });
   writeStore(storage.emails, queue.slice(0, 40));
   queueCloudEmail(to, subject, body, meta).catch(() => {});
+  sendEmailViaSupabase(to, subject, body, meta).catch(() => {});
 }
 
 function isModerationUser(account = currentAccount) {
@@ -1974,23 +2001,53 @@ function tutorLevelLabel(tutor) {
   return tutor.level || tutor.qualificationLevel || "";
 }
 
+function isSupabaseStoragePath(value = "") {
+  return /^(applications|profile-photos|message-attachments)\//.test(String(value || ""));
+}
+
 function tutorPhotoMarkup(tutor, className = "profile-photo") {
-  const photo = tutor.photo || tutor.photoUrl || tutor.profilePhoto || "";
+  const photo = tutor.photoPath || tutor.photo || tutor.photoUrl || tutor.profilePhoto || "";
   if (photo) {
+    if (isSupabaseStoragePath(photo)) {
+      return `<div class="${className}" data-supabase-photo-path="${escapeHtml(photo)}" aria-label="${escapeHtml(tutor.name)} profile picture">${escapeHtml(tutor.initials || initialsFromName(tutor.name || ""))}</div>`;
+    }
     return `<img class="${className}" src="${escapeHtml(photo)}" alt="${escapeHtml(tutor.name)} profile picture" />`;
   }
   return `<div class="${className}" aria-label="${escapeHtml(tutor.name)} profile picture">${escapeHtml(tutor.initials || initialsFromName(tutor.name || ""))}</div>`;
 }
 
-function updateProfilePhotoPreview(value, fallbackName = "") {
+async function hydrateSupabaseImages(container = document) {
+  const nodes = [...container.querySelectorAll("[data-supabase-photo-path]")];
+  await Promise.all(nodes.map(async (node) => {
+    const path = node.dataset.supabasePhotoPath;
+    if (!path) return;
+    try {
+      const signedUrl = await createSupabaseSignedUrl(path);
+      const image = document.createElement("img");
+      image.src = signedUrl;
+      image.alt = node.getAttribute("aria-label") || "Profile picture";
+      image.className = node.className;
+      node.replaceWith(image);
+    } catch {
+      node.removeAttribute("data-supabase-photo-path");
+    }
+  }));
+}
+
+async function updateProfilePhotoPreview(value, fallbackName = "") {
   if (!profilePhotoPreview) return;
   profilePhotoPreview.innerHTML = "";
   if (value) {
-    const image = document.createElement("img");
-    image.src = value;
-    image.alt = "Profile picture preview";
-    profilePhotoPreview.append(image);
-    return;
+    try {
+      const image = document.createElement("img");
+      image.src = isSupabaseStoragePath(value) ? await createSupabaseSignedUrl(value) : value;
+      image.alt = "Profile picture preview";
+      profilePhotoPreview.append(image);
+      return;
+    } catch {
+      profilePhotoPreview.textContent = initialsFromName(fallbackName || currentAccount?.name || "");
+      return;
+    }
   }
   profilePhotoPreview.textContent = "";
 }
@@ -2099,6 +2156,7 @@ function cloudMessageToBubble(message) {
     time: message.timeLabel || nowLabel(),
     senderEmail: message.senderEmail,
     recipientEmail: message.recipientEmail,
+    attachments: Array.isArray(message.attachments) ? message.attachments : [],
     readBy: message.readBy || [],
     clientCreatedAt: message.clientCreatedAt || messageTimestamp(message)
   };
@@ -2215,6 +2273,7 @@ function saveProfile(profile) {
       about: profile.about || "",
       sessions: profile.sessions || "",
       photo: profile.photo || "",
+      photoPath: profile.photoPath || "",
       badges: Array.isArray(profile.badges) ? profile.badges : [],
       initials: "",
       score: Number(profile.score || 0)
@@ -2315,6 +2374,7 @@ function getTutorProfiles() {
         email: account.email,
         visible: !isCloudReady() || account.email === currentAccount?.email,
         photo: profile.photo || "",
+        photoPath: profile.photoPath || "",
         about: cleanAutoText(profile.about),
         sessions: cleanAutoText(profile.sessions)
       };
@@ -2345,6 +2405,7 @@ function getTutorProfiles() {
     email: profile.email,
     visible: profile.visible === true,
     photo: profile.photo || profile.photoUrl || profile.profilePhoto || "",
+    photoPath: profile.photoPath || "",
     about: cleanAutoText(profile.about),
     sessions: cleanAutoText(profile.sessions)
   });
@@ -2555,6 +2616,7 @@ function renderTutors() {
       showPage("messages");
     });
   });
+  hydrateSupabaseImages(tutorGrid);
 }
 
 function renderSubjectLandingPage() {
@@ -2660,6 +2722,7 @@ async function saveMessageToCloud(key, message) {
     recipientEmail,
     senderRole: currentAccount.role,
     body: message.text,
+    attachments: Array.isArray(message.attachments) ? message.attachments : [],
     direction: message.direction,
     timeLabel: message.time,
     readBy: [senderEmail],
@@ -2701,13 +2764,40 @@ function markCurrentThreadRead() {
 
 function messageBubbleHtml(message) {
   const id = escapeHtml(message.id || "");
+  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+  const attachmentHtml = attachments.length
+    ? `<span class="message-attachments">${attachments.map((attachment) => {
+      const label = escapeHtml(attachment.fileName || attachment.label || "Attachment");
+      const path = escapeHtml(attachment.path || "");
+      const isImage = String(attachment.mimeType || "").startsWith("image/");
+      return path
+        ? `<a class="message-attachment" href="#" data-supabase-file-path="${path}" target="_blank" rel="noopener">${isImage ? "View image" : "Open file"}: ${label}</a>`
+        : `<span class="message-attachment">${label}</span>`;
+    }).join("")}</span>`
+    : "";
   return `
     <p class="bubble ${escapeHtml(message.direction)}">
-      ${escapeHtml(message.text)}
+      ${message.text ? escapeHtml(message.text) : ""}
+      ${attachmentHtml}
       <time>${escapeHtml(message.time)}</time>
       ${id ? `<button class="message-report" type="button" data-report-message="${id}">Report</button>` : ""}
     </p>
   `;
+}
+
+async function hydrateSupabaseFileLinks(container = document) {
+  const links = [...container.querySelectorAll("[data-supabase-file-path]")];
+  await Promise.all(links.map(async (link) => {
+    const path = link.dataset.supabaseFilePath;
+    if (!path || link.dataset.supabaseLinked === "true") return;
+    try {
+      link.href = await createSupabaseSignedUrl(path);
+      link.dataset.supabaseLinked = "true";
+    } catch {
+      link.removeAttribute("href");
+      link.textContent = `${link.textContent} (upload link unavailable)`;
+    }
+  }));
 }
 
 function attachReportHandlers(container) {
@@ -2750,6 +2840,7 @@ function renderChat(role) {
   const messages = getMessages();
   markCurrentThreadRead();
   chatMessages.innerHTML = messages.length ? messages.map(messageBubbleHtml).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  hydrateSupabaseFileLinks(chatMessages);
   attachReportHandlers(chatMessages);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -2837,6 +2928,7 @@ function renderMessagesPage() {
   messagePageInput.placeholder = `Message ${messagePageWith.textContent}...`;
   const messages = getMessages();
   messagePageMessages.innerHTML = messages.length ? messages.map(messageBubbleHtml).join("") : `<p class="empty-copy">No messages yet.</p>`;
+  hydrateSupabaseFileLinks(messagePageMessages);
   attachReportHandlers(messagePageMessages);
   messagePageMessages.scrollTop = messagePageMessages.scrollHeight;
 }
@@ -3054,6 +3146,113 @@ function filePathForApplication(folder, name) {
   return fileName ? `applications/pending/${folder}/${fileName}` : "";
 }
 
+function applicationFile(name) {
+  const field = tutorApplicationForm?.elements[name];
+  return field?.type === "file" ? field.files?.[0] || null : null;
+}
+
+function safeUploadName(fileName = "upload") {
+  return String(fileName || "upload")
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 90) || "upload";
+}
+
+function safeUploadFolder(value = "upload") {
+  return safeUploadName(value).replace(/\./g, "-") || "upload";
+}
+
+function encodeStoragePath(path = "") {
+  return String(path).split("/").map(encodeURIComponent).join("/");
+}
+
+function supabaseStorageHeaders(contentType = "") {
+  return {
+    apikey: SUPABASE_PUBLISHABLE_KEY,
+    Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+    ...(contentType ? { "Content-Type": contentType } : {})
+  };
+}
+
+async function uploadSupabaseFile(basePath, file, label, options = {}) {
+  if (!file) return null;
+  const maxBytes = options.maxBytes || 8 * 1024 * 1024;
+  const allowedTypes = options.allowedTypes || [];
+  if (file.size > maxBytes) {
+    throw new Error(`${label} is too large. Please choose a file under ${Math.round(maxBytes / 1024 / 1024)}MB.`);
+  }
+  if (allowedTypes.length && !allowedTypes.some((type) => type.endsWith("/*") ? file.type.startsWith(type.slice(0, -1)) : file.type === type)) {
+    throw new Error(`${label} must be ${allowedTypes.join(", ")}.`);
+  }
+  const random = Math.random().toString(36).slice(2, 10);
+  const path = `${String(basePath || "uploads").replace(/^\/+|\/+$/g, "")}/${Date.now()}-${random}-${safeUploadName(file.name)}`;
+  const url = `${SUPABASE_PROJECT_URL}/storage/v1/object/${SUPABASE_UPLOAD_BUCKET}/${encodeStoragePath(path)}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...supabaseStorageHeaders(file.type || "application/octet-stream"),
+      "x-upsert": "true"
+    },
+    body: file
+  });
+  if (!response.ok) {
+    throw new Error(`${label} could not upload to Supabase. Check the bucket and Storage policies.`);
+  }
+  return {
+    label,
+    bucket: SUPABASE_UPLOAD_BUCKET,
+    path,
+    fileName: file.name,
+    mimeType: file.type || "application/octet-stream",
+    size: file.size,
+    provider: "supabase"
+  };
+}
+
+async function uploadSupabaseApplicationFile(applicationId, name, folder, label, options = {}) {
+  return uploadSupabaseFile(`applications/${applicationId}/${folder}`, applicationFile(name), label, options);
+}
+
+async function uploadSupabaseProfilePhoto(file) {
+  const owner = auth?.currentUser?.uid || currentAccount?.uid || accountKey() || "unknown";
+  return uploadSupabaseFile(`profile-photos/${safeUploadFolder(owner)}`, file, "Profile photo", {
+    allowedTypes: ["image/*"],
+    maxBytes: 5 * 1024 * 1024
+  });
+}
+
+async function uploadSupabaseMessageAttachment(file) {
+  const key = threadKey() || "thread";
+  return uploadSupabaseFile(`message-attachments/${safeUploadFolder(key).slice(0, 80)}`, file, "Message attachment", {
+    allowedTypes: ["image/*", "application/pdf"],
+    maxBytes: 8 * 1024 * 1024
+  });
+}
+
+async function uploadTutorApplicationFiles(applicationId) {
+  const uploads = await Promise.all([
+    uploadSupabaseApplicationFile(applicationId, "photo", "profile-photo", "Profile photo", {
+      allowedTypes: ["image/jpeg", "image/png"],
+      maxBytes: 5 * 1024 * 1024
+    }),
+    uploadSupabaseApplicationFile(applicationId, "certificate", "degree-transcript", "Degree certificate or transcript", {
+      allowedTypes: ["image/*", "application/pdf"],
+      maxBytes: 10 * 1024 * 1024
+    }),
+    uploadSupabaseApplicationFile(applicationId, "idFront", "id-photo", "ID photo", {
+      allowedTypes: ["image/*"],
+      maxBytes: 8 * 1024 * 1024
+    }),
+    uploadSupabaseApplicationFile(applicationId, "selfie", "selfie-with-id", "Selfie with ID", {
+      allowedTypes: ["image/*"],
+      maxBytes: 8 * 1024 * 1024
+    })
+  ]);
+  return uploads.filter(Boolean);
+}
+
 function isApplicationAdult() {
   const value = applicationValue("dob");
   if (!value) return false;
@@ -3214,10 +3413,11 @@ async function populateTutorApplicationForm() {
   }
 }
 
-function tutorApplicationPayload(status = "submitted") {
+function tutorApplicationPayload(status = "submitted", uploadedFiles = []) {
   const subjects = selectedApplicationSubjects();
   const now = firebase.firestore.FieldValue.serverTimestamp();
   const dbsHave = applicationValue("dbsStatus") === "have";
+  const uploadByLabel = Object.fromEntries(uploadedFiles.map((item) => [item.label, item]));
   return {
     applicantUid: auth?.currentUser?.uid || "",
     status,
@@ -3234,7 +3434,7 @@ function tutorApplicationPayload(status = "submitted") {
       town: applicationValue("town"),
       timezone: applicationValue("timezone"),
       heardFrom: applicationValue("heardFrom") || null,
-      photoPath: filePathForApplication("photos", "photo")
+      photoPath: uploadByLabel["Profile photo"]?.path || filePathForApplication("photos", "photo")
     },
     teaching: {
       mainSubject: applicationValue("mainSubject"),
@@ -3270,13 +3470,13 @@ function tutorApplicationPayload(status = "submitted") {
       qts: applicationValue("qts") === "yes",
       trn: applicationValue("qts") === "yes" ? applicationValue("trn") : null,
       otherQuals: applicationValue("otherQuals") || null,
-      certificatePath: filePathForApplication("certificates", "certificate")
+      certificatePath: uploadByLabel["Degree certificate or transcript"]?.path || filePathForApplication("certificates", "certificate")
     },
     identity: {
       idType: applicationValue("idType"),
       idExpiry: applicationValue("idExpiry"),
-      idPath: filePathForApplication("id", "idFront"),
-      selfiePath: filePathForApplication("id", "selfie"),
+      idPath: uploadByLabel["ID photo"]?.path || filePathForApplication("id", "idFront"),
+      selfiePath: uploadByLabel["Selfie with ID"]?.path || filePathForApplication("id", "selfie"),
       selfieCode: tutorApplicationSelfieCode,
       rightToWork: applicationValue("rightToWork"),
       shareCode: applicationValue("shareCode") || null
@@ -3319,12 +3519,12 @@ function tutorApplicationPayload(status = "submitted") {
       signedAt: new Date().toISOString()
     },
     uploads: [
-      { label: "Profile photo", path: filePathForApplication("photos", "photo") },
-      { label: "Certificate or transcript", path: filePathForApplication("certificates", "certificate") },
-      { label: "ID", path: filePathForApplication("id", "idFront") },
-      { label: "Selfie", path: filePathForApplication("id", "selfie") }
+      uploadByLabel["Profile photo"] || { label: "Profile photo", path: filePathForApplication("photos", "photo") },
+      uploadByLabel["Degree certificate or transcript"] || { label: "Degree certificate or transcript", path: filePathForApplication("certificates", "certificate") },
+      uploadByLabel["ID photo"] || { label: "ID photo", path: filePathForApplication("id", "idFront") },
+      uploadByLabel["Selfie with ID"] || { label: "Selfie with ID", path: filePathForApplication("id", "selfie") }
     ].filter((item) => item.path),
-    files: []
+    files: uploadedFiles
   };
 }
 
@@ -3361,11 +3561,13 @@ async function submitTutorApplication(event) {
   const submitButton = tutorApplicationForm.querySelector("button[type='submit']");
   try {
     submitButton.disabled = true;
-    setApplicationStatus("Submitting your application...");
-    const payload = tutorApplicationPayload(applicationValue("dbsStatus") === "have" ? "submitted" : "awaiting_dbs");
     const applicationRef = auth?.currentUser
       ? db.collection("tutorApplications").doc(auth.currentUser.uid)
       : db.collection("tutorApplications").doc();
+    setApplicationStatus("Uploading files securely...");
+    const uploadedFiles = await uploadTutorApplicationFiles(applicationRef.id);
+    setApplicationStatus("Submitting your application...");
+    const payload = tutorApplicationPayload(applicationValue("dbsStatus") === "have" ? "submitted" : "awaiting_dbs", uploadedFiles);
     await applicationRef.set({
       ...payload,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -3383,7 +3585,7 @@ async function submitTutorApplication(event) {
   } catch (error) {
     setApplicationStatus(error.code === "permission-denied"
       ? "Firebase blocked this application. Check the tutorApplications Firestore rules are deployed."
-      : "The application could not be submitted yet. Please try again.");
+      : (error.message || "The application could not be submitted yet. Please try again."));
   } finally {
     submitButton.disabled = false;
   }
@@ -3469,12 +3671,59 @@ function renderAdminApplications() {
 }
 
 function uploadPathList(application) {
-  return [
-    ["Profile photo", nestedValue(application, "personal.photoPath", "")],
-    ["Certificate/transcript", nestedValue(application, "qualifications.certificatePath", "")],
-    ["ID photo", nestedValue(application, "identity.idPath", "")],
-    ["Selfie with code", nestedValue(application, "identity.selfiePath", "")]
-  ].filter(([, path]) => path);
+  const uploaded = Array.isArray(application.files) && application.files.length
+    ? application.files
+    : (Array.isArray(application.uploads) ? application.uploads : []);
+  const rows = uploaded
+    .filter((item) => item?.path)
+    .map((item) => ({
+      label: item.label || "Uploaded file",
+      path: item.path,
+      bucket: item.bucket || SUPABASE_APPLICATION_BUCKET,
+      provider: item.provider || "supabase",
+      fileName: item.fileName || item.path.split("/").pop()
+    }));
+  const fallbackRows = [
+    { label: "Profile photo", path: nestedValue(application, "personal.photoPath", "") },
+    { label: "Certificate/transcript", path: nestedValue(application, "qualifications.certificatePath", "") },
+    { label: "ID photo", path: nestedValue(application, "identity.idPath", "") },
+    { label: "Selfie with code", path: nestedValue(application, "identity.selfiePath", "") }
+  ].filter((item) => item.path && !rows.some((row) => row.path === item.path));
+  return [...rows, ...fallbackRows];
+}
+
+async function createSupabaseSignedUrl(path) {
+  const response = await fetch(`${SUPABASE_PROJECT_URL}/storage/v1/object/sign/${SUPABASE_UPLOAD_BUCKET}/${encodeStoragePath(path)}`, {
+    method: "POST",
+    headers: {
+      ...supabaseStorageHeaders("application/json")
+    },
+    body: JSON.stringify({ expiresIn: 60 * 10 })
+  });
+  if (!response.ok) throw new Error("Could not create signed URL");
+  const data = await response.json();
+  return data.signedURL?.startsWith("http")
+    ? data.signedURL
+    : `${SUPABASE_PROJECT_URL}/storage/v1${data.signedURL}`;
+}
+
+async function hydrateAdminFileLinks(container = adminApplicationDetail) {
+  if (!container) return;
+  const links = [...container.querySelectorAll("[data-supabase-file-path]")];
+  await Promise.all(links.map(async (link) => {
+    const path = link.dataset.supabaseFilePath;
+    if (!path) return;
+    try {
+      link.href = await createSupabaseSignedUrl(path);
+      link.textContent = "Open file";
+      link.removeAttribute("aria-disabled");
+    } catch {
+      link.removeAttribute("href");
+      link.textContent = "Signed link unavailable";
+      link.setAttribute("aria-disabled", "true");
+      link.closest("li")?.querySelector(".admin-file-hint")?.removeAttribute("hidden");
+    }
+  }));
 }
 
 function checksHtml(checks = {}) {
@@ -3530,8 +3779,8 @@ function renderAdminApplicationDetail() {
       </section>
       <section class="admin-card">
         <h3>Uploaded files</h3>
-        ${uploads.length ? `<ul class="admin-file-list">${uploads.map(([label, path]) => `<li><strong>${escapeHtml(label)}</strong><span>${escapeHtml(path)}</span></li>`).join("")}</ul>` : `<p class="empty-copy">No upload paths recorded yet.</p>`}
-        <p class="empty-copy">Firebase Storage rules allow only admins to read these application files. If uploads are stored in Supabase later, store private object paths here and show signed admin-only links.</p>
+        ${uploads.length ? `<ul class="admin-file-list">${uploads.map((file) => `<li><strong>${escapeHtml(file.label)}</strong><span>${escapeHtml(file.fileName || file.path)}</span><a class="text-link" data-supabase-file-path="${escapeHtml(file.path)}" aria-disabled="true">Preparing link...</a><small class="admin-file-hint" hidden>Check Supabase Storage policies for signed admin links. Path: ${escapeHtml(file.path)}</small></li>`).join("")}</ul>` : `<p class="empty-copy">No upload paths recorded yet.</p>`}
+        <p class="empty-copy">Files are stored in the private Supabase bucket. Signed links expire after 10 minutes.</p>
       </section>
       <section class="admin-card">
         <h3>Decision</h3>
@@ -3543,6 +3792,7 @@ function renderAdminApplicationDetail() {
       </section>
     </div>
   `;
+  hydrateAdminFileLinks(adminApplicationDetail);
   adminApplicationDetail.querySelectorAll("[data-admin-decision]").forEach((button) => {
     button.addEventListener("click", async () => {
       const nextStatus = button.dataset.adminDecision;
@@ -3594,7 +3844,8 @@ function renderProfile(role) {
   profileDetail.value = cleanAutoText(profile.detail);
   profileUniversity.value = cleanAutoText(profile.university);
   if (profileLevel) profileLevel.value = cleanAutoText(profile.level);
-  pendingProfilePhoto = profile.photo || "";
+  pendingProfilePhotoPath = profile.photoPath || (isSupabaseStoragePath(profile.photo) ? profile.photo : "");
+  pendingProfilePhoto = pendingProfilePhotoPath || profile.photo || "";
   updateProfilePhotoPreview(pendingProfilePhoto, profile.name || currentAccount.name);
   profileAbout.value = cleanAutoText(profile.about);
   profileSessions.value = cleanAutoText(profile.sessions);
@@ -3772,6 +4023,7 @@ function renderPublicProfile() {
     renderReviewsPage();
     showPage("reviews");
   });
+  hydrateSupabaseImages(publicProfile);
 }
 
 function renderStudentProfile() {
@@ -4869,10 +5121,13 @@ function updateAccess() {
   if (currentAccount) {
     userMenuName.textContent = currentAccount.name;
     const accountProfile = getProfileForAccount(currentAccount);
-    const accountPhoto = accountProfile.photo || accountProfile.photoUrl || accountProfile.profilePhoto || "";
+    const accountPhoto = accountProfile.photoPath || accountProfile.photo || accountProfile.photoUrl || accountProfile.profilePhoto || "";
     userMenuInitials.innerHTML = accountPhoto
-      ? `<img src="${escapeHtml(accountPhoto)}" alt="${escapeHtml(currentAccount.name)} profile picture" />`
+      ? (isSupabaseStoragePath(accountPhoto)
+        ? `<span data-supabase-photo-path="${escapeHtml(accountPhoto)}" aria-label="${escapeHtml(currentAccount.name)} profile picture">${escapeHtml(initialsFromName(currentAccount.name))}</span>`
+        : `<img src="${escapeHtml(accountPhoto)}" alt="${escapeHtml(currentAccount.name)} profile picture" />`)
       : escapeHtml(initialsFromName(currentAccount.name));
+    hydrateSupabaseImages(userMenuInitials);
     populateAccountDetails();
   } else {
     userDropdown.hidden = true;
@@ -5216,7 +5471,8 @@ profileForm.addEventListener("submit", async (event) => {
     detail: profileDetail.value.trim(),
     university: profileUniversity.value.trim(),
     level: currentAccount.role === "tutor" ? profileLevel.value : "",
-    photo: currentAccount.role === "tutor" ? pendingProfilePhoto : "",
+    photo: currentAccount.role === "tutor" ? pendingProfilePhotoPath || pendingProfilePhoto : "",
+    photoPath: currentAccount.role === "tutor" ? pendingProfilePhotoPath : "",
     grade: "",
     about: profileAbout.value.trim(),
     sessions: profileSessions.value.trim(),
@@ -5252,15 +5508,31 @@ chatForm.addEventListener("submit", async (event) => {
   }
 
   const text = chatInput.value.trim();
-  if (!text) return;
+  const file = chatAttachment?.files?.[0] || null;
+  if (!text && !file) return;
 
+  const attachments = [];
+  if (file) {
+    try {
+      signupStatus.textContent = "Uploading attachment...";
+      attachments.push(await uploadSupabaseMessageAttachment(file));
+      signupStatus.textContent = "Attachment uploaded.";
+      signupStatus.classList.add("success");
+    } catch (error) {
+      signupStatus.textContent = error.message || "Attachment could not upload to Supabase.";
+      signupStatus.classList.remove("success");
+      return;
+    }
+  }
   const sent = await saveMessage({
     direction: "outgoing",
     text,
+    attachments,
     time: nowLabel()
   });
   if (!sent) return;
   chatInput.value = "";
+  if (chatAttachment) chatAttachment.value = "";
   addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedTutor.name}`, "Chat");
   renderChat(currentAccount.role);
 });
@@ -5273,15 +5545,31 @@ messagePageForm.addEventListener("submit", async (event) => {
   }
 
   const text = messagePageInput.value.trim();
-  if (!text) return;
+  const file = messagePageAttachment?.files?.[0] || null;
+  if (!text && !file) return;
 
+  const attachments = [];
+  if (file) {
+    try {
+      signupStatus.textContent = "Uploading attachment...";
+      attachments.push(await uploadSupabaseMessageAttachment(file));
+      signupStatus.textContent = "Attachment uploaded.";
+      signupStatus.classList.add("success");
+    } catch (error) {
+      signupStatus.textContent = error.message || "Attachment could not upload to Supabase.";
+      signupStatus.classList.remove("success");
+      return;
+    }
+  }
   const sent = await saveMessage({
     direction: "outgoing",
     text,
+    attachments,
     time: nowLabel()
   });
   if (!sent) return;
   messagePageInput.value = "";
+  if (messagePageAttachment) messagePageAttachment.value = "";
   addActivity(`Sent message to ${currentAccount.role === "tutor" ? "student and parent" : selectedThreadTutor.name}`, "Chat");
   renderMessagesPage();
 });
@@ -5586,12 +5874,18 @@ profilePhoto?.addEventListener("change", async () => {
   }
 
   try {
-    pendingProfilePhoto = await resizeProfileImage(file);
-    updateProfilePhotoPreview(pendingProfilePhoto, profileName.value || currentAccount?.name);
+    profileBadge.textContent = "Uploading";
+    const upload = await uploadSupabaseProfilePhoto(file);
+    pendingProfilePhotoPath = upload.path;
+    pendingProfilePhoto = upload.path;
+    await updateProfilePhotoPreview(upload.path, profileName.value || currentAccount?.name);
     profileBadge.textContent = "Unsaved";
-  } catch {
-    signupStatus.textContent = "That profile picture could not be loaded. Try another image.";
+    signupStatus.textContent = "Profile picture uploaded to Supabase. Save the profile to keep it.";
+    signupStatus.classList.add("success");
+  } catch (error) {
+    signupStatus.textContent = error.message || "That profile picture could not upload. Check Supabase Storage and try another image.";
     signupStatus.classList.remove("success");
+    profileBadge.textContent = "Not uploaded";
   }
 });
 

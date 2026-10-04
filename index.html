@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20260923-application-polish" />
+    <link rel="stylesheet" href="styles.css?v=20260928-message-attachments-visible" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -495,7 +495,7 @@
                 </article>
                 <article>
                   <h3>Profile photo</h3>
-                  <p class="form-note">Supabase uploads will be wired once the bucket details are added. For now this stores the selected file name for admin review.</p>
+                  <p class="form-note">This uploads privately for tutrSTEM admin review.</p>
                   <label class="field"><span>Profile photo</span><input id="applicationPhoto" name="photo" type="file" accept="image/jpeg,image/png" /></label>
                 </article>
               </section>
@@ -806,6 +806,11 @@
             </div>
             <div id="chatMessages"></div>
             <form class="chat-input" id="chatForm">
+              <label class="attachment-button" title="Attach file" aria-label="Attach file">
+                <input id="chatAttachment" type="file" accept="image/*,application/pdf" />
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21.44 11.05-8.49 8.49a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.19 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+                <span>Attach file</span>
+              </label>
               <input id="chatInput" type="text" placeholder="Message Priya..." autocomplete="off" />
               <button class="icon-btn" type="submit" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
             </form>
@@ -845,6 +850,11 @@
               </div>
               <div id="messagePageMessages"></div>
               <form class="chat-input" id="messagePageForm">
+                <label class="attachment-button" title="Attach file" aria-label="Attach file">
+                  <input id="messagePageAttachment" type="file" accept="image/*,application/pdf" />
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21.44 11.05-8.49 8.49a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.19 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+                  <span>Attach file</span>
+                </label>
                 <input id="messagePageInput" type="text" placeholder="Write a private message..." autocomplete="off" />
                 <button class="icon-btn" type="submit" title="Send message" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
               </form>
@@ -1439,6 +1449,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20260923-application-polish"></script>
+    <script src="app.js?v=20260928-message-attachments-visible"></script>
   </body>
 </html>
