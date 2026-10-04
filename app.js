@@ -682,6 +682,7 @@ const bookingHour = document.querySelector("#bookingHour");
 const bookingMinuteOptions = document.querySelector("#bookingMinuteOptions");
 const bookingMinute = document.querySelector("#bookingMinute");
 const bookingDateTime = document.querySelector("#bookingDateTime");
+const bookingPaymentHint = document.querySelector("#bookingPaymentHint");
 const bookingSubmitButton = document.querySelector("#bookingSubmitButton");
 const bookingsPageTitle = document.querySelector("#bookingsPageTitle");
 const bookingsPageCopy = document.querySelector("#bookingsPageCopy");
@@ -4437,6 +4438,17 @@ function bookingIsPaid(booking) {
   return ["paid_held", "paid_released"].includes(String(booking.paymentStatus || ""));
 }
 
+function bookingPaymentStatusText(booking) {
+  if (booking.isFreeTrial) return "No payment due";
+  if (booking.paymentStatus === "paid_held") return "Paid - held safely until the lesson is complete";
+  if (booking.paymentStatus === "paid_released") return "Paid out";
+  if (booking.paymentStatus === "refunded") return "Refunded";
+  if (booking.paymentStatus === "checkout_started") return "Checkout opened - finish payment in Stripe";
+  if (booking.status === "Accepted" && bookingNeedsPayment(booking)) return "Tutor accepted - pay securely with Stripe to confirm";
+  if (booking.status === "Pending tutor approval" && bookingNeedsPayment(booking)) return "Payment opens after the tutor accepts";
+  return `${formatMoneyPounds(bookingAmount(booking))} lesson fee`;
+}
+
 function bookingCanStartCheckout(booking) {
   return currentAccount?.role !== "tutor"
     && bookingNeedsPayment(booking)
@@ -4448,6 +4460,26 @@ function bookingCanReleasePayment(booking) {
   return currentAccount?.role === "tutor"
     && booking.paymentStatus === "paid_held"
     && booking.payoutStatus !== "released";
+}
+
+function updateBookingPaymentPreview() {
+  if (!bookingPaymentHint) return;
+  if (currentAccount?.role === "tutor") {
+    bookingPaymentHint.textContent = "";
+    return;
+  }
+  const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor?.value) || selectedTutor;
+  const lessonType = bookingLessonType?.value || "One-off lesson";
+  if (!tutor) {
+    bookingPaymentHint.textContent = "Choose a tutor to see the lesson price.";
+    return;
+  }
+  const price = Number(tutor.price || 0);
+  if (lessonType === "Free trial lesson" || price <= 0) {
+    bookingPaymentHint.textContent = "Free trial: no payment is taken for this booking.";
+    return;
+  }
+  bookingPaymentHint.textContent = `${formatMoneyPounds(price)} due after the tutor accepts. Stripe Checkout lets the student or parent choose or change card securely.`;
 }
 
 function localDateTimeInputValue(date) {
@@ -4682,6 +4714,7 @@ function renderBookingTutorOptions() {
   bookingTutor.innerHTML = options.map((tutor) => `
     <option value="${escapeHtml(tutorId(tutor))}" ${tutorId(tutor) === tutorId(selectedTutor) ? "selected" : ""}>${escapeHtml(tutor.name)} · ${escapeHtml(tutorSubjectLabel(tutor))}</option>
   `).join("");
+  updateBookingPaymentPreview();
 }
 
 function bookingPersonKey(booking) {
@@ -4875,12 +4908,13 @@ function rescheduleDecisionButtons(booking, action, singleLabel, futureLabel) {
 
 function recurringAcceptButtons(booking) {
   const id = escapeHtml(booking.id);
+  const label = bookingNeedsPayment(booking) ? "Accept and request payment" : "Accept";
   if (!booking.isGeneratedOccurrence) {
-    return `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">Accept</button>`;
+    return `<button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}">${label}</button>`;
   }
   return `
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}" data-booking-scope="single">Accept this</button>
-    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}" data-booking-scope="future">Accept future</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}" data-booking-scope="single">${bookingNeedsPayment(booking) ? "Accept this and request payment" : "Accept this"}</button>
+    <button class="secondary-btn compact-btn" type="button" data-booking-action="Accepted" data-booking-id="${id}" data-booking-scope="future">${bookingNeedsPayment(booking) ? "Accept future and request payment" : "Accept future"}</button>
   `;
 }
 
@@ -4896,7 +4930,7 @@ function bookingActions(booking) {
       || (status === "Reschedule requested by tutor" && currentAccount?.role !== "tutor"));
   const proposed = booking.proposedDateTime ? `<small class="booking-proposed">Proposed: ${escapeHtml(formatBookingDate(booking.proposedDateTime))}</small>` : "";
   const paymentButtons = `
-    ${bookingCanStartCheckout(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="checkout" data-booking-id="${paymentId}">Pay now</button>` : ""}
+    ${bookingCanStartCheckout(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="checkout" data-booking-id="${paymentId}" title="Open Stripe Checkout to choose or change card securely">Pay securely with Stripe</button>` : ""}
     ${bookingCanReleasePayment(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="release" data-booking-id="${paymentId}">Mark complete</button>` : ""}
   `;
 
@@ -4987,19 +5021,7 @@ function renderBookingList(container, items, emptyText) {
 
   container.innerHTML = sortedItems.map((booking) => {
     const participant = bookingPersonName(booking);
-    const amount = bookingAmount(booking);
-    const paymentLabel = booking.isFreeTrial
-      ? "No payment due"
-      : `${formatMoneyPounds(amount)} lesson fee`;
-    const paymentStatus = booking.paymentStatus === "paid_held"
-      ? "Paid - held safely"
-      : booking.paymentStatus === "paid_released"
-        ? "Paid out"
-        : booking.paymentStatus === "refunded"
-          ? "Refunded"
-          : booking.paymentStatus === "checkout_started"
-            ? "Payment not complete"
-            : paymentLabel;
+    const paymentStatus = bookingPaymentStatusText(booking);
     return `
       <article class="booking-row">
         <div class="avatar small-avatar">${escapeHtml(booking.initials)}</div>
@@ -5288,8 +5310,9 @@ function renderBookingsPage() {
   } else {
     updateBookingDateConstraints();
     bookingPersonLabel.textContent = "Tutor";
-    bookingSubmitButton.textContent = "Book lesson";
+    bookingSubmitButton.textContent = "Request lesson";
     renderBookingTutorOptions();
+    updateBookingPaymentPreview();
     bookingPageForm.hidden = false;
     bookingPageForm.style.display = "";
     bookingPageForm.querySelectorAll("input, select, button").forEach((control) => {
@@ -5298,8 +5321,8 @@ function renderBookingsPage() {
   }
   bookingsPageTitle.textContent = currentAccount.role === "tutor" ? "Lesson requests" : "Bookings";
   bookingsPageCopy.textContent = currentAccount.role === "tutor"
-    ? "Accept, reject, or request a new time for student and parent booking requests."
-    : "Request a lesson time, then reschedule or cancel if plans change.";
+    ? "Accept a request to send the student or parent to Stripe. Funds are held safely until the lesson is complete."
+    : "Request a lesson time. When the tutor accepts, pay securely with Stripe to confirm it.";
 
   markBookingsSeen();
   const bookings = getDisplayBookings();
@@ -5716,7 +5739,9 @@ bookingTutorSearch?.addEventListener("input", renderBookingTutorOptions);
 bookingTutor?.addEventListener("change", () => {
   const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value);
   if (tutor) selectedTutor = tutor;
+  updateBookingPaymentPreview();
 });
+bookingLessonType?.addEventListener("change", updateBookingPaymentPreview);
 bookingViewFilter?.addEventListener("change", renderBookingsPage);
 [bookingDate, bookingHour].forEach((control) => {
   control?.addEventListener("change", syncBookingDateTime);
@@ -6030,6 +6055,10 @@ bookingPageForm.addEventListener("submit", async (event) => {
     });
   }
   addActivity(`Requested ${bookingLessonType.value} with ${tutor.name}`, "Booking");
+  signupStatus.textContent = firstBooking.isFreeTrial
+    ? "Free trial request sent to the tutor."
+    : "Lesson request sent. If the tutor accepts, you will see a secure Stripe payment button here to confirm the booking.";
+  signupStatus.classList.add("success");
   updateBookingBadge();
   checkLessonReminders();
   renderBookingsPage();

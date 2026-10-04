@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261004-responsive-layout" />
+    <link rel="stylesheet" href="styles.css?v=20261004-checkout-flow" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -1043,7 +1043,8 @@
                 </div>
                 <input id="bookingDateTime" type="hidden" />
               </label>
-              <button class="primary-btn wide" id="bookingSubmitButton" type="submit">Book lesson</button>
+              <p class="booking-payment-hint" id="bookingPaymentHint">Choose a tutor to see the lesson price.</p>
+              <button class="primary-btn wide" id="bookingSubmitButton" type="submit">Request lesson</button>
             </form>
             <div class="booking-lists">
               <label class="field booking-view-filter">
@@ -1453,6 +1454,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20261004-payouts-chat-empty"></script>
+    <script src="app.js?v=20261004-checkout-flow"></script>
   </body>
 </html>
