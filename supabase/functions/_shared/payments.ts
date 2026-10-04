@@ -8,6 +8,10 @@ export function stripeClient() {
 }
 
 export function authedEmail(request: Request) {
+  return authedUser(request).email;
+}
+
+export function authedUser(request: Request) {
   const auth = request.headers.get("authorization") || "";
   if (!auth.toLowerCase().startsWith("bearer ")) throw new Error("Log in first.");
   const token = auth.slice(7);
@@ -16,7 +20,9 @@ export function authedEmail(request: Request) {
   const data = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
   const email = String(data.email || "").trim().toLowerCase();
   if (!email) throw new Error("Login token is missing an email.");
-  return email;
+  const uid = String(data.user_id || data.sub || "").trim();
+  if (!uid) throw new Error("Login token is missing a user ID.");
+  return { email, uid };
 }
 
 export function hoursUntil(value: unknown) {

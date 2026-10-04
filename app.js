@@ -611,6 +611,7 @@ const profileAdmissionsSuggestions = document.querySelector("#profileAdmissionsS
 const profileDetail = document.querySelector("#profileDetail");
 const profileUniversity = document.querySelector("#profileUniversity");
 const profileLevel = document.querySelector("#profileLevel");
+const profilePrice = document.querySelector("#profilePrice");
 const profilePhoto = document.querySelector("#profilePhoto");
 const profilePhotoPreview = document.querySelector("#profilePhotoPreview");
 const profileAbout = document.querySelector("#profileAbout");
@@ -1799,6 +1800,33 @@ async function callPaymentFunction(name, payload = {}) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Payment action could not be completed yet.");
   return data;
+}
+
+async function setupTutorPayouts() {
+  if (currentAccount?.role !== "tutor") return;
+  if (!isPaymentsReady()) {
+    signupStatus.textContent = "Log in as a tutor before setting up payouts.";
+    signupStatus.classList.remove("success");
+    return;
+  }
+  const button = document.querySelector("#setupTutorPayouts");
+  if (button) button.disabled = true;
+  try {
+    signupStatus.textContent = "Opening secure Stripe payout setup...";
+    const result = await callPaymentFunction("create-tutor-connect-account-link", {
+      origin: window.location.origin
+    });
+    if (result.url) {
+      window.location.assign(result.url);
+      return;
+    }
+    throw new Error("Stripe did not return an onboarding link.");
+  } catch (error) {
+    signupStatus.textContent = error.message || "Could not open Stripe payout setup yet.";
+    signupStatus.classList.remove("success");
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 function createId(prefix = "item") {
@@ -3943,6 +3971,7 @@ function renderProfile(role) {
   profileDetail.value = cleanAutoText(profile.detail);
   profileUniversity.value = cleanAutoText(profile.university);
   if (profileLevel) profileLevel.value = cleanAutoText(profile.level);
+  if (profilePrice) profilePrice.value = profile.price ? String(Number(profile.price || 0)) : "";
   pendingProfilePhotoPath = profile.photoPath || (isSupabaseStoragePath(profile.photo) ? profile.photo : "");
   pendingProfilePhoto = pendingProfilePhotoPath || profile.photo || "";
   updateProfilePhotoPreview(pendingProfilePhoto, profile.name || currentAccount.name);
@@ -5277,7 +5306,13 @@ function renderDashboard(role) {
       <strong>${escapeHtml(title)}</strong>
       <span>${escapeHtml(text)}</span>
     </article>
-  `).join("");
+  `).join("") + (role === "tutor" ? `
+    <article>
+      <strong>Payments</strong>
+      <span>${getCurrentTutorProfile()?.stripeAccountId ? "Stripe payouts are connected." : "Add your bank details securely with Stripe."}</span>
+      <button class="secondary-btn compact-btn" type="button" id="setupTutorPayouts">Set up payouts</button>
+    </article>
+  ` : "");
   const liveLessons = nextBookings.length
     ? nextBookings.map((booking) => [
         formatBookingDate(booking.dateTime),
@@ -5319,6 +5354,7 @@ function renderDashboard(role) {
   `;
   document.querySelector("#openBookingsFromDash")?.addEventListener("click", () => showPage("bookings"));
   document.querySelector("#openMessagesFromDash")?.addEventListener("click", () => showPage("messages"));
+  document.querySelector("#setupTutorPayouts")?.addEventListener("click", setupTutorPayouts);
   renderProfile(role);
   renderActivity();
   renderChat(role);
@@ -5755,6 +5791,7 @@ profileForm.addEventListener("submit", async (event) => {
     detail: profileDetail.value.trim(),
     university: profileUniversity.value.trim(),
     level: currentAccount.role === "tutor" ? profileLevel.value : "",
+    price: currentAccount.role === "tutor" ? Number(profilePrice?.value || 0) : 0,
     photo: currentAccount.role === "tutor" ? pendingProfilePhotoPath || pendingProfilePhoto : "",
     photoPath: currentAccount.role === "tutor" ? pendingProfilePhotoPath : "",
     grade: "",

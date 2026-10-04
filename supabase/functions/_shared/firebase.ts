@@ -125,6 +125,36 @@ export async function updateBooking(id: string, updates: Record<string, unknown>
   return data;
 }
 
+export async function getTutorProfile(id: string) {
+  const response = await fetch(documentUrl("tutorProfiles", id), {
+    headers: { Authorization: `Bearer ${await accessToken()}` }
+  });
+  const data = await response.json();
+  if (response.status === 404) return { id };
+  if (!response.ok) throw new Error(data.error?.message || "Tutor profile was not found.");
+  return { id, ...fromFirestoreFields(data.fields || {}) };
+}
+
+export async function updateTutorProfile(id: string, updates: Record<string, unknown>) {
+  const fields = toFirestoreFields({
+    ...updates,
+    updatedAt: new Date().toISOString()
+  });
+  const params = new URLSearchParams();
+  Object.keys(fields).forEach((key) => params.append("updateMask.fieldPaths", key));
+  const response = await fetch(`${documentUrl("tutorProfiles", id)}?${params}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${await accessToken()}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error?.message || "Could not update tutor profile.");
+  return data;
+}
+
 export function assertBookingAccess(email: string, booking: Record<string, unknown>, roles: Array<"student" | "tutor">) {
   const actor = email.trim().toLowerCase();
   const isStudent = String(booking.studentEmail || "").trim().toLowerCase() === actor;
