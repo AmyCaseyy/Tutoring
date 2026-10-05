@@ -1,6 +1,6 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { assertBookingAccess, getBooking, updateBooking } from "../_shared/firebase.ts";
-import { authedEmail, hoursUntil, releaseBookingNet, stripeClient } from "../_shared/payments.ts";
+import { authedEmail, hoursUntil, releaseBookingNet, stripeClient, syncPaidBookingFromStripe } from "../_shared/payments.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -11,7 +11,8 @@ Deno.serve(async (request) => {
     const body = await request.json();
     const bookingId = String(body.bookingId || "").trim();
     const cancelledBy = body.cancelledBy === "tutor" ? "tutor" : "student";
-    const booking = await getBooking(bookingId);
+    let booking = await getBooking(bookingId);
+    booking = await syncPaidBookingFromStripe(bookingId, booking);
     assertBookingAccess(email, booking, [cancelledBy]);
 
     const status = cancelledBy === "tutor" ? "Cancelled by tutor" : "Cancelled by student";

@@ -38,8 +38,49 @@ export function netSplit(netAmount: number) {
   return { tutorAmount, ownerAAmount, ownerBAmount };
 }
 
+export async function syncPaidBookingFromStripe(bookingId: string, booking: Record<string, unknown>) {
+  if (booking.paymentStatus === "paid_held" || booking.paymentStatus === "paid_released") return booking;
+
+  const sessionId = String(booking.stripeCheckoutSessionId || "");
+  if (!sessionId.startsWith("cs_")) return booking;
+
+  const stripe = stripeClient();
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent.latest_charge.balance_transaction"]
+  });
+  if (session.payment_status !== "paid" || !session.payment_intent) return booking;
+
+  const paymentIntent = typeof session.payment_intent === "string"
+    ? await stripe.paymentIntents.retrieve(session.payment_intent, {
+      expand: ["latest_charge.balance_transaction"]
+    })
+    : session.payment_intent;
+  const charge = paymentIntent.latest_charge;
+  const chargeId = typeof charge === "string" ? charge : charge?.id || "";
+  const balanceTransaction = typeof charge === "string" ? null : charge?.balance_transaction;
+  const stripeFee = typeof balanceTransaction === "object" && balanceTransaction ? balanceTransaction.fee : 0;
+  const net = typeof balanceTransaction === "object" && balanceTransaction ? balanceTransaction.net : paymentIntent.amount_received;
+
+  const updates = {
+    stripeCheckoutSessionId: session.id,
+    stripePaymentIntentId: paymentIntent.id,
+    stripeChargeId: chargeId,
+    grossAmount: paymentIntent.amount_received,
+    stripeFee,
+    stripeNetAmount: net,
+    currency: paymentIntent.currency,
+    status: "Confirmed",
+    paymentStatus: "paid_held",
+    paymentReleaseStatus: "ready",
+    paidAt: new Date().toISOString()
+  };
+  await updateBooking(bookingId, updates);
+  return { ...booking, ...updates };
+}
+
 export async function releaseBookingNet(bookingId: string, requestedBy: string, trigger: string) {
-  const booking = await getBooking(bookingId);
+  let booking = await getBooking(bookingId);
+  booking = await syncPaidBookingFromStripe(bookingId, booking);
   if (booking.paymentStatus !== "paid_held") throw new Error("This booking is not paid and held.");
   if (booking.paymentReleaseStatus === "released" || booking.paymentStatus === "paid_released") {
     return { alreadyReleased: true, transferIds: booking.stripeTransferIds || [] };
