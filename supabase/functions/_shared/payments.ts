@@ -116,17 +116,20 @@ export async function releaseBookingNet(bookingId: string, requestedBy: string, 
 
   try {
     const transfers = [];
+    const sourceChargeId = String(booking.stripeChargeId || "");
     for (const spec of transferSpecs) {
-      transfers.push(await stripe.transfers.create({
+      const transfer: Stripe.TransferCreateParams = {
         amount: spec.amount,
         currency: "gbp",
         destination: spec.destination,
+        ...(sourceChargeId.startsWith("ch_") ? { source_transaction: sourceChargeId } : {}),
         metadata: {
           bookingId,
           share: spec.share,
-          sourceChargeId: String(booking.stripeChargeId || "")
+          sourceChargeId
         }
-      }, {
+      };
+      transfers.push(await stripe.transfers.create(transfer, {
         idempotencyKey: `booking-${bookingId}-transfer-${spec.share}`
       }));
     }
