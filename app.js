@@ -2490,6 +2490,20 @@ function getAllTutors() {
   return [...tutors, ...getTutorProfiles()];
 }
 
+function isHiddenTestTutor(tutor = {}) {
+  tutor = tutor || {};
+  const name = String(tutor.name || "").trim().toLowerCase();
+  const email = normalizeEmail(tutor.email || "");
+  return name === "priya shah"
+    || name.includes("test tutor")
+    || email.includes("test")
+    || email.includes("demo");
+}
+
+function getPublicTutors() {
+  return getAllTutors().filter((tutor) => !isHiddenTestTutor(tutor));
+}
+
 function getCurrentTutorProfile() {
   return getAllTutors().find((tutor) => tutor.email === currentAccount?.email);
 }
@@ -2511,7 +2525,7 @@ function tutorSlug(tutor) {
 }
 
 function tutorBySlug(slug) {
-  return getAllTutors().find((tutor) => tutorSlug(tutor) === slug);
+  return getPublicTutors().find((tutor) => tutorSlug(tutor) === slug);
 }
 
 function setMetaTag(selector, attrName, attrValue, content) {
@@ -2592,7 +2606,7 @@ function getFilteredTutors() {
   const university = uniFilter.value.trim().toLowerCase();
   const minGrade = gradeFilter.value;
 
-  const filtered = getAllTutors().filter((tutor) => {
+  const filtered = getPublicTutors().filter((tutor) => {
     const nameMatch = !tutorName || tutor.name.toLowerCase().includes(tutorName);
     const subjectMatch = subject === "All" || tutorSubjectIds(tutor).includes(subject);
     const admissionMatch = admissionTest === "All" || tutorAdmissionTestIds(tutor).includes(admissionTest);
@@ -2988,7 +3002,7 @@ function renderMessagesPage() {
     viewMessageProfile.textContent = "View student profile";
     viewMessageProfile.onclick = () => showPage("student-profile");
   } else {
-    const availableTutors = getAllTutors();
+    const availableTutors = getPublicTutors();
     threadList.innerHTML = availableTutors.map((tutor) => {
       const unread = unreadCountForThread(currentAccount.email, tutorEmail(tutor));
       return `
@@ -4497,7 +4511,7 @@ function updateBookingPaymentPreview() {
     bookingPaymentHint.textContent = "";
     return;
   }
-  const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor?.value) || selectedTutor;
+  const tutor = getPublicTutors().find((item) => tutorId(item) === bookingTutor?.value) || (!isHiddenTestTutor(selectedTutor) ? selectedTutor : null);
   const lessonType = bookingLessonType?.value || "One-off lesson";
   if (!tutor) {
     bookingPaymentHint.textContent = "Choose a tutor to see the lesson price.";
@@ -4729,7 +4743,7 @@ function buildBookingRecord(baseBooking) {
 
 function renderBookingTutorOptions() {
   if (!bookingTutor) return;
-  const availableTutors = getAllTutors();
+  const availableTutors = getPublicTutors();
   const query = normalizeEmail(bookingTutorSearch?.value || "");
   const filteredTutors = availableTutors.filter((tutor) => {
     if (!query) return true;
@@ -5783,7 +5797,7 @@ admissionsFilter?.addEventListener("change", () => {
 
 bookingTutorSearch?.addEventListener("input", renderBookingTutorOptions);
 bookingTutor?.addEventListener("change", () => {
-  const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value);
+  const tutor = getPublicTutors().find((item) => tutorId(item) === bookingTutor.value);
   if (tutor) selectedTutor = tutor;
   updateBookingPaymentPreview();
 });
@@ -6017,7 +6031,7 @@ bookingPageForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const tutor = getAllTutors().find((item) => tutorId(item) === bookingTutor.value) || selectedTutor;
+  const tutor = getPublicTutors().find((item) => tutorId(item) === bookingTutor.value) || (!isHiddenTestTutor(selectedTutor) ? selectedTutor : null);
   if (!tutor || !bookingTutor.value) {
     signupStatus.textContent = "Choose a tutor before booking.";
     signupStatus.classList.remove("success");
