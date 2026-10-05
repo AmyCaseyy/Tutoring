@@ -41,7 +41,7 @@ function lessonEndTime(booking: Record<string, unknown>) {
 function assertLessonCanRelease(booking: Record<string, unknown>, trigger: string) {
   if (trigger !== "lesson_completed") return;
   if (booking.isRecurringSeries) {
-    throw new Error("Recurring lessons need per-lesson payment release. Use one-off lessons for paid checkout until recurring billing is enabled.");
+    throw new Error("Choose the specific recurring lesson to release payment for.");
   }
   const end = lessonEndTime(booking);
   if (!Number.isFinite(end)) throw new Error("This booking is missing a lesson time.");
@@ -57,11 +57,47 @@ export function netSplit(netAmount: number) {
   return { tutorAmount, ownerAAmount, ownerBAmount };
 }
 
-export async function syncPaidBookingFromStripe(bookingId: string, booking: Record<string, unknown>) {
-  if (booking.paymentStatus === "paid_held" || booking.paymentStatus === "paid_released") return booking;
+function occurrencePayments(booking: Record<string, unknown>) {
+  return (booking.occurrencePayments && typeof booking.occurrencePayments === "object")
+    ? booking.occurrencePayments as Record<string, Record<string, unknown>>
+    : {};
+}
 
-  const sessionId = String(booking.stripeCheckoutSessionId || "");
-  if (!sessionId.startsWith("cs_")) return booking;
+function paymentTarget(booking: Record<string, unknown>, occurrenceKey = "") {
+  if (!occurrenceKey) return booking;
+  const payment = occurrencePayments(booking)[occurrenceKey] || {};
+  return {
+    ...booking,
+    ...payment,
+    occurrenceKey,
+    dateTime: payment.dateTime || occurrenceKey
+  };
+}
+
+async function updatePaymentTarget(bookingId: string, booking: Record<string, unknown>, occurrenceKey: string, updates: Record<string, unknown>) {
+  if (!occurrenceKey) {
+    await updateBooking(bookingId, updates);
+    return;
+  }
+  const payments = occurrencePayments(booking);
+  await updateBooking(bookingId, {
+    occurrencePayments: {
+      ...payments,
+      [occurrenceKey]: {
+        ...(payments[occurrenceKey] || {}),
+        ...updates,
+        occurrenceKey
+      }
+    }
+  });
+}
+
+export async function syncPaidBookingFromStripe(bookingId: string, booking: Record<string, unknown>, occurrenceKey = "") {
+  let target = paymentTarget(booking, occurrenceKey);
+  if (target.paymentStatus === "paid_held" || target.paymentStatus === "paid_released") return target;
+
+  const sessionId = String(target.stripeCheckoutSessionId || "");
+  if (!sessionId.startsWith("cs_")) return target;
 
   const stripe = stripeClient();
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -93,15 +129,16 @@ export async function syncPaidBookingFromStripe(bookingId: string, booking: Reco
     paymentReleaseStatus: "ready",
     paidAt: new Date().toISOString()
   };
-  await updateBooking(bookingId, updates);
-  return { ...booking, ...updates };
+  await updatePaymentTarget(bookingId, booking, occurrenceKey, updates);
+  return { ...target, ...updates };
 }
 
-export async function releaseBookingNet(bookingId: string, requestedBy: string, trigger: string) {
-  let booking = await getBooking(bookingId);
-  booking = await syncPaidBookingFromStripe(bookingId, booking);
-  assertLessonCanRelease(booking, trigger);
-  if (booking.paymentStatus !== "paid_held") throw new Error("This booking is not paid and held.");
+export async function releaseBookingNet(bookingId: string, requestedBy: string, trigger: string, occurrenceKey = "") {
+  const parentBooking = await getBooking(bookingId);
+  let booking = paymentTarget(parentBooking, occurrenceKey);
+  booking = await syncPaidBookingFromStripe(bookingId, parentBooking, occurrenceKey);
+  assertLessonCanRelease({ ...booking, isRecurringSeries: false }, trigger);
+  if (booking.paymentStatus !== "paid_held") throw new Error("This lesson is not paid and held.");
   if (booking.paymentReleaseStatus === "released" || booking.paymentStatus === "paid_released") {
     return { alreadyReleased: true, transferIds: booking.stripeTransferIds || [] };
   }
@@ -116,7 +153,7 @@ export async function releaseBookingNet(bookingId: string, requestedBy: string, 
   if (!amyAccountId.startsWith("acct_")) throw new Error("Amy connected account ID is not configured.");
   if (!Number.isFinite(netAmount) || netAmount < 50) throw new Error("Net amount is missing.");
 
-  await updateBooking(bookingId, {
+  await updatePaymentTarget(bookingId, parentBooking, occurrenceKey, {
     paymentReleaseStatus: "processing",
     paymentReleaseRequestedBy: requestedBy,
     paymentReleaseTrigger: trigger,
@@ -150,11 +187,11 @@ export async function releaseBookingNet(bookingId: string, requestedBy: string, 
         }
       };
       transfers.push(await stripe.transfers.create(transfer, {
-        idempotencyKey: `booking-${bookingId}-transfer-${spec.share}-source-charge-v2`
+        idempotencyKey: `booking-${bookingId}${occurrenceKey ? `-${occurrenceKey}` : ""}-transfer-${spec.share}-source-charge-v2`
       }));
     }
 
-    await updateBooking(bookingId, {
+    await updatePaymentTarget(bookingId, parentBooking, occurrenceKey, {
       paymentStatus: "paid_released",
       payoutStatus: "released",
       paymentReleaseStatus: "released",
@@ -176,7 +213,7 @@ export async function releaseBookingNet(bookingId: string, requestedBy: string, 
       ownerBShareStatus: ownerBConfigured ? "transferred" : "held_on_platform"
     };
   } catch (error) {
-    await updateBooking(bookingId, {
+    await updatePaymentTarget(bookingId, parentBooking, occurrenceKey, {
       paymentReleaseStatus: "failed",
       paymentReleaseError: error instanceof Error ? error.message : "Transfer failed."
     });

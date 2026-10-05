@@ -10,16 +10,24 @@ Deno.serve(async (request) => {
     const email = authedEmail(request);
     const body = await request.json();
     const bookingId = String(body.bookingId || "").trim();
+    const occurrenceKey = String(body.occurrenceKey || "").trim();
+    const occurrenceDateTime = String(body.occurrenceDateTime || occurrenceKey || "").trim();
     const origin = String(body.origin || "https://tutrstem.co.uk").replace(/\/$/, "");
     const booking = await getBooking(bookingId);
     assertBookingAccess(email, booking, ["student"]);
+    const isRecurringOccurrence = Boolean(booking.isRecurringSeries);
+    const occurrencePayments = booking.occurrencePayments && typeof booking.occurrencePayments === "object"
+      ? booking.occurrencePayments as Record<string, Record<string, unknown>>
+      : {};
+    const existingOccurrencePayment = occurrenceKey ? occurrencePayments[occurrenceKey] || {} : {};
+    const paymentStatus = String(isRecurringOccurrence ? existingOccurrencePayment.paymentStatus || "" : booking.paymentStatus || "");
 
-    if (booking.paymentStatus === "paid_held" || booking.paymentStatus === "paid_released") {
-      throw new Error("This booking is already paid.");
+    if (paymentStatus === "paid_held" || paymentStatus === "paid_released") {
+      throw new Error("This lesson is already paid.");
     }
     if (booking.status !== "Accepted") throw new Error("The tutor needs to accept this booking before payment.");
-    if (booking.isRecurringSeries) {
-      throw new Error("Recurring paid checkout needs per-lesson billing before it can take payment safely. Use one-off bookings for paid lessons for now.");
+    if (isRecurringOccurrence && (!occurrenceKey || !Number.isFinite(new Date(occurrenceDateTime).getTime()))) {
+      throw new Error("Choose a specific recurring lesson before opening Stripe Checkout.");
     }
 
     let tutorProfile: Record<string, unknown> | null | undefined;
@@ -59,6 +67,7 @@ Deno.serve(async (request) => {
     }
 
     const stripe = stripeClient();
+    const lessonDateTime = isRecurringOccurrence ? occurrenceDateTime : String(booking.dateTime || "");
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: String(booking.studentEmail || email),
@@ -68,7 +77,7 @@ Deno.serve(async (request) => {
           unit_amount: amount,
           product_data: {
             name: `${booking.type || "Tutoring lesson"} with ${booking.tutor || "tutrSTEM tutor"}`,
-            description: `${booking.subject || "Tutoring"} booked through tutrSTEM`
+            description: `${booking.subject || "Tutoring"}${lessonDateTime ? ` on ${lessonDateTime}` : ""} booked through tutrSTEM`
           }
         },
         quantity: 1
@@ -77,6 +86,8 @@ Deno.serve(async (request) => {
       cancel_url: `${origin}/#bookings`,
       metadata: {
         bookingId,
+        occurrenceKey,
+        occurrenceDateTime: lessonDateTime,
         studentEmail: String(booking.studentEmail || email),
         tutorEmail: String(booking.tutorEmail || ""),
         tutorStripeAccountId
@@ -84,16 +95,18 @@ Deno.serve(async (request) => {
       payment_intent_data: {
         metadata: {
           bookingId,
+          occurrenceKey,
+          occurrenceDateTime: lessonDateTime,
           studentEmail: String(booking.studentEmail || email),
           tutorEmail: String(booking.tutorEmail || ""),
           tutorStripeAccountId
         }
       }
     }, {
-      idempotencyKey: `booking-${bookingId}-checkout`
+      idempotencyKey: `booking-${bookingId}${occurrenceKey ? `-${occurrenceKey}` : ""}-checkout`
     });
 
-    await updateBooking(bookingId, {
+    const paymentUpdates = {
       amount: amount / 100,
       amountPence: amount,
       amountSource,
@@ -102,7 +115,22 @@ Deno.serve(async (request) => {
       stripeCheckoutSessionId: session.id,
       paymentStatus: "checkout_started",
       paymentReleaseStatus: "not_ready"
-    });
+    };
+    if (isRecurringOccurrence) {
+      await updateBooking(bookingId, {
+        occurrencePayments: {
+          ...occurrencePayments,
+          [occurrenceKey]: {
+            ...existingOccurrencePayment,
+            ...paymentUpdates,
+            occurrenceKey,
+            dateTime: lessonDateTime
+          }
+        }
+      });
+    } else {
+      await updateBooking(bookingId, paymentUpdates);
+    }
 
     return jsonResponse({ url: session.url, sessionId: session.id });
   } catch (error) {

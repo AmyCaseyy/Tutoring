@@ -4479,8 +4479,7 @@ function bookingCanStartCheckout(booking) {
   return currentAccount?.role !== "tutor"
     && bookingNeedsPayment(booking)
     && !bookingIsPaid(booking)
-    && !booking.isRecurringSeries
-    && !booking.isGeneratedOccurrence
+    && (!booking.isRecurringSeries || booking.isGeneratedOccurrence)
     && ["Accepted", "Checkout started - payment not complete"].includes(booking.status || "");
 }
 
@@ -4488,8 +4487,7 @@ function bookingCanReleasePayment(booking) {
   return currentAccount?.role === "tutor"
     && booking.paymentStatus === "paid_held"
     && booking.payoutStatus !== "released"
-    && !booking.isRecurringSeries
-    && !booking.isGeneratedOccurrence
+    && (!booking.isRecurringSeries || booking.isGeneratedOccurrence)
     && bookingLessonHasEnded(booking);
 }
 
@@ -4671,17 +4669,20 @@ function expandRecurringBooking(series, limit = 5, includePrevious = false) {
   const results = [];
   const now = Date.now();
   const overrides = series.occurrenceOverrides || {};
+  const payments = series.occurrencePayments || {};
   const max = Number(series.lessonCount || 260);
   for (let index = 0; index < max && results.length < limit; index += 1) {
     const scheduled = occurrenceDateFor(series, index);
     const key = occurrenceKeyFromDate(scheduled);
     const override = overrides[key] || {};
+    const payment = payments[key] || {};
     if (bookingIsCancelled(override)) continue;
     const dateTime = override.dateTime || key;
     if (!includePrevious && new Date(dateTime).getTime() < now) continue;
     results.push({
       ...series,
       ...override,
+      ...payment,
       id: `${series.id}::${key}`,
       parentBookingId: series.id,
       occurrenceKey: key,
@@ -4952,6 +4953,7 @@ function recurringAcceptButtons(booking) {
 function bookingActions(booking) {
   const id = escapeHtml(booking.id);
   const paymentId = escapeHtml(booking.parentBookingId || booking.id);
+  const occurrenceKey = escapeHtml(booking.occurrenceKey || "");
   const status = booking.status || "Pending tutor approval";
   if (["Cancelled by student", "Cancelled by tutor"].includes(status)) return "";
   const needsTutorDecision = status === "Pending tutor approval" || status === "Reschedule requested by student";
@@ -4961,8 +4963,8 @@ function bookingActions(booking) {
       || (status === "Reschedule requested by tutor" && currentAccount?.role !== "tutor"));
   const proposed = booking.proposedDateTime ? `<small class="booking-proposed">Proposed: ${escapeHtml(formatBookingDate(booking.proposedDateTime))}</small>` : "";
   const paymentButtons = `
-    ${bookingCanStartCheckout(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="checkout" data-booking-id="${paymentId}" title="Open Stripe Checkout to choose or change card securely">Pay securely with Stripe</button>` : ""}
-    ${bookingCanReleasePayment(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="release" data-booking-id="${paymentId}">Mark complete</button>` : ""}
+    ${bookingCanStartCheckout(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="checkout" data-booking-id="${paymentId}" data-occurrence-key="${occurrenceKey}" title="Open Stripe Checkout to choose or change card securely">Pay securely with Stripe</button>` : ""}
+    ${bookingCanReleasePayment(booking) ? `<button class="primary-btn compact-btn" type="button" data-payment-action="release" data-booking-id="${paymentId}" data-occurrence-key="${occurrenceKey}">Mark complete</button>` : ""}
   `;
 
   if (currentAccount?.role === "tutor") {
@@ -5080,7 +5082,11 @@ function renderBookingList(container, items, emptyText) {
 
   container.querySelectorAll("[data-payment-action]").forEach((button) => {
     button.addEventListener("click", async () => {
-      const booking = getDisplayBookings().find((item) => item.id === button.dataset.bookingId || item.parentBookingId === button.dataset.bookingId);
+      const occurrenceKey = button.dataset.occurrenceKey || "";
+      const booking = getDisplayBookings().find((item) => (
+        item.id === button.dataset.bookingId
+        || (item.parentBookingId === button.dataset.bookingId && (!occurrenceKey || item.occurrenceKey === occurrenceKey))
+      ));
       if (!booking) return;
       if (!isPaymentsReady()) {
         signupStatus.textContent = "Payments need Supabase and a logged-in account.";
@@ -5093,6 +5099,8 @@ function renderBookingList(container, items, emptyText) {
           signupStatus.textContent = "Opening secure Stripe checkout...";
           const result = await callPaymentFunction("create-booking-checkout", {
             bookingId: booking.parentBookingId || booking.id,
+            occurrenceKey: booking.occurrenceKey || "",
+            occurrenceDateTime: booking.dateTime || "",
             origin: window.location.origin
           });
           if (result.url) {
@@ -5104,7 +5112,10 @@ function renderBookingList(container, items, emptyText) {
         if (button.dataset.paymentAction === "release") {
           if (!window.confirm("Mark this lesson complete and release the held payment?")) return;
           signupStatus.textContent = "Releasing the held payment...";
-          await callPaymentFunction("release-completed-lesson", { bookingId: booking.parentBookingId || booking.id });
+          await callPaymentFunction("release-completed-lesson", {
+            bookingId: booking.parentBookingId || booking.id,
+            occurrenceKey: booking.occurrenceKey || ""
+          });
           signupStatus.textContent = "Payment released.";
           signupStatus.classList.add("success");
           await loadCloudData();

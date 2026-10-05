@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
-import { updateBooking } from "../_shared/firebase.ts";
+import { getBooking, updateBooking } from "../_shared/firebase.ts";
 import { stripeClient } from "../_shared/payments.ts";
 
 Deno.serve(async (request) => {
@@ -17,6 +17,7 @@ Deno.serve(async (request) => {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const bookingId = session.metadata?.bookingId || "";
+      const occurrenceKey = session.metadata?.occurrenceKey || "";
       if (bookingId && session.payment_intent) {
         const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent.id;
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
@@ -28,7 +29,7 @@ Deno.serve(async (request) => {
         const stripeFee = typeof balanceTransaction === "object" && balanceTransaction ? balanceTransaction.fee : 0;
         const net = typeof balanceTransaction === "object" && balanceTransaction ? balanceTransaction.net : paymentIntent.amount_received;
 
-        await updateBooking(bookingId, {
+        const updates = {
           stripeCheckoutSessionId: session.id,
           stripePaymentIntentId: paymentIntent.id,
           stripeChargeId: chargeId,
@@ -40,7 +41,26 @@ Deno.serve(async (request) => {
           paymentStatus: "paid_held",
           paymentReleaseStatus: "ready",
           paidAt: new Date().toISOString()
-        });
+        };
+        if (occurrenceKey) {
+          const booking = await getBooking(bookingId);
+          const payments = booking.occurrencePayments && typeof booking.occurrencePayments === "object"
+            ? booking.occurrencePayments as Record<string, Record<string, unknown>>
+            : {};
+          await updateBooking(bookingId, {
+            occurrencePayments: {
+              ...payments,
+              [occurrenceKey]: {
+                ...(payments[occurrenceKey] || {}),
+                ...updates,
+                occurrenceKey,
+                dateTime: session.metadata?.occurrenceDateTime || occurrenceKey
+              }
+            }
+          });
+        } else {
+          await updateBooking(bookingId, updates);
+        }
       }
     }
 

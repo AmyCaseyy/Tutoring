@@ -10,9 +10,10 @@ Deno.serve(async (request) => {
     const email = authedEmail(request);
     const body = await request.json();
     const bookingId = String(body.bookingId || "").trim();
+    const occurrenceKey = String(body.occurrenceKey || "").trim();
     const booking = await getBooking(bookingId);
     assertBookingAccess(email, booking, ["tutor"]);
-    return jsonResponse(await releaseBookingNet(bookingId, email, "lesson_completed"));
+    return jsonResponse(await releaseBookingNet(bookingId, email, "lesson_completed", occurrenceKey));
   } catch (error) {
     return jsonResponse({ error: error instanceof Error ? error.message : "Could not release payment." }, 400);
   }
