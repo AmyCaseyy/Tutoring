@@ -130,7 +130,7 @@ export async function releaseBookingNet(bookingId: string, requestedBy: string, 
         }
       };
       transfers.push(await stripe.transfers.create(transfer, {
-        idempotencyKey: `booking-${bookingId}-transfer-${spec.share}`
+        idempotencyKey: `booking-${bookingId}-transfer-${spec.share}-source-charge-v2`
       }));
     }
 
