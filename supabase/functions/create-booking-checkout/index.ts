@@ -19,18 +19,38 @@ Deno.serve(async (request) => {
     }
     if (booking.status !== "Accepted") throw new Error("The tutor needs to accept this booking before payment.");
 
+    let tutorProfile: Record<string, unknown> | null | undefined;
+    const tutorProfileForBooking = async () => {
+      if (tutorProfile === undefined) {
+        tutorProfile = await getTutorProfileByEmail(String(booking.tutorEmail || ""));
+      }
+      return tutorProfile;
+    };
+
     let amount = Math.round(Number(booking.amountPence || 0));
     let amountSource = "booking";
     if (!Number.isFinite(amount) || amount < 50) {
-      const tutorProfile = await getTutorProfileByEmail(String(booking.tutorEmail || ""));
-      const profilePrice = Number(tutorProfile?.price || tutorProfile?.hourlyRate || 0);
+      const profile = await tutorProfileForBooking();
+      const profilePrice = Number(profile?.price || profile?.hourlyRate || 0);
       amount = Math.round(profilePrice * 100);
       amountSource = "tutor_profile";
     }
     if (!Number.isFinite(amount) || amount < 50) {
       throw new Error("This tutor needs to set an hourly rate before payment can be taken.");
     }
-    const tutorStripeAccountId = String(booking.tutorStripeAccountId || "");
+    let tutorStripeAccountId = String(booking.tutorStripeAccountId || "");
+    let tutorStripeAccountSource = "booking";
+    if (!tutorStripeAccountId.startsWith("acct_")) {
+      const profile = await tutorProfileForBooking();
+      tutorStripeAccountId = String(
+        profile?.stripeAccountId ||
+        profile?.stripeConnectAccountId ||
+        profile?.payoutStripeAccountId ||
+        profile?.stripeConnectedAccountId ||
+        ""
+      );
+      tutorStripeAccountSource = "tutor_profile";
+    }
     if (!tutorStripeAccountId.startsWith("acct_")) {
       throw new Error("This tutor needs to finish Stripe payout setup before payment can be taken.");
     }
@@ -74,6 +94,8 @@ Deno.serve(async (request) => {
       amount: amount / 100,
       amountPence: amount,
       amountSource,
+      tutorStripeAccountId,
+      tutorStripeAccountSource,
       stripeCheckoutSessionId: session.id,
       paymentStatus: "checkout_started",
       paymentReleaseStatus: "not_ready"
