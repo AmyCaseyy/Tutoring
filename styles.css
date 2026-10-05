@@ -4004,3 +4004,29 @@ body.site-ready .hero-media {
 .application-form .application-step[hidden] {
   display: none;
 }
+
+.thread-items,
+.thread-search,
+.thread-search-results {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.thread-search {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.thread-search input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.thread-search[hidden],
+.thread-search-results[hidden] {
+  display: none;
+}

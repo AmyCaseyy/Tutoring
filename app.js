@@ -627,6 +627,9 @@ const activityCount = document.querySelector("#activityCount");
 const publicProfile = document.querySelector("#publicProfile");
 const studentProfile = document.querySelector("#studentProfile");
 const threadList = document.querySelector("#threadList");
+const threadSearchWrap = document.querySelector("#threadSearchWrap");
+const threadSearch = document.querySelector("#threadSearch");
+const threadSearchResults = document.querySelector("#threadSearchResults");
 const messagePageTitle = document.querySelector("#messagePageTitle");
 const messagePageWith = document.querySelector("#messagePageWith");
 const messagePageMessages = document.querySelector("#messagePageMessages");
@@ -2498,9 +2501,36 @@ function getPublicTutors() {
 }
 
 function getMessagingTutors() {
-  if (!currentAccount?.email) return getPublicTutors();
-  return getAllTutors().filter((tutor) => !isHiddenTestTutor(tutor)
-    || cloudMessages.some((message) => messageIsInThread(message, currentAccount.email, tutorEmail(tutor))));
+  if (!currentAccount?.email) return [];
+  return getAllTutors().filter((tutor) => cloudMessages.some((message) => messageIsInThread(message, currentAccount.email, tutorEmail(tutor))));
+}
+
+function renderThreadSearchResults() {
+  if (!threadSearch || !threadSearchResults) return;
+  const query = threadSearch.value.trim().toLowerCase();
+  if (!query) {
+    threadSearchResults.hidden = true;
+    threadSearchResults.innerHTML = "";
+    return;
+  }
+  const matches = getPublicTutors().filter((tutor) => [tutor.name, tutorSubjectLabel(tutor)]
+    .some((value) => String(value || "").toLowerCase().includes(query))).slice(0, 8);
+  threadSearchResults.hidden = false;
+  threadSearchResults.innerHTML = matches.length ? matches.map((tutor) => `
+    <button class="thread-button" type="button" data-search-thread="${escapeHtml(tutorId(tutor))}">
+      <span class="avatar small-avatar">${escapeHtml(tutor.initials || initialsFromName(tutor.name))}</span>
+      <span><strong>${escapeHtml(tutor.name)}</strong><small>${escapeHtml(tutorSubjectLabel(tutor))}</small></span>
+    </button>
+  `).join("") : `<p class="empty-copy">No tutors match "${escapeHtml(threadSearch.value.trim())}".</p>`;
+  threadSearchResults.querySelectorAll("[data-search-thread]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedThreadTutor = matches.find((tutor) => tutorId(tutor) === button.dataset.searchThread) || null;
+      selectedTutor = selectedThreadTutor;
+      threadSearch.value = "";
+      renderThreadSearchResults();
+      renderMessagesPage();
+    });
+  });
 }
 
 function getCurrentTutorProfile() {
@@ -2958,6 +2988,7 @@ function renderMessagesPage() {
     promptForAccount("Log in first, then your private messages will open.");
     return;
   }
+  if (threadSearchWrap) threadSearchWrap.hidden = currentAccount.role === "tutor";
 
   if (currentAccount.role === "tutor") {
     const students = getStudentsForTutor();
@@ -3002,7 +3033,11 @@ function renderMessagesPage() {
     viewMessageProfile.onclick = () => showPage("student-profile");
   } else {
     const availableTutors = getMessagingTutors();
-    threadList.innerHTML = availableTutors.map((tutor) => {
+    // A tutor picked from search or a profile shows as a chat before the first message is sent
+    if (selectedThreadTutor && !availableTutors.some((tutor) => tutorId(tutor) === tutorId(selectedThreadTutor))) {
+      availableTutors.unshift(selectedThreadTutor);
+    }
+    threadList.innerHTML = availableTutors.length ? availableTutors.map((tutor) => {
       const unread = unreadCountForThread(currentAccount.email, tutorEmail(tutor));
       return `
         <button class="thread-button ${selectedThreadTutor && tutorId(tutor) === tutorId(selectedThreadTutor) ? "active" : ""}" type="button" data-thread="${escapeHtml(tutorId(tutor))}">
@@ -3011,7 +3046,7 @@ function renderMessagesPage() {
           ${unread ? `<span class="message-badge thread-unread">${unread}</span>` : ""}
         </button>
       `;
-    }).join("");
+    }).join("") : `<p class="empty-copy">No chats yet. Search for a tutor above to start one.</p>`;
 
     threadList.querySelectorAll("[data-thread]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -6638,6 +6673,8 @@ tutorApplicationForm?.addEventListener("submit", submitTutorApplication);
 tutorApplicationBack?.addEventListener("click", () => {
   goTutorApplicationStep(tutorApplicationStep - 1);
 });
+
+threadSearch?.addEventListener("input", renderThreadSearchResults);
 
 tutorApplicationSteps?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-application-step]");

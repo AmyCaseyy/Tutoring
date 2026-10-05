@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261005-accurate-badges" />
+    <link rel="stylesheet" href="styles.css?v=20261005-chat-search" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -849,7 +849,13 @@
             </div>
           </div>
           <div class="messages-layout">
-            <aside class="thread-list" id="threadList"></aside>
+            <aside class="thread-list">
+              <div class="thread-search" id="threadSearchWrap" hidden>
+                <input id="threadSearch" type="search" placeholder="Search for a tutor to message..." autocomplete="off" aria-label="Search for a tutor to message" />
+                <div class="thread-search-results" id="threadSearchResults" hidden></div>
+              </div>
+              <div class="thread-items" id="threadList"></div>
+            </aside>
             <section class="message-room">
               <div class="chat-title">
                 <div>
@@ -1460,6 +1466,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20261005-accurate-badges"></script>
+    <script src="app.js?v=20261005-chat-search"></script>
   </body>
 </html>
