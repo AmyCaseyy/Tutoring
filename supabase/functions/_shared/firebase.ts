@@ -71,6 +71,11 @@ function documentUrl(collection: string, id: string) {
   return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}/${id}`;
 }
 
+function databaseUrl(path = "") {
+  const projectId = serviceAccount().project_id;
+  return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents${path}`;
+}
+
 function fromFirestoreValue(value: Record<string, unknown>): unknown {
   if ("stringValue" in value) return value.stringValue || "";
   if ("integerValue" in value) return Number(value.integerValue || 0);
@@ -137,6 +142,37 @@ export async function getTutorProfile(id: string) {
   if (response.status === 404) return { id };
   if (!response.ok) throw new Error(data.error?.message || "Tutor profile was not found.");
   return { id, ...fromFirestoreFields(data.fields || {}) };
+}
+
+export async function getTutorProfileByEmail(email: string) {
+  const tutorEmail = String(email || "").trim().toLowerCase();
+  if (!tutorEmail) return null;
+  const response = await fetch(databaseUrl(":runQuery"), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${await accessToken()}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: "tutorProfiles" }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: "email" },
+            op: "EQUAL",
+            value: { stringValue: tutorEmail }
+          }
+        },
+        limit: 1
+      }
+    })
+  });
+  const data = await response.json().catch(() => []);
+  if (!response.ok) throw new Error(data.error?.message || "Could not find tutor profile.");
+  const match = Array.isArray(data) ? data.find((item) => item.document)?.document : null;
+  if (!match) return null;
+  const id = String(match.name || "").split("/").pop() || "";
+  return { id, ...fromFirestoreFields(match.fields || {}) };
 }
 
 export async function updateTutorProfile(id: string, updates: Record<string, unknown>) {

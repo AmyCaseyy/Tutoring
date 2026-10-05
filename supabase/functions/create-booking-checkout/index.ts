@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
-import { assertBookingAccess, getBooking, updateBooking } from "../_shared/firebase.ts";
+import { assertBookingAccess, getBooking, getTutorProfileByEmail, updateBooking } from "../_shared/firebase.ts";
 import { authedEmail, stripeClient } from "../_shared/payments.ts";
 
 Deno.serve(async (request) => {
@@ -19,8 +19,17 @@ Deno.serve(async (request) => {
     }
     if (booking.status !== "Accepted") throw new Error("The tutor needs to accept this booking before payment.");
 
-    const amount = Math.round(Number(booking.amountPence || 0));
-    if (!Number.isFinite(amount) || amount < 50) throw new Error("Invalid booking amount.");
+    let amount = Math.round(Number(booking.amountPence || 0));
+    let amountSource = "booking";
+    if (!Number.isFinite(amount) || amount < 50) {
+      const tutorProfile = await getTutorProfileByEmail(String(booking.tutorEmail || ""));
+      const profilePrice = Number(tutorProfile?.price || tutorProfile?.hourlyRate || 0);
+      amount = Math.round(profilePrice * 100);
+      amountSource = "tutor_profile";
+    }
+    if (!Number.isFinite(amount) || amount < 50) {
+      throw new Error("This tutor needs to set an hourly rate before payment can be taken.");
+    }
     const tutorStripeAccountId = String(booking.tutorStripeAccountId || "");
     if (!tutorStripeAccountId.startsWith("acct_")) {
       throw new Error("This tutor needs to finish Stripe payout setup before payment can be taken.");
@@ -62,6 +71,9 @@ Deno.serve(async (request) => {
     });
 
     await updateBooking(bookingId, {
+      amount: amount / 100,
+      amountPence: amount,
+      amountSource,
       stripeCheckoutSessionId: session.id,
       paymentStatus: "checkout_started",
       paymentReleaseStatus: "not_ready"

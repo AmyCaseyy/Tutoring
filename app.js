@@ -6001,6 +6001,12 @@ bookingPageForm.addEventListener("submit", async (event) => {
     signupStatus.classList.remove("success");
     return;
   }
+  const lessonPrice = Number(tutor.price || 0);
+  if (bookingLessonType.value !== "Free trial lesson" && (!Number.isFinite(lessonPrice) || lessonPrice < 0.5)) {
+    signupStatus.textContent = "This tutor needs to save an hourly rate before paid lessons can be booked.";
+    signupStatus.classList.remove("success");
+    return;
+  }
   selectedTutor = tutor;
   const items = getBookings();
   const baseBooking = {
@@ -6013,8 +6019,8 @@ bookingPageForm.addEventListener("submit", async (event) => {
     dateTime: bookingDateTimeValue,
     status: "Pending tutor approval",
     isFreeTrial: bookingLessonType.value === "Free trial lesson",
-    amount: bookingLessonType.value === "Free trial lesson" ? 0 : Number(tutor.price || 0),
-    amountPence: bookingLessonType.value === "Free trial lesson" ? 0 : Math.round(Number(tutor.price || 0) * 100),
+    amount: bookingLessonType.value === "Free trial lesson" ? 0 : lessonPrice,
+    amountPence: bookingLessonType.value === "Free trial lesson" ? 0 : Math.round(lessonPrice * 100),
     paymentStatus: bookingLessonType.value === "Free trial lesson" ? "free_trial" : "not_started",
     payoutStatus: bookingLessonType.value === "Free trial lesson" ? "not_required" : "not_released",
     student: currentAccount.name,
