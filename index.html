@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261005-accurate-revenue" />
+    <link rel="stylesheet" href="styles.css?v=20261005-nav-fix" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -1381,9 +1381,9 @@
         </nav>
         <nav class="footer-column" aria-label="Tutor links">
           <h2>For Tutors</h2>
-          <a href="#tutor-application" data-route="tutor-application">Become a Tutor</a>
+          <a href="#tutor-application" data-route="tutor-application" data-public-only>Become a Tutor</a>
           <a href="#tutor-requirements" data-route="tutor-requirements">Tutor Requirements</a>
-          <a href="#accounts" data-route="accounts">Tutor Portal Login</a>
+          <a href="#accounts" data-route="accounts" data-public-only>Tutor Portal Login</a>
         </nav>
         <nav class="footer-column" aria-label="Legal and contact links">
           <h2>Legal</h2>
@@ -1469,6 +1469,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20261005-accurate-revenue"></script>
+    <script src="app.js?v=20261005-nav-fix"></script>
   </body>
 </html>

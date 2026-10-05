@@ -4030,3 +4030,14 @@ body.site-ready .hero-media {
 .thread-search-results[hidden] {
   display: none;
 }
+
+/* Links shown or hidden by login state must stay hidden even where a display rule applies */
+[data-public-only][hidden],
+[data-auth-only][hidden],
+[data-guest-only][hidden],
+[data-tutor-nav][hidden],
+[data-hide-tutor-nav][hidden],
+[data-student-parent-nav][hidden],
+[data-admin-only][hidden] {
+  display: none !important;
+}

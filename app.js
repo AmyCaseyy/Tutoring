@@ -5766,6 +5766,15 @@ document.querySelector("[data-search-form]").addEventListener("submit", (event) 
 routeLinks.forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
+    // A tutor's own Profile link opens their profile, not whichever tutor was last viewed
+    if (link.hasAttribute("data-tutor-nav") && link.dataset.route === "profile") {
+      const ownProfile = getCurrentTutorProfile();
+      if (!ownProfile) {
+        showPage("account-details");
+        return;
+      }
+      selectedTutor = ownProfile;
+    }
     showPage(link.dataset.route);
     if (link.dataset.route === "accounts") {
       if (link.dataset.accountMode === "signup") showSignupAccountView();
