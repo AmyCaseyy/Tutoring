@@ -143,7 +143,11 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.token.email in request.resource.data.participantEmails
         && request.resource.data.senderEmail == userEmail();
-      allow update, delete: if false;
+      // Participants may only mark messages as read
+      allow update: if isParticipant()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["readBy"])
+        && request.resource.data.readBy.hasAll(resource.data.get("readBy", []));
+      allow delete: if false;
     }
 
     match /reviews/{reviewId} {

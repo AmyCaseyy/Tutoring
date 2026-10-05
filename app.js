@@ -2176,15 +2176,9 @@ function updateMessageBadge() {
     });
     return;
   }
-  const ownEmail = normalizeEmail(currentAccount.email);
-  const unread = cloudMessages.filter((message) => {
-    const recipient = normalizeEmail(message.recipientEmail);
-    const sender = normalizeEmail(message.senderEmail);
-    const participants = (message.participantEmails || []).map(normalizeEmail);
-    const readBy = (message.readBy || []).map(normalizeEmail);
-    const isIncoming = sender !== ownEmail && (recipient === ownEmail || participants.includes(ownEmail));
-    return isIncoming && !readBy.includes(ownEmail);
-  }).length;
+  const unread = currentAccount.role === "tutor"
+    ? getStudentsForTutor().reduce((total, student) => total + unreadCountForThread(student.email, currentAccount.email), 0)
+    : getMessagingTutors().reduce((total, tutor) => total + unreadCountForThread(currentAccount.email, tutorEmail(tutor)), 0);
   badges.forEach((badge) => {
     badge.textContent = String(unread);
     badge.hidden = unread === 0;
@@ -2501,6 +2495,12 @@ function isHiddenTestTutor(tutor = {}) {
 
 function getPublicTutors() {
   return getAllTutors().filter((tutor) => !isHiddenTestTutor(tutor));
+}
+
+function getMessagingTutors() {
+  if (!currentAccount?.email) return getPublicTutors();
+  return getAllTutors().filter((tutor) => !isHiddenTestTutor(tutor)
+    || cloudMessages.some((message) => messageIsInThread(message, currentAccount.email, tutorEmail(tutor))));
 }
 
 function getCurrentTutorProfile() {
@@ -3001,7 +3001,7 @@ function renderMessagesPage() {
     viewMessageProfile.textContent = "View student profile";
     viewMessageProfile.onclick = () => showPage("student-profile");
   } else {
-    const availableTutors = getPublicTutors();
+    const availableTutors = getMessagingTutors();
     threadList.innerHTML = availableTutors.map((tutor) => {
       const unread = unreadCountForThread(currentAccount.email, tutorEmail(tutor));
       return `
