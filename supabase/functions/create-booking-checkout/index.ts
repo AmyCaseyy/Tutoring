@@ -18,6 +18,9 @@ Deno.serve(async (request) => {
       throw new Error("This booking is already paid.");
     }
     if (booking.status !== "Accepted") throw new Error("The tutor needs to accept this booking before payment.");
+    if (booking.isRecurringSeries) {
+      throw new Error("Recurring paid checkout needs per-lesson billing before it can take payment safely. Use one-off bookings for paid lessons for now.");
+    }
 
     let tutorProfile: Record<string, unknown> | null | undefined;
     const tutorProfileForBooking = async () => {

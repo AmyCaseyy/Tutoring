@@ -31,6 +31,25 @@ export function hoursUntil(value: unknown) {
   return (time - Date.now()) / 36e5;
 }
 
+function lessonEndTime(booking: Record<string, unknown>) {
+  const start = new Date(String(booking.dateTime || "")).getTime();
+  const minutes = Number(booking.durationMinutes || booking.lessonMinutes || 60);
+  if (!Number.isFinite(start)) return NaN;
+  return start + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60000;
+}
+
+function assertLessonCanRelease(booking: Record<string, unknown>, trigger: string) {
+  if (trigger !== "lesson_completed") return;
+  if (booking.isRecurringSeries) {
+    throw new Error("Recurring lessons need per-lesson payment release. Use one-off lessons for paid checkout until recurring billing is enabled.");
+  }
+  const end = lessonEndTime(booking);
+  if (!Number.isFinite(end)) throw new Error("This booking is missing a lesson time.");
+  if (Date.now() < end) {
+    throw new Error("Payment can only be released after the scheduled lesson has ended.");
+  }
+}
+
 export function netSplit(netAmount: number) {
   const tutorAmount = Math.floor(netAmount * 0.8);
   const ownerAAmount = Math.floor(netAmount * 0.1);
@@ -81,6 +100,7 @@ export async function syncPaidBookingFromStripe(bookingId: string, booking: Reco
 export async function releaseBookingNet(bookingId: string, requestedBy: string, trigger: string) {
   let booking = await getBooking(bookingId);
   booking = await syncPaidBookingFromStripe(bookingId, booking);
+  assertLessonCanRelease(booking, trigger);
   if (booking.paymentStatus !== "paid_held") throw new Error("This booking is not paid and held.");
   if (booking.paymentReleaseStatus === "released" || booking.paymentStatus === "paid_released") {
     return { alreadyReleased: true, transferIds: booking.stripeTransferIds || [] };

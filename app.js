@@ -4452,6 +4452,18 @@ function bookingIsPaid(booking) {
   return ["paid_held", "paid_released"].includes(String(booking.paymentStatus || ""));
 }
 
+function bookingLessonEndMs(booking) {
+  const start = new Date(booking?.dateTime || "").getTime();
+  const minutes = Number(booking?.durationMinutes || booking?.lessonMinutes || 60);
+  if (!Number.isFinite(start)) return NaN;
+  return start + (Number.isFinite(minutes) && minutes > 0 ? minutes : 60) * 60000;
+}
+
+function bookingLessonHasEnded(booking) {
+  const end = bookingLessonEndMs(booking);
+  return Number.isFinite(end) && Date.now() >= end;
+}
+
 function bookingPaymentStatusText(booking) {
   if (booking.isFreeTrial) return "No payment due";
   if (booking.paymentStatus === "paid_held") return "Paid - held safely until the lesson is complete";
@@ -4467,13 +4479,18 @@ function bookingCanStartCheckout(booking) {
   return currentAccount?.role !== "tutor"
     && bookingNeedsPayment(booking)
     && !bookingIsPaid(booking)
+    && !booking.isRecurringSeries
+    && !booking.isGeneratedOccurrence
     && ["Accepted", "Checkout started - payment not complete"].includes(booking.status || "");
 }
 
 function bookingCanReleasePayment(booking) {
   return currentAccount?.role === "tutor"
     && booking.paymentStatus === "paid_held"
-    && booking.payoutStatus !== "released";
+    && booking.payoutStatus !== "released"
+    && !booking.isRecurringSeries
+    && !booking.isGeneratedOccurrence
+    && bookingLessonHasEnded(booking);
 }
 
 function updateBookingPaymentPreview() {
