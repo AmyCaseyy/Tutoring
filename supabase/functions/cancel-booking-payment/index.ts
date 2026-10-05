@@ -10,22 +10,59 @@ Deno.serve(async (request) => {
     const email = authedEmail(request);
     const body = await request.json();
     const bookingId = String(body.bookingId || "").trim();
+    const occurrenceKey = String(body.occurrenceKey || "").trim();
     const cancelledBy = body.cancelledBy === "tutor" ? "tutor" : "student";
-    let booking = await getBooking(bookingId);
-    booking = await syncPaidBookingFromStripe(bookingId, booking);
-    assertBookingAccess(email, booking, [cancelledBy]);
+    const parentBooking = await getBooking(bookingId);
+    const occurrencePayments = parentBooking.occurrencePayments && typeof parentBooking.occurrencePayments === "object"
+      ? parentBooking.occurrencePayments as Record<string, Record<string, unknown>>
+      : {};
+    const occurrenceOverrides = parentBooking.occurrenceOverrides && typeof parentBooking.occurrenceOverrides === "object"
+      ? parentBooking.occurrenceOverrides as Record<string, Record<string, unknown>>
+      : {};
+    let booking = occurrenceKey
+      ? { ...parentBooking, ...(occurrencePayments[occurrenceKey] || {}), occurrenceKey, dateTime: occurrencePayments[occurrenceKey]?.dateTime || occurrenceKey }
+      : parentBooking;
+    booking = await syncPaidBookingFromStripe(bookingId, parentBooking, occurrenceKey);
+    assertBookingAccess(email, parentBooking, [cancelledBy]);
 
     const status = cancelledBy === "tutor" ? "Cancelled by tutor" : "Cancelled by student";
     const shouldRefund = cancelledBy === "tutor" || hoursUntil(booking.dateTime) >= 24;
+    const updatePayment = async (updates: Record<string, unknown>) => {
+      if (!occurrenceKey) {
+        await updateBooking(bookingId, updates);
+        return;
+      }
+      const overrideUpdates: Record<string, unknown> = {};
+      if ("status" in updates) overrideUpdates.status = updates.status;
+      if ("cancelled" in updates) overrideUpdates.cancelled = updates.cancelled;
+      await updateBooking(bookingId, {
+        occurrenceOverrides: {
+          ...occurrenceOverrides,
+          [occurrenceKey]: {
+            ...(occurrenceOverrides[occurrenceKey] || {}),
+            ...overrideUpdates
+          }
+        },
+        occurrencePayments: {
+          ...occurrencePayments,
+          [occurrenceKey]: {
+            ...(occurrencePayments[occurrenceKey] || {}),
+            ...updates,
+            occurrenceKey,
+            dateTime: booking.dateTime
+          }
+        }
+      });
+    };
 
     if (!shouldRefund) {
-      const release = await releaseBookingNet(bookingId, email, "late_student_cancellation");
-      await updateBooking(bookingId, { status, cancelled: true, lateCancellationReleased: true });
+      const release = await releaseBookingNet(bookingId, email, "late_student_cancellation", occurrenceKey);
+      await updatePayment({ status, cancelled: true, lateCancellationReleased: true });
       return jsonResponse({ ...release, refunded: false, reason: "Late student cancellation released to tutor/platform." });
     }
 
     if (booking.paymentStatus !== "paid_held") {
-      await updateBooking(bookingId, { status, cancelled: true });
+      await updatePayment({ status, cancelled: true });
       return jsonResponse({ refunded: false, reason: "No held payment to refund." });
     }
     if (booking.refundStatus === "refunded") return jsonResponse({ refunded: true, refundId: booking.stripeRefundId });
@@ -38,7 +75,7 @@ Deno.serve(async (request) => {
       idempotencyKey: `booking-${bookingId}-refund`
     });
 
-    await updateBooking(bookingId, {
+    await updatePayment({
       status,
       cancelled: true,
       paymentStatus: "refunded",

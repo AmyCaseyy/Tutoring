@@ -5206,12 +5206,25 @@ function renderBookingList(container, items, emptyText) {
           };
         }
       }
-      if ((status === "Cancelled by tutor" || status === "Cancelled by student") && !booking.isGeneratedOccurrence && bookingNeedsPayment(booking) && isPaymentsReady()) {
+      if ((status === "Cancelled by tutor" || status === "Cancelled by student")
+        && booking.isGeneratedOccurrence
+        && scope === "future"
+        && bookingIsPaid(booking)) {
+        signupStatus.textContent = "Cancel paid recurring lessons one at a time so each refund or late-cancellation payout is handled safely.";
+        signupStatus.classList.remove("success");
+        return;
+      }
+      if ((status === "Cancelled by tutor" || status === "Cancelled by student")
+        && bookingNeedsPayment(booking)
+        && bookingIsPaid(booking)
+        && isPaymentsReady()
+        && (!booking.isGeneratedOccurrence || scope === "single")) {
         try {
           button.disabled = true;
           signupStatus.textContent = "Applying the cancellation payment rules...";
           await callPaymentFunction("cancel-booking-payment", {
-            bookingId: booking.id,
+            bookingId: booking.parentBookingId || booking.id,
+            occurrenceKey: booking.occurrenceKey || "",
             cancelledBy: currentAccount.role === "tutor" ? "tutor" : "student"
           });
           await loadCloudData();

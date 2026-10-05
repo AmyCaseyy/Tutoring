@@ -103,7 +103,7 @@ export async function syncPaidBookingFromStripe(bookingId: string, booking: Reco
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ["payment_intent.latest_charge.balance_transaction"]
   });
-  if (session.payment_status !== "paid" || !session.payment_intent) return booking;
+  if (session.payment_status !== "paid" || !session.payment_intent) return target;
 
   const paymentIntent = typeof session.payment_intent === "string"
     ? await stripe.paymentIntents.retrieve(session.payment_intent, {
