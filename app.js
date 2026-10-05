@@ -706,6 +706,8 @@ const routeLinks = [...document.querySelectorAll("[data-route]")];
 
 let selectedTutor = tutors[0];
 let selectedThreadTutor = null;
+// Must match the tutor split in supabase/functions/_shared/payments.ts (tutor keeps 80% of the Stripe net)
+const PLATFORM_COMMISSION = 0.2;
 let selectedStudentAccount = null;
 let currentAccount = null;
 let activeLandingPage = null;
@@ -3597,7 +3599,7 @@ function tutorApplicationPayload(status = "submitted", uploadedFiles = []) {
       hoursPerWeek: applicationValue("maxHours"),
       availabilityText: applicationValue("availability"),
       hourlyRate: Number(applicationValue("rate") || 0),
-      platformFee: 0.5,
+      platformFee: PLATFORM_COMMISSION,
       headline: applicationValue("headline"),
       bio: applicationValue("bio"),
       experience: applicationValue("experience"),
@@ -3756,6 +3758,21 @@ function bookingAmount(booking) {
   return Number(tutor?.price || 0);
 }
 
+// Every paid lesson, including each paid week of a recurring booking
+function paidLessonPayments() {
+  return cloudBookings.flatMap((booking) => [
+    booking,
+    ...Object.values(booking.occurrencePayments || {}).map((payment) => ({ ...booking, ...payment }))
+  ]).filter(bookingIsPaid);
+}
+
+// Platform share in pounds, matching the Stripe transfer split
+function platformShareOfPayment(payment) {
+  const netPence = Number(payment.stripeNetAmount || payment.grossAmount || 0);
+  if (!Number.isFinite(netPence) || netPence <= 0) return 0;
+  return (netPence - Math.floor(netPence * (1 - PLATFORM_COMMISSION))) / 100;
+}
+
 function adminStatCard(label, value, hint = "") {
   return `
     <article class="admin-stat-card">
@@ -3780,13 +3797,15 @@ function renderAdminDashboard() {
   renderAdminBadges();
   const month = bookingMonthKey();
   const thisMonthBookings = cloudBookings.filter((booking) => bookingMonthKey(booking.dateTime || booking.createdAtMs || Date.now()) === month);
-  const platformRevenue = thisMonthBookings.reduce((sum, booking) => sum + (bookingAmount(booking) * 0.5), 0);
+  const platformRevenue = paidLessonPayments()
+    .filter((payment) => bookingMonthKey(payment.paidAt || payment.dateTime || Date.now()) === month)
+    .reduce((sum, payment) => sum + platformShareOfPayment(payment), 0);
   if (adminStats) {
     adminStats.innerHTML = [
       adminStatCard("Pending applications", String(getPendingApplications().length), "Need review"),
       adminStatCard("Approved tutors", String(cloudTutorApplications.filter((app) => applicationStatusGroup(app) === "approved").length), "Approved applications"),
       adminStatCard("Bookings this month", String(thisMonthBookings.length), "Visible to admin"),
-      adminStatCard("Platform revenue", `£${platformRevenue.toFixed(2)}`, "50% platform cut")
+      adminStatCard("Platform revenue", `£${platformRevenue.toFixed(2)}`, `${Math.round(PLATFORM_COMMISSION * 100)}% of paid lessons this month, after Stripe fees`)
     ].join("");
   }
   if (adminRecentApplications) {
