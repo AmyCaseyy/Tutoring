@@ -723,7 +723,6 @@ let pendingProfilePhotoPath = "";
 let activeReschedulePicker = null;
 let tutorApplicationStep = 0;
 let tutorApplicationMaxStep = 0;
-const tutorApplicationSelfieCode = `TS-${Math.floor(1000 + Math.random() * 9000)}`;
 const signupWizard = {
   stepIndex: 0,
   steps: ["subject", "level", "role", "name", "dob", "email", "password"],
@@ -3359,10 +3358,6 @@ async function uploadTutorApplicationFiles(applicationId) {
     uploadSupabaseApplicationFile(applicationId, "idFront", "id-photo", "ID photo", {
       allowedTypes: ["image/*"],
       maxBytes: 8 * 1024 * 1024
-    }),
-    uploadSupabaseApplicationFile(applicationId, "selfie", "selfie-with-id", "Selfie with ID", {
-      allowedTypes: ["image/*"],
-      maxBytes: 8 * 1024 * 1024
     })
   ]);
   return uploads.filter(Boolean);
@@ -3434,6 +3429,9 @@ function validateTutorApplicationStep() {
       ok = false;
     }
   });
+  active.querySelectorAll("details").forEach((details) => {
+    if (details.querySelector(".invalid")) details.open = true;
+  });
   if (tutorApplicationStep === 0 && !isApplicationAdult()) {
     document.querySelector("#applicationDob")?.closest(".field")?.classList.add("invalid");
     setApplicationStatus("Tutors must be 18 or over.");
@@ -3471,8 +3469,6 @@ async function populateTutorApplicationForm() {
     document.querySelector("#applicationEmail").value ||= currentAccount.email || "";
     document.querySelector("#applicationDob").value ||= currentAccount.dob || "";
   }
-  const selfieCode = document.querySelector("#applicationSelfieCode");
-  if (selfieCode) selfieCode.textContent = tutorApplicationSelfieCode;
   const signDate = document.querySelector("#applicationSignDate");
   if (signDate) signDate.value = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -3591,8 +3587,6 @@ function tutorApplicationPayload(status = "submitted", uploadedFiles = []) {
       idType: applicationValue("idType"),
       idExpiry: applicationValue("idExpiry"),
       idPath: uploadByLabel["ID photo"]?.path || filePathForApplication("id", "idFront"),
-      selfiePath: uploadByLabel["Selfie with ID"]?.path || filePathForApplication("id", "selfie"),
-      selfieCode: tutorApplicationSelfieCode,
       rightToWork: applicationValue("rightToWork"),
       shareCode: applicationValue("shareCode") || null
     },
@@ -3618,13 +3612,6 @@ function tutorApplicationPayload(status = "submitted", uploadedFiles = []) {
       phone: applicationValue(`ref${index}Phone`) || null,
       status: "requested"
     })),
-    checks: {
-      idVerified: false,
-      qualificationsVerified: false,
-      referencesComplete: false,
-      dbsVerified: false,
-      interviewDone: false
-    },
     declarations: {
       accurate: Boolean(applicationValue("decAccurate")),
       consentToChecks: Boolean(applicationValue("decChecks")),
@@ -3636,8 +3623,7 @@ function tutorApplicationPayload(status = "submitted", uploadedFiles = []) {
     uploads: [
       uploadByLabel["Profile photo"] || { label: "Profile photo", path: filePathForApplication("photos", "photo") },
       uploadByLabel["Degree certificate or transcript"] || { label: "Degree certificate or transcript", path: filePathForApplication("certificates", "certificate") },
-      uploadByLabel["ID photo"] || { label: "ID photo", path: filePathForApplication("id", "idFront") },
-      uploadByLabel["Selfie with ID"] || { label: "Selfie with ID", path: filePathForApplication("id", "selfie") }
+      uploadByLabel["ID photo"] || { label: "ID photo", path: filePathForApplication("id", "idFront") }
     ].filter((item) => item.path),
     files: uploadedFiles
   };
@@ -3682,7 +3668,7 @@ async function submitTutorApplication(event) {
     setApplicationStatus("Uploading files securely...");
     const uploadedFiles = await uploadTutorApplicationFiles(applicationRef.id);
     setApplicationStatus("Submitting your application...");
-    const payload = tutorApplicationPayload(applicationValue("dbsStatus") === "have" ? "submitted" : "awaiting_dbs", uploadedFiles);
+    const payload = tutorApplicationPayload("submitted", uploadedFiles);
     await applicationRef.set({
       ...payload,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -3864,8 +3850,7 @@ function checksHtml(checks = {}) {
     ["idVerified", "ID"],
     ["qualificationsVerified", "Qualifications"],
     ["referencesComplete", "References"],
-    ["dbsVerified", "DBS"],
-    ["interviewDone", "Interview"]
+    ["dbsVerified", "DBS"]
   ];
   return labels.map(([key, label]) => `
     <span class="admin-check ${checks[key] ? "ok" : ""}">${checks[key] ? "✓" : "–"} ${escapeHtml(label)}</span>

@@ -25,7 +25,7 @@
         "description": "Online GCSE and A-Level STEM, Economics and Psychology tutoring."
       }
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261004-payout-profile" />
+    <link rel="stylesheet" href="styles.css?v=20261005-optional-checks" />
   </head>
   <body class="is-loading">
     <div class="loading-screen" id="loadingScreen" aria-label="Loading tutrSTEM">
@@ -558,7 +558,7 @@
                     <label class="field"><span>Year graduated or expected</span><input id="applicationGradYear" name="gradYear" type="number" min="1970" max="2032" required /></label>
                     <label class="field"><span>University email</span><input id="applicationUniEmail" name="uniEmail" type="email" placeholder="name@student.ac.uk" /></label>
                   </div>
-                  <label class="field"><span>Degree certificate or transcript</span><input id="applicationCertificate" name="certificate" type="file" accept="image/*,application/pdf" /></label>
+                  <label class="field"><span>Degree certificate or transcript (optional)</span><input id="applicationCertificate" name="certificate" type="file" accept="image/*,application/pdf" /></label>
                 </article>
                 <article>
                   <h3>School qualifications</h3>
@@ -588,11 +588,6 @@
                   <label class="field"><span>ID photo</span><input id="applicationIdFront" name="idFront" type="file" accept="image/*" /></label>
                 </article>
                 <article>
-                  <h3>Selfie with ID</h3>
-                  <p class="form-note">Write this code on paper and hold it next to your ID: <strong id="applicationSelfieCode">TS-0000</strong></p>
-                  <label class="field"><span>Selfie with ID and code</span><input id="applicationSelfie" name="selfie" type="file" accept="image/*" /></label>
-                </article>
-                <article>
                   <h3>Right to work</h3>
                   <div class="application-chip-grid">
                     <label><input type="radio" name="rightToWork" value="UK or Irish passport" required /> UK or Irish passport</label>
@@ -602,23 +597,25 @@
                 </article>
               </section>
 
-              <section class="application-step" data-app-step="4" data-title="Safeguarding and DBS" data-lede="Most students are under 18, so safeguarding checks are essential.">
-                <article class="application-alert">
-                  <strong>You arrange and pay for your DBS.</strong>
-                  <p>Self-employed tutors can apply for an Enhanced check through a DBS umbrella body. The Update Service lets us check certificate status with your permission.</p>
-                </article>
-                <article>
-                  <h3>Your DBS certificate</h3>
-                  <label class="field"><span>DBS status</span><select id="applicationDbsStatus" name="dbsStatus" required><option value="">Choose...</option><option value="have">I have an Enhanced DBS with Children's Barred List</option><option value="applied">I've applied</option><option value="none">Not yet</option></select></label>
-                  <div class="form-grid two">
-                    <label class="field"><span>Certificate number</span><input id="applicationDbsNumber" name="dbsNumber" type="text" maxlength="12" /></label>
-                    <label class="field"><span>Issue date</span><input id="applicationDbsIssued" name="dbsIssued" type="date" /></label>
-                  </div>
-                  <div class="application-chip-grid">
-                    <label><input type="checkbox" id="applicationDbsUpdate" name="dbsUpdate" /> Certificate is on the DBS Update Service</label>
-                    <label><input type="checkbox" id="applicationDbsConsent" name="dbsConsent" /> I consent to tutrSTEM checking my DBS status</label>
-                  </div>
-                </article>
+              <section class="application-step" data-app-step="4" data-title="Safeguarding and DBS" data-lede="DBS is optional. Add your DBS details if you have them, or skip and continue.">
+                <details class="application-optional">
+                  <summary>DBS certificate <span class="optional-tag">Optional</span></summary>
+                  <article class="application-alert">
+                    <strong>DBS is optional.</strong>
+                    <p>You can continue without a DBS. If you have one, or have applied, add the details below. Self-employed tutors can apply for an Enhanced check through a DBS umbrella body.</p>
+                  </article>
+                  <article>
+                    <label class="field"><span>DBS status (optional)</span><select id="applicationDbsStatus" name="dbsStatus"><option value="">Choose...</option><option value="have">I have an Enhanced DBS with Children's Barred List</option><option value="applied">I've applied</option><option value="none">Not yet</option></select></label>
+                    <div class="form-grid two">
+                      <label class="field"><span>Certificate number (optional)</span><input id="applicationDbsNumber" name="dbsNumber" type="text" maxlength="12" /></label>
+                      <label class="field"><span>Issue date (optional)</span><input id="applicationDbsIssued" name="dbsIssued" type="date" /></label>
+                    </div>
+                    <div class="application-chip-grid">
+                      <label><input type="checkbox" id="applicationDbsUpdate" name="dbsUpdate" /> Certificate is on the DBS Update Service (optional)</label>
+                      <label><input type="checkbox" id="applicationDbsConsent" name="dbsConsent" /> I consent to tutrSTEM checking my DBS status (optional)</label>
+                    </div>
+                  </article>
+                </details>
                 <article>
                   <h3>Suitability to work with children</h3>
                   <label class="field"><span>Are you barred from working with children?</span><select id="applicationBarred" name="barred" required><option value="">Choose...</option><option value="no">No</option><option value="yes">Yes</option></select></label>
@@ -633,30 +630,33 @@
                 </article>
               </section>
 
-              <section class="application-step" data-app-step="5" data-title="References" data-lede="Give two referees who are not family. We may email them a short reference form.">
+              <section class="application-step" data-app-step="5" data-title="References (optional)" data-lede="References are optional. Add up to two referees who are not family, or skip and continue.">
+                <details class="application-optional">
+                  <summary>Add referees <span class="optional-tag">Optional</span></summary>
                 <article>
-                  <h3>Referee 1</h3>
+                  <h3>Referee 1 (optional)</h3>
                   <div class="form-grid two">
-                    <label class="field"><span>Full name</span><input id="applicationRef1Name" name="ref1Name" type="text" required /></label>
-                    <label class="field"><span>Relationship</span><input id="applicationRef1Relationship" name="ref1Relationship" type="text" required /></label>
-                    <label class="field"><span>Organisation</span><input id="applicationRef1Org" name="ref1Org" type="text" required /></label>
-                    <label class="field"><span>Work email</span><input id="applicationRef1Email" name="ref1Email" type="email" required /></label>
-                    <label class="field"><span>Phone</span><input id="applicationRef1Phone" name="ref1Phone" type="tel" /></label>
-                    <label class="field"><span>Known for</span><select id="applicationRef1Years" name="ref1Years"><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
+                    <label class="field"><span>Full name (optional)</span><input id="applicationRef1Name" name="ref1Name" type="text" /></label>
+                    <label class="field"><span>Relationship (optional)</span><input id="applicationRef1Relationship" name="ref1Relationship" type="text" /></label>
+                    <label class="field"><span>Organisation (optional)</span><input id="applicationRef1Org" name="ref1Org" type="text" /></label>
+                    <label class="field"><span>Work email (optional)</span><input id="applicationRef1Email" name="ref1Email" type="email" /></label>
+                    <label class="field"><span>Phone (optional)</span><input id="applicationRef1Phone" name="ref1Phone" type="tel" /></label>
+                    <label class="field"><span>Known for (optional)</span><select id="applicationRef1Years" name="ref1Years"><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
                   </div>
                 </article>
                 <article>
-                  <h3>Referee 2</h3>
+                  <h3>Referee 2 (optional)</h3>
                   <div class="form-grid two">
-                    <label class="field"><span>Full name</span><input id="applicationRef2Name" name="ref2Name" type="text" required /></label>
-                    <label class="field"><span>Relationship</span><input id="applicationRef2Relationship" name="ref2Relationship" type="text" required /></label>
-                    <label class="field"><span>Organisation</span><input id="applicationRef2Org" name="ref2Org" type="text" required /></label>
-                    <label class="field"><span>Work email</span><input id="applicationRef2Email" name="ref2Email" type="email" required /></label>
-                    <label class="field"><span>Phone</span><input id="applicationRef2Phone" name="ref2Phone" type="tel" /></label>
-                    <label class="field"><span>Known for</span><select id="applicationRef2Years" name="ref2Years"><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
+                    <label class="field"><span>Full name (optional)</span><input id="applicationRef2Name" name="ref2Name" type="text" /></label>
+                    <label class="field"><span>Relationship (optional)</span><input id="applicationRef2Relationship" name="ref2Relationship" type="text" /></label>
+                    <label class="field"><span>Organisation (optional)</span><input id="applicationRef2Org" name="ref2Org" type="text" /></label>
+                    <label class="field"><span>Work email (optional)</span><input id="applicationRef2Email" name="ref2Email" type="email" /></label>
+                    <label class="field"><span>Phone (optional)</span><input id="applicationRef2Phone" name="ref2Phone" type="tel" /></label>
+                    <label class="field"><span>Known for (optional)</span><select id="applicationRef2Years" name="ref2Years"><option>Under 1 year</option><option>1-2 years</option><option>3-5 years</option><option>5+ years</option></select></label>
                   </div>
-                  <label class="checkbox-line"><input id="applicationRefConsent" name="refConsent" type="checkbox" required /> Both referees know I have named them and are happy to be contacted.</label>
+                  <label class="checkbox-line"><input id="applicationRefConsent" name="refConsent" type="checkbox" /> Both referees know I have named them and are happy to be contacted. (optional)</label>
                 </article>
+                </details>
               </section>
 
               <section class="application-step" data-app-step="6" data-title="Review and submit" data-lede="Check everything before you send it. You cannot edit your application after submitting.">
@@ -667,7 +667,7 @@
                 <article>
                   <h3>Declarations</h3>
                   <label class="checkbox-line"><input id="applicationAccurate" name="decAccurate" type="checkbox" required /> Everything in this application is true and complete.</label>
-                  <label class="checkbox-line"><input id="applicationChecks" name="decChecks" type="checkbox" required /> I consent to identity, qualification, reference, and DBS checks.</label>
+                  <label class="checkbox-line"><input id="applicationChecks" name="decChecks" type="checkbox" required /> I consent to identity and qualification checks, and to reference and DBS checks if I have provided them.</label>
                   <label class="checkbox-line"><input id="applicationTerms" name="decTerms" type="checkbox" required /> I agree to the Tutor Terms, including the platform fee, and understand I am self-employed.</label>
                   <label class="checkbox-line"><input id="applicationPrivacy" name="decPrivacy" type="checkbox" required /> I have read the Privacy Notice.</label>
                   <div class="form-grid two">
@@ -683,9 +683,8 @@
                   <p class="form-note">Your application is now visible in the tutrSTEM admin panel for review.</p>
                   <ol class="application-timeline">
                     <li><strong>Application received</strong><span>Confirmation is queued.</span></li>
-                    <li><strong>Document review</strong><span>The team checks ID, selfie, qualifications, and references.</span></li>
-                    <li><strong>DBS check</strong><span>If you do not have a DBS yet, the application waits at Awaiting DBS.</span></li>
-                    <li><strong>Short video call</strong><span>Bring your ID and be ready to explain one topic.</span></li>
+                    <li><strong>Document review</strong><span>The team checks your ID, qualifications, and any references you added.</span></li>
+                    <li><strong>DBS check (optional)</strong><span>If you added DBS details, we check them. You can add a DBS later.</span></li>
                     <li><strong>Profile goes live</strong><span>Approved tutor emails can then create tutor access.</span></li>
                   </ol>
                 </article>
@@ -1461,6 +1460,6 @@
         firebase.analytics();
       }
     </script>
-    <script src="app.js?v=20261005-tutor-rates"></script>
+    <script src="app.js?v=20261005-optional-checks"></script>
   </body>
 </html>

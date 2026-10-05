@@ -3973,3 +3973,34 @@ body.site-ready .hero-media {
     min-width: 680px;
   }
 }
+
+.application-optional {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 16px;
+}
+
+.application-optional > summary {
+  cursor: pointer;
+  padding: 16px 0;
+  font-weight: 700;
+}
+
+.application-optional[open] {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+.optional-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.application-form .application-step[hidden] {
+  display: none;
+}
