@@ -706,6 +706,10 @@ const routeLinks = [...document.querySelectorAll("[data-route]")];
 
 let selectedTutor = tutors[0];
 let selectedThreadTutor = null;
+// One application per form: stops double clicks or retries saving a second copy
+let tutorApplicationSubmitting = false;
+let tutorApplicationSubmittedId = "";
+let tutorApplicationDocRef = null;
 // Must match the tutor split in supabase/functions/_shared/payments.ts (tutor keeps 80% of the Stripe net)
 const PLATFORM_COMMISSION = 0.2;
 let selectedStudentAccount = null;
@@ -3691,17 +3695,26 @@ async function submitTutorApplication(event) {
     goTutorApplicationStep(tutorApplicationStep + 1);
     return;
   }
+  if (tutorApplicationSubmitting) return;
+  if (tutorApplicationSubmittedId) {
+    tutorApplicationMaxStep = 7;
+    goTutorApplicationStep(7);
+    return;
+  }
   if (!isCloudReady()) {
     setApplicationStatus("Firebase is not connected, so the application cannot be submitted yet.");
     return;
   }
 
   const submitButton = tutorApplicationForm.querySelector("button[type='submit']");
+  tutorApplicationSubmitting = true;
   try {
     submitButton.disabled = true;
-    const applicationRef = auth?.currentUser
+    // Reuse the same record if a submit is retried, so it never creates a second application
+    tutorApplicationDocRef ||= auth?.currentUser
       ? db.collection("tutorApplications").doc(auth.currentUser.uid)
       : db.collection("tutorApplications").doc();
+    const applicationRef = tutorApplicationDocRef;
     setApplicationStatus("Uploading files securely...");
     const uploadedFiles = await uploadTutorApplicationFiles(applicationRef.id);
     setApplicationStatus("Submitting your application...");
@@ -3710,6 +3723,9 @@ async function submitTutorApplication(event) {
       ...payload,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: Boolean(auth?.currentUser) });
+    tutorApplicationSubmittedId = applicationRef.id;
+    tutorApplicationMaxStep = 7;
+    goTutorApplicationStep(7);
     const applicantName = [payload.personal.firstName, payload.personal.lastName].filter(Boolean).join(" ");
     queueEmail(payload.personal.email, "We've got your application", `Thanks for applying to tutor with tutrSTEM, ${payload.personal.firstName || "there"}. We check every application by hand and will email you as soon as we've made a decision.`, templateMeta("application_received", {
       firstName: payload.personal.firstName,
@@ -3735,13 +3751,14 @@ async function submitTutorApplication(event) {
     });
     setApplicationStatus("Application submitted. The tutrSTEM team can now review it in the admin panel.", true);
     showConfirmation("Tutor application submitted for review.");
-    tutorApplicationMaxStep = 7;
-    goTutorApplicationStep(7);
   } catch (error) {
+    // Once saved, a later problem (e.g. an email) must not invite the applicant to submit again
+    if (tutorApplicationSubmittedId) return;
     setApplicationStatus(error.code === "permission-denied"
       ? "Firebase blocked this application. Check the tutorApplications Firestore rules are deployed."
       : (error.message || "The application could not be submitted yet. Please try again."));
   } finally {
+    tutorApplicationSubmitting = false;
     submitButton.disabled = false;
   }
 }
