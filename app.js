@@ -1792,7 +1792,11 @@ async function sendEmailViaSupabase(to, subject, body, meta = {}) {
       meta
     })
   });
-  if (!response.ok) throw new Error("Email function did not accept the message.");
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    const detail = data.details?.message || data.details?.error || "";
+    throw new Error([data.error || `Email service error (${response.status})`, detail].filter(Boolean).join(": "));
+  }
 }
 
 async function callPaymentFunction(name, payload = {}) {
@@ -1874,7 +1878,9 @@ function queueEmail(to, subject, body, meta = {}) {
   });
   writeStore(storage.emails, queue.slice(0, 40));
   queueCloudEmail(to, subject, body, meta).catch(() => {});
-  sendEmailViaSupabase(to, subject, body, meta).catch(() => {});
+  const sending = sendEmailViaSupabase(to, subject, body, meta);
+  sending.catch(() => {});
+  return sending;
 }
 
 function isModerationUser(account = currentAccount) {
@@ -3977,10 +3983,21 @@ function renderAdminApplicationDetail() {
           <button class="secondary-btn compact-btn" type="button" data-admin-decision="approved">Approve</button>
           <button class="secondary-btn compact-btn" type="button" data-admin-decision="rejected">Reject</button>
         </div>
+        ${decisionEmailHtml(application)}
       </section>
     </div>
   `;
   hydrateAdminFileLinks(adminApplicationDetail);
+  adminApplicationDetail.querySelector("[data-admin-resend-email]")?.addEventListener("click", async (event) => {
+    const emailArgs = decisionEmailArgs(application, application.id, applicationStatus(application));
+    if (!emailArgs) return;
+    event.currentTarget.disabled = true;
+    const result = await deliverDecisionEmail(application.id, emailArgs);
+    await loadCloudData();
+    renderAdminApplicationDetail();
+    if (result.ok) showConfirmation(`Email sent to ${emailArgs[0]}.`);
+    else window.alert(`The email to ${emailArgs[0]} failed again.\n\nReason: ${result.error}`);
+  });
   adminApplicationDetail.querySelectorAll("[data-admin-decision]").forEach((button) => {
     button.addEventListener("click", async () => {
       const nextStatus = button.dataset.adminDecision;
@@ -4022,36 +4039,76 @@ async function updateTutorApplicationStatus(id, status) {
       approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    queueEmail(
-      approvedEmail,
-      "Your tutrSTEM tutor application has been accepted",
-      `Hi ${applicationName(application) || "there"}, your tutrSTEM tutor application has been accepted. You can now log in with this email and set up your tutor profile.`,
-      templateMeta("tutor_approved", {
-        firstName: emailFirstName(applicationName(application)),
-        name: applicationName(application)
-      }, {
-        key: `application-approved-${id}`,
-        applicationId: id
-      })
-    );
-  } else if (status === "rejected" && approvedEmail) {
-    queueEmail(
-      approvedEmail,
-      "Your tutrSTEM tutor application update",
-      `Hi ${applicationName(application) || "there"}, thank you for applying to tutor with tutrSTEM. We are not able to accept this application at this stage.`,
-      templateMeta("tutor_rejected", {
-        firstName: emailFirstName(applicationName(application)),
-        name: applicationName(application),
-        reason: "We are not able to accept this application at this stage."
-      }, {
-        key: `application-rejected-${id}`,
-        applicationId: id
-      })
-    );
   }
+  const emailArgs = decisionEmailArgs(application, id, status);
+  const emailResult = emailArgs ? await deliverDecisionEmail(id, emailArgs) : null;
   await loadCloudData();
   renderAdminApplicationDetail();
-  if (status === "approved") showConfirmation(`${applicationName(application)} is approved for tutor signup.`);
+  if (emailResult && !emailResult.ok) {
+    window.alert(`${applicationName(application)} is ${status}, but the email to ${emailArgs[0]} FAILED to send.\n\nReason: ${emailResult.error}\n\nUse "Send email again" on this application, or email them yourself.`);
+  } else if (status === "approved") {
+    showConfirmation(`${applicationName(application)} is approved and the approval email was sent.`);
+  }
+}
+
+// The email a tutor gets when their application is approved or rejected
+function decisionEmailArgs(application, id, status) {
+  const to = normalizeEmail(applicationEmail(application));
+  const name = applicationName(application);
+  if (!to) return null;
+  if (status === "approved") {
+    return [
+      to,
+      "Your tutrSTEM tutor application has been accepted",
+      `Hi ${name || "there"}, your tutrSTEM tutor application has been accepted. You can now log in with this email and set up your tutor profile.`,
+      templateMeta("tutor_approved", { firstName: emailFirstName(name), name }, { key: `application-approved-${id}`, applicationId: id })
+    ];
+  }
+  if (status === "rejected") {
+    return [
+      to,
+      "Your tutrSTEM tutor application update",
+      `Hi ${name || "there"}, thank you for applying to tutor with tutrSTEM. We are not able to accept this application at this stage.`,
+      templateMeta("tutor_rejected", { firstName: emailFirstName(name), name, reason: "We are not able to accept this application at this stage." }, { key: `application-rejected-${id}`, applicationId: id })
+    ];
+  }
+  return null;
+}
+
+// Sends a decision email, waits for the result and saves it on the application so failures are visible
+async function deliverDecisionEmail(id, emailArgs) {
+  let result;
+  queueCloudEmail(...emailArgs).catch(() => {});
+  try {
+    await sendEmailViaSupabase(...emailArgs);
+    result = { ok: true };
+  } catch (error) {
+    result = { ok: false, error: error?.message || "Could not reach the email service." };
+  }
+  await db.collection("tutorApplications").doc(id).set({
+    decisionEmail: {
+      to: emailArgs[0],
+      template: emailArgs[3]?.template || "",
+      status: result.ok ? "sent" : "failed",
+      error: result.ok ? null : result.error,
+      attemptedAt: new Date().toISOString()
+    }
+  }, { merge: true }).catch(() => {});
+  return result;
+}
+
+function decisionEmailHtml(application) {
+  const email = application.decisionEmail;
+  const status = applicationStatus(application);
+  const canEmail = ["approved", "rejected"].includes(status);
+  if (!email) {
+    return canEmail ? `<p class="empty-copy">No decision email recorded for this application.</p><button class="secondary-btn compact-btn" type="button" data-admin-resend-email>Send ${escapeHtml(status)} email</button>` : "";
+  }
+  const when = email.attemptedAt ? new Date(email.attemptedAt).toLocaleString("en-GB") : "";
+  return email.status === "sent"
+    ? `<p class="admin-email-status ok">✓ Decision email sent to ${escapeHtml(email.to)}${when ? ` on ${escapeHtml(when)}` : ""}.</p>`
+    : `<p class="admin-email-status failed">✗ Decision email to ${escapeHtml(email.to)} FAILED${when ? ` on ${escapeHtml(when)}` : ""}: ${escapeHtml(email.error || "unknown error")}</p>
+       ${canEmail ? `<button class="secondary-btn compact-btn" type="button" data-admin-resend-email>Send email again</button>` : ""}`;
 }
 
 function attachAdminApplicationLinks(root) {

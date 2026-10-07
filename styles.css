@@ -4041,3 +4041,16 @@ body.site-ready .hero-media {
 [data-admin-only][hidden] {
   display: none !important;
 }
+
+.admin-email-status {
+  margin: 12px 0 8px;
+  font-weight: 600;
+}
+
+.admin-email-status.ok {
+  color: #1f7a3d;
+}
+
+.admin-email-status.failed {
+  color: #b42318;
+}
