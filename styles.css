@@ -4054,3 +4054,56 @@ body.site-ready .hero-media {
 .admin-email-status.failed {
   color: #b42318;
 }
+
+/* How it works: six steps in rows of three */
+.how-steps {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .how-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .how-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Bigger, friendlier tutor photos on the Find a tutor cards */
+.tutor-card-main {
+  grid-template-columns: 136px minmax(0, 1fr) auto;
+}
+
+.tutor-card .avatar {
+  width: 136px;
+  height: 136px;
+  border-radius: 18px;
+  object-fit: cover;
+  font-size: 1.6rem;
+}
+
+@media (max-width: 760px) {
+  .tutor-card-main {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+
+  .tutor-card .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .tutor-card-main {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .tutor-card .avatar {
+    width: 84px;
+    height: 84px;
+  }
+}
