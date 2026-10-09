@@ -286,10 +286,12 @@ function buildEmail(template: string, data: EmailData = {}): RenderedEmail {
     case "tutor_approved":
       email = { subject: "You're approved to tutor on tutrSTEM", label: "Approved", fromLocal: "applications", reason: "You're receiving this because you applied to tutor on tutrSTEM.", html: "", text: "" };
       body = heading("You're approved. Welcome to tutrSTEM.")
-        + paragraph(`Congratulations, ${userFirst}. Your profile is now live and students can book you. Three things to do next:`)
-        + steps(["Set up payouts with Stripe so you can get paid.", "Add the times you're available.", "Check your profile reads the way you want it to."])
-        + button("Go to your dashboard", "/dashboard");
-      email.text = textLines([email.subject, `Congratulations, ${userFirst}.`, "01 Set up payouts with Stripe so you can get paid.", "02 Add the times you're available.", "03 Check your profile reads the way you want it to.", href("/dashboard"), email.reason]);
+        + paragraph(`Congratulations, ${userFirst}. Your tutor application has been approved. Next, create your tutor account:`)
+        + steps(["Go to the tutrSTEM sign up page using the button below.", "Choose Tutor account.", "Sign up with this same email address. Tutor accounts only work with the email we approved."])
+        + button("Create your tutor account", "/#tutor-signup")
+        + paragraph(`Once your account is set up, set up payouts with Stripe, add the times you're available, and check your profile reads the way you want it to.`)
+        + paragraph(`Already made your account? Log in at ${href("/#login")}`);
+      email.text = textLines([email.subject, `Congratulations, ${userFirst}. Your tutor application has been approved.`, "Next, create your tutor account:", "01 Go to the sign up page: " + href("/#tutor-signup"), "02 Choose Tutor account.", "03 Sign up with this same email address.", "Already made your account? Log in: " + href("/#login"), email.reason]);
       break;
     case "tutor_rejected":
       email = { subject: "An update on your tutrSTEM application", label: "Application update", fromLocal: "applications", reason: "You're receiving this because you applied to tutor on tutrSTEM.", html: "", text: "" };

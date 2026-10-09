@@ -721,6 +721,7 @@ let cloudBookings = [];
 let cloudMessages = [];
 let cloudReviews = [];
 let cloudSafetyEvents = [];
+let cloudUserAccounts = [];
 let cloudTutorApplications = [];
 let currentIsAdmin = false;
 let adminCheckResolved = false;
@@ -763,6 +764,18 @@ const storage = {
 };
 
 function showPage(pageName, options = {}) {
+  // Shortcut links (used in emails): #login, #signup, #tutor-signup
+  if (["login", "signup", "tutor-signup"].includes(pageName)) {
+    showPage("accounts", { ...options, replaceHistory: true });
+    if (currentAccount) return;
+    if (pageName === "login") {
+      showLoginAccountView();
+    } else {
+      showSignupAccountView();
+      if (pageName === "tutor-signup") setSignupRoleChoice("tutor");
+    }
+    return;
+  }
   const publicPages = ["home", "tutors", "how", "about", "accounts", "profile", "reviews", "pricing-faq", "tutor-requirements", "terms", "privacy", "subject-landing", "tutor-application"];
   const privatePages = ["messages", "bookings", "dashboard", "student-profile", "account-details", "support", "moderation", "admin", "admin-applications", "admin-application-detail"];
   const adminPages = ["admin", "admin-applications", "admin-application-detail"];
@@ -1674,6 +1687,17 @@ async function loadCloudData() {
       .sort((a, b) => (Number(b.createdAtMs || 0) - Number(a.createdAtMs || 0)));
   } else {
     cloudSafetyEvents = [];
+  }
+
+  if (currentIsAdmin) {
+    try {
+      const userSnapshot = await db.collection("users").limit(2000).get();
+      cloudUserAccounts = userSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch {
+      cloudUserAccounts = [];
+    }
+  } else {
+    cloudUserAccounts = [];
   }
 
   if (currentIsAdmin) {
@@ -3815,6 +3839,31 @@ function renderAdminBadges() {
   });
 }
 
+const ONLINE_WINDOW_MINUTES = 5;
+
+function onlineTutorCount() {
+  const cutoff = Date.now() - ONLINE_WINDOW_MINUTES * 60 * 1000;
+  return cloudUserAccounts.filter((account) => account.role === "tutor" && Number(account.lastSeenMs || 0) >= cutoff).length;
+}
+
+// Records that the signed-in person is active, so admins can see who is online
+let presenceTimer = null;
+function recordPresence() {
+  const uid = auth?.currentUser?.uid;
+  if (!isCloudReady() || !uid || !currentAccount || document.visibilityState !== "visible") return;
+  db.collection("users").doc(uid).set({
+    lastSeenMs: Date.now(),
+    lastSeenAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch(() => {});
+}
+
+function startPresence() {
+  if (presenceTimer) return;
+  recordPresence();
+  presenceTimer = setInterval(recordPresence, 2 * 60 * 1000);
+  document.addEventListener("visibilitychange", recordPresence);
+}
+
 function renderAdminDashboard() {
   if (!currentIsAdmin) return;
   renderAdminBadges();
@@ -3825,6 +3874,8 @@ function renderAdminDashboard() {
     .reduce((sum, payment) => sum + platformShareOfPayment(payment), 0);
   if (adminStats) {
     adminStats.innerHTML = [
+      adminStatCard("Tutors online now", String(onlineTutorCount()), `Active in the last ${ONLINE_WINDOW_MINUTES} minutes`),
+      adminStatCard("Student & parent accounts", String(cloudUserAccounts.filter((account) => ["student", "parent"].includes(account.role)).length), "Total sign-ups"),
       adminStatCard("Pending applications", String(getPendingApplications().length), "Need review"),
       adminStatCard("Approved tutors", String(cloudTutorApplications.filter((app) => applicationStatusGroup(app) === "approved").length), "Approved applications"),
       adminStatCard("Bookings this month", String(thisMonthBookings.length), "Visible to admin"),
@@ -4060,7 +4111,7 @@ function decisionEmailArgs(application, id, status) {
     return [
       to,
       "Your tutrSTEM tutor application has been accepted",
-      `Hi ${name || "there"}, your tutrSTEM tutor application has been accepted. You can now log in with this email and set up your tutor profile.`,
+      `Hi ${name || "there"}, your tutrSTEM tutor application has been approved. Next, create your tutor account: go to https://tutrstem.co.uk/#tutor-signup, choose Tutor account, and sign up with this same email address.`,
       templateMeta("tutor_approved", { firstName: emailFirstName(name), name }, { key: `application-approved-${id}`, applicationId: id })
     ];
   }
@@ -5703,6 +5754,7 @@ function setAccount(account, options = {}) {
   currentAccount = account;
   localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(account));
   saveAccountToCloud(account, account.uid).catch(() => {});
+  startPresence();
   signupRole.value = account.role;
   signupName.value = account.name;
   signupEmail.value = account.email;
@@ -6416,7 +6468,7 @@ signupForm.addEventListener("submit", async (event) => {
         signupStatus.textContent = "Checking tutor approval...";
         approvedRecord = await getApprovedTutorRecord(email);
         if (!approvedRecord || approvedRecord.status !== "approved") {
-          signupStatus.textContent = "This tutor email has not been approved yet. Please apply first or ask the tutrSTEM team to approve the exact email.";
+          signupStatus.textContent = "This email hasn't been approved as a tutor yet. Apply with Become a tutor first. Once we approve you, sign up here with the same email and choose Tutor account.";
           signupStatus.classList.remove("success");
           signupForm.querySelector("button[type='submit']").disabled = false;
           return;
@@ -6509,7 +6561,7 @@ loginPanel.addEventListener("submit", async (event) => {
       }
       if (cloudAccount.role === "tutor" && !(await isApprovedTutorEmail(email))) {
         await auth.signOut();
-        signupStatus.textContent = "Tutor login is only available after the tutrSTEM team approves your email in Firestore.";
+        signupStatus.textContent = "Your tutor application hasn't been approved yet. You can log in as a tutor once the tutrSTEM team approves it. We'll email you when it is.";
         signupStatus.classList.remove("success");
         loginPassword.focus();
         return;
@@ -6812,6 +6864,7 @@ async function initializeSite() {
             } else {
               currentAccount = currentIsAdmin ? { ...cloudAccount, role: cloudAccount.role || "admin" } : cloudAccount;
               localStorage.setItem("girlstemTutoringCurrentAccount", JSON.stringify(currentAccount));
+              startPresence();
             }
           } else if (currentIsAdmin) {
             currentAccount = {
