@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
+    function isImage() {
+      return request.resource != null
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isImageOrPdf() {
+      return request.resource != null
+        && (request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf');
+    }
+
+    function maxSizeMb(mb) {
+      return request.resource != null
+        && request.resource.size <= mb * 1024 * 1024;
+    }
+
+    match /applications/{uid}/photo/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isOwner(uid) && isImage() && maxSizeMb(5);
+    }
+
+    match /applications/{uid}/id/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isOwner(uid) && isImage() && maxSizeMb(10);
+    }
+
+    match /applications/{uid}/selfie/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isOwner(uid) && isImage() && maxSizeMb(10);
+    }
+
+    match /applications/{uid}/certificates/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isOwner(uid) && isImageOrPdf() && maxSizeMb(10);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "email:preview": "node scripts/email-preview.mjs"
+  }
+}

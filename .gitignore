@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.DS_Store
+node_modules/
+functions/node_modules/
+supabase/.temp/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+email-previews/
