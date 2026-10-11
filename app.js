@@ -544,6 +544,7 @@ const signupSubject = document.querySelector("#signupSubject");
 const signupProgressBar = document.querySelector("#signupProgressBar");
 const signupContext = document.querySelector("#signupContext");
 const marketingOptIn = document.querySelector("#marketingOptIn");
+const signupAgreeTerms = document.querySelector("#signupAgreeTerms");
 const signupRole = document.querySelector("#signupRole");
 const signupName = document.querySelector("#signupName");
 const signupEmail = document.querySelector("#signupEmail");
@@ -1432,7 +1433,7 @@ function renderSubjectSuggestions() {
         saveOtherSubjectRequest(requestedSubject || "New subject request");
         const subjectLine = encodeURIComponent("Subject request for tutrSTEM");
         const body = encodeURIComponent(`Hi tutrSTEM,\n\nPlease can you add this subject to the tutor profile list: ${requestedSubject || "[type subject here]"}\n\nThanks`);
-        window.location.href = `mailto:tutrstem@gmail.com?subject=${subjectLine}&body=${body}`;
+        window.location.href = `mailto:support@tutrstem.org.uk?subject=${subjectLine}&body=${body}`;
         hideSubjectSuggestions();
         return;
       }
@@ -1522,7 +1523,7 @@ function renderAdmissionsSuggestions() {
     const requested = profileAdmissionsSearch.value.trim();
     const subjectLine = encodeURIComponent("Admissions test request for tutrSTEM");
     const body = encodeURIComponent(`Hi tutrSTEM,\n\nPlease can you add this admissions test: ${requested || "[type test here]"}\n\nThanks`);
-    window.location.href = `mailto:tutrstem@gmail.com?subject=${subjectLine}&body=${body}`;
+    window.location.href = `mailto:support@tutrstem.org.uk?subject=${subjectLine}&body=${body}`;
     hideAdmissionsSuggestions();
   });
 }
@@ -2982,7 +2983,7 @@ function attachReportHandlers(container) {
         recipientEmail: message.recipientEmail || currentRecipientEmail(),
         threadKey: threadKey()
       });
-      queueEmail("tutrstem@gmail.com", "New tutrSTEM moderation report", `${currentAccount.name} submitted a ${category} report for review.`, {
+      queueEmail("support@tutrstem.org.uk", "New tutrSTEM moderation report", `${currentAccount.name} submitted a ${category} report for review.`, {
         key: `report-${message.id}-${Date.now()}`,
         type: "safeguarding_alert",
         template: "safeguarding_alert",
@@ -6432,6 +6433,13 @@ signupForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (signupAgreeTerms && !signupAgreeTerms.checked) {
+    signupStatus.textContent = "Please tick the box to agree to the Terms and Conditions and Privacy Policy before creating your account.";
+    signupStatus.classList.remove("success");
+    signupAgreeTerms.focus();
+    return;
+  }
+
   if (under18 && (!signupParentName.value.trim() || !normalizeEmail(signupParentEmail.value))) {
     signupStatus.textContent = "Parent or guardian name and email are required for under-18 accounts.";
     signupStatus.classList.remove("success");
@@ -6455,6 +6463,8 @@ signupForm.addEventListener("submit", async (event) => {
     learningSubject: signupWizard.subject || signupSubject?.value || "",
     learningLevel: signupWizard.level || "",
     marketingOptIn: marketingOptIn?.checked || false,
+    agreedToTerms: true,
+    agreedToTermsAt: new Date().toISOString(),
     parentName: under18 ? signupParentName.value.trim() : "",
     parentEmail: under18 ? normalizeEmail(signupParentEmail.value) : "",
     password

@@ -16,6 +16,8 @@
 const PROJECT_ID = "tutrstem-67155";
 const ONLINE_WINDOW_MINUTES = 5;
 const TIME_ZONE = "Europe/London";
+// Test or personal accounts to leave out of the sheet (they stay on the website)
+const HIDDEN_EMAILS = ["caseyamy7cc@gmail.com", "casea0@outlook.com"];
 
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -34,8 +36,10 @@ function setup() {
 }
 
 function refreshAll() {
-  const users = fetchCollection("users", ["name", "email", "role", "lastSeenMs"]);
-  const bookings = fetchCollection("bookings", ["dateTime", "student", "studentEmail", "tutor", "tutorEmail", "subject", "type", "isFreeTrial", "status", "paymentStatus", "amount"]);
+  const users = fetchCollection("users", ["name", "email", "role", "lastSeenMs"])
+    .filter((user) => !isHidden(user.email));
+  const bookings = fetchCollection("bookings", ["dateTime", "student", "studentEmail", "tutor", "tutorEmail", "subject", "type", "isFreeTrial", "status", "paymentStatus", "amount"])
+    .filter((booking) => !isHidden(booking.studentEmail) && !isHidden(booking.tutorEmail));
   const approvedTutors = fetchCollection("approvedTutors", ["status", "approved"]);
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -205,6 +209,10 @@ function freshSheet(spreadsheet, name) {
 }
 
 /* ---------- Helpers ---------- */
+
+function isHidden(email) {
+  return HIDDEN_EMAILS.includes(String(email || "").trim().toLowerCase());
+}
 
 function lessonDate(booking) {
   const value = booking.dateTime || booking.createTime;
